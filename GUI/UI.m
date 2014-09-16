@@ -4,10 +4,11 @@ classdef UI < handle % subclass of handle is fucking important...
     %   Detailed explanation goes here
     
     properties
-        filepath = '';
-        fileinfo = struct();
+        fileinfo = struct('path', '', 'x', 0,...
+                          'y', 0, 'z', 0); % fileinfo (dims, path, ...)
+        data;
         analyzed = false;
-        h = struct();
+        h = struct();                      % handles
     end
 
     
@@ -31,7 +32,7 @@ classdef UI < handle % subclass of handle is fucking important...
                       
             set(ui.h.text, 'units', 'pixels',...
                            'style', 'text',...
-                           'string', ui.filepath,...
+                           'string', ui.fileinfo.path,...
                            'position', [100 10 200 30]);
     
             % open HDF5 file
@@ -57,7 +58,7 @@ classdef UI < handle % subclass of handle is fucking important...
             if ~ischar(name) || ~ischar(path) % no file selected
                 return
             end
-            ui.filepath = [path name];
+            ui.fileinfo.path = [path name];
             
             % get dimensions of scan, determine if scan finished
             dims = h5readatt(ui.filepath, '/PATH/DATA', 'GRID DIMENSIONS');
