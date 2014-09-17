@@ -5,8 +5,9 @@ classdef UIPlot < handle
     properties
         cp;
         data;
+        fitparams;
         model;
-        h = struct(); 
+        h = struct();           % handles
     end
     
     methods
@@ -18,8 +19,7 @@ classdef UIPlot < handle
             
             
             set(plt.h.f, 'units', 'pixels',...
-                        'position', [200 200 1000 500],...
-                        'menubar', 'none',...
+                        'position', [500 200 1000 500],...
                         'numbertitle', 'off',...
                         'name',  ['SISA Scan - ' ui.fileinfo.name ' - ' num2str(plt.cp)],...
                         'resize', 'on');
@@ -28,20 +28,33 @@ classdef UIPlot < handle
                            'position', [40 80 400 400]);
                        
                        
-            plt.getdata(ui);
-            axis(plt.h.axes);
-            plot(plt.data);
+            plt.plotdata(ui);
         end
         
         function getdata(plt, ui)
             if ~ui.data_read
                 dataset = ['/' num2str(plt.cp(1)-1) '/' num2str(plt.cp(2)-1)...
-                                            '/' num2str(plt.cp(3)-1) '/sisa/1'];
+                           '/' num2str(plt.cp(3)-1) '/sisa/' num2str(ui.current_sa)];
                 plt.data = h5read(ui.fileinfo.path, dataset);
             else
-                % something's missing here :)
+                plt.data = ui.data(plt.cp(1), plt.cp(2), plt.cp(3), ui.current_sa);
+            end
+            if ui.fitted
+                plt.model = ui.model;
+                plt.fitparams = ui.params(plt.cp(1), plt.cp(2), plt.cp(3), ui.current_sa, :);
             end
         end
+        
+        function plotdata(plt, ui)
+            plt.getdata(ui);
+            axis(plt.h.axes);
+            plot(plt.data);
+        end
+        
+        function plotfit(plt)
+            plt.model(x, plt.fitparams);
+        end
+        
     end
     
 end
