@@ -33,7 +33,8 @@ classdef UIPlot < handle
                         'position', [500 200 1000 500],...
                         'numbertitle', 'off',...
                         'name',  ['SISA Scan - ' ui.fileinfo.name ' - ' num2str(plt.cp)],...
-                        'resize', 'on');
+                        'resize', 'on',...
+                        'ResizeFcn', @plt.resize);
                     
 
             set(plt.h.axes, 'units', 'pixels',...
@@ -100,6 +101,10 @@ classdef UIPlot < handle
         
         function set_model(plt, varargin)
             plt.model = get(plt.h.drpd, 'value');
+        end
+        
+        function resize(ui, varargin)
+            
         end
         
     end

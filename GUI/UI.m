@@ -1,7 +1,5 @@
 classdef UI < handle % subclass of handle is fucking important...
-    
-    %UI Summary of this class goes here
-    %   Detailed explanation goes here
+    %UI 
     
     properties
         % fileinfo (dims, path, ...)
@@ -35,27 +33,24 @@ classdef UI < handle % subclass of handle is fucking important...
             ui.h.menu = uimenu();
 
             ui.h.plotpanel = uipanel();
-
-            ui.h.axes = axes('parent', ui.h.plotpanel);
-            ui.h.legend = axes('parent', ui.h.plotpanel);
-            ui.h.plttxt = uicontrol(ui.h.plotpanel);
-            ui.h.zslider = uicontrol(ui.h.plotpanel);
-            ui.h.zbox = uicontrol(ui.h.plotpanel);
-            ui.h.saslider = uicontrol(ui.h.plotpanel);
-            ui.h.sabox = uicontrol(ui.h.plotpanel);
-            ui.h.param = uicontrol(ui.h.plotpanel);
+                ui.h.axes = axes('parent', ui.h.plotpanel);
+                ui.h.legend = axes('parent', ui.h.plotpanel);
+                ui.h.plttxt = uicontrol(ui.h.plotpanel);
+                ui.h.zslider = uicontrol(ui.h.plotpanel);
+                ui.h.zbox = uicontrol(ui.h.plotpanel);
+                ui.h.saslider = uicontrol(ui.h.plotpanel);
+                ui.h.sabox = uicontrol(ui.h.plotpanel);
+                ui.h.param = uicontrol(ui.h.plotpanel);
 
             ui.h.bottombar = uipanel();
-            ui.h.path = uicontrol(ui.h.bottombar);
+                ui.h.path = uicontrol(ui.h.bottombar);
             
             ui.h.pb = uicontrol();
 
             ui.h.fitpanel = uipanel();
+                ui.h.fittxt = uicontrol(ui.h.fitpanel);
+                ui.h.drpd = uicontrol(ui.h.fitpanel);
 
-            ui.h.fittxt = uicontrol(ui.h.fitpanel);
-            ui.h.drpd = uicontrol(ui.h.fitpanel);
-
-            
             %% Figure, menu, bottombar
             set(ui.h.f, 'units', 'pixels',...
                         'position', [200 200 1000 600],...
@@ -84,22 +79,29 @@ classdef UI < handle % subclass of handle is fucking important...
             
             %% Plot
             set(ui.h.plotpanel, 'units', 'pixels',...
-                                'position', [270 28 500 500]);
+                                'position', [270 28 500 500],...
+                                'BackgroundColor', [.85 .85 .85]);
             
             set(ui.h.axes, 'units', 'pixels',...
                            'position', [50 50 400 400],...
                            'xtick', [], 'ytick', [],...
+                           'Color', get(ui.h.plotpanel, 'BackgroundColor'),...
+                           'XColor', get(ui.h.plotpanel, 'BackgroundColor'),...
+                           'YColor', get(ui.h.plotpanel, 'BackgroundColor'),...
                            'ButtonDownFcn', @ui.aplot_click);
                                   
             set(ui.h.legend, 'units', 'pixels',...
                              'position', [50 22 400 20],...
                              'xtick', [], 'ytick', [],...
+                             'XColor', get(ui.h.plotpanel, 'BackgroundColor'),...
+                             'YColor', get(ui.h.plotpanel, 'BackgroundColor'),...
                              'visible', 'off');
                                      
             set(ui.h.plttxt, 'units', 'pixels',...
                              'style', 'text',...
                              'position', [50 452 250 20],...
-                             'horizontalalignment', 'left',...
+                             'HorizontalAlignment', 'left',...
+                             'BackgroundColor', get(ui.h.plotpanel, 'BackgroundColor'),...
                              'FontSize', 9,...
                              'string', '');
                                                        
@@ -119,50 +121,54 @@ classdef UI < handle % subclass of handle is fucking important...
             
             set(ui.h.saslider, 'units', 'pixels',...
                                'style', 'slider',...
-                               'position', [20 80 20 370],... 
+                               'position', [20 50 20 370],... 
                                'value', 1,...
                                'visible', 'off',...
                                'callback', @ui.update_plot);
-                           
+
             set(ui.h.sabox, 'units', 'pixels',...
                             'style', 'edit',...
                             'string', '1',...
                             'position', [20 460 20 20],...
                             'callback', @ui.update_plot,...
                             'visible', 'off');
-             
-            % not activate yet
+
+            % not activated yet
             set(ui.h.param, 'units', 'pixels',...
                             'style', 'popupmenu',...
                             'string', {'bl', 'bli', 'blu'},...
                             'position', [40 60 100 15],...
                             'visible', 'off',...
                             'callback', @ui.update_plot);
-                        
+
             %% pushbutton
             set(ui.h.pb,  'units', 'pixels',...
                           'style', 'push',...
                           'position', [10 20 70 30],...
                           'string', 'open',...
                           'callback', @ui.openHDF5);
-            
+
             %% Fit-Panel:
             set(ui.h.fitpanel, 'units', 'pixels',...
                                'position', [10 50 250 300],...
-                               'title', 'Fit-Optionen')
+                               'title', 'Fit-Optionen',...
+                               'FontSize', 9);
 
             % select fit model
             set(ui.h.fittxt, 'units', 'pixels',...
                              'style', 'text',...
-                             'position', [35 260 50 15],...
+                             'position', [15 260 50 15],...
+                             'HorizontalAlignment', 'left',...
                              'string', 'Fitmodell:');
-            
+
             set(ui.h.drpd, 'units', 'pixels',...
                            'style', 'popupmenu',...
                            'string', keys(ui.models),...
                            'value', ui.model,...
-                           'position', [40 245 200 15],...
+                           'position', [15 245 220 15],...
                            'callback', @ui.set_model);
+                   
+                       
                        
             ui.resize();
         end
@@ -252,6 +258,7 @@ classdef UI < handle % subclass of handle is fucking important...
         end
         
         function readHDF5(ui, varargin)
+            tic
             k = keys(ui.points);
             for i = 1:ui.fileinfo.np
                 ind = ui.points(k{i});
@@ -272,7 +279,7 @@ classdef UI < handle % subclass of handle is fucking important...
                 end
             end
             ui.data_read = true;
-            
+            toc
             % UI stuff
             set(ui.h.pb, 'visible', 'off');
             ui.plot_array();
@@ -333,6 +340,11 @@ classdef UI < handle % subclass of handle is fucking important...
                     plot_data(tmp(1), tmp(2)) = 1;
                 end
                 set(ui.h.plttxt, 'string', 'Gescannte Punkte:');
+                cla
+                hold on
+                hmap(squeeze(plot_data(:, :))', true);
+                hold off
+                return
             elseif ~ui.fitted
                 plot_data = max(ui.data(:, :, z, sample, 50:end), [], 5);
                 set(ui.h.plttxt, 'string', 'Amplitude (abgeschätzt):');
@@ -343,6 +355,7 @@ classdef UI < handle % subclass of handle is fucking important...
             
             % plot
             % Memo to self: Don't try using HeatMaps... seriously. 
+            cla
             hold on
             hmap(squeeze(plot_data(:, :))');
             hold off
@@ -350,6 +363,7 @@ classdef UI < handle % subclass of handle is fucking important...
             if min(plot_data) < max(plot_data)
                 axes(ui.h.legend);
                 l_data = min(min(plot_data)):round(max(max(plot_data))/20):max(max(plot_data));
+                cla
                 hold on
                 hmap(squeeze(l_data));
                 hold off
@@ -434,7 +448,7 @@ classdef UI < handle % subclass of handle is fucking important...
             set(ui.h.saslider, 'position', tmp);
             
             tmp = get(ui.h.sabox, 'position');
-            tmp(4) = aP(1) + aP(4) - 20;
+            tmp(2) = aP(1) + aP(4) - 20;
             set(ui.h.sabox, 'position', tmp);
             
 %             ui.h.param
@@ -451,20 +465,25 @@ classdef UI < handle % subclass of handle is fucking important...
     
 end
 
-function hmap(data, cmap)
-    if nargin < 2
+function hmap(data, grid, cmap)
+    if nargin < 3
         cmap = 'summer';
+        if nargin < 2
+            grid = false;
+        end
     end
     im = imagesc(data);
     set(im, 'HitTest', 'off');
     colormap(cmap);
-    [max_x, max_y] = size(data');
-    hold on
-    for i = 1:max_x-1
-        for j = 1:max_y-1
-            line([0 max_x]+.5,[j j]+.5, 'color', [.6 .6 .6], 'HitTest', 'off');
-            line([i i]+.5, [0 max_y]+.5, 'color', [.6 .6 .6], 'HitTest', 'off');
+    if grid
+        [max_x, max_y] = size(data');
+        hold on
+        for i = 1:max_x-1
+            for j = 1:max_y-1
+                line([0 max_x]+.5,[j j]+.5, 'color', [.6 .6 .6], 'HitTest', 'off');
+                line([i i]+.5, [0 max_y]+.5, 'color', [.6 .6 .6], 'HitTest', 'off');
+            end
         end
+        hold off
     end
-    hold off
 end
