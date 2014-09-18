@@ -10,10 +10,12 @@ classdef UI < handle % subclass of handle is fucking important...
         data;       % source data from HDF5
         params;     % fit params, size(params) = [x y z length(fitparams)]
         model;      % fit model, should be global
+        channel_width = 1;   % should be determines from file
         
         file_opened = 0;
         current_z = 1;
         current_sa = 1;
+        current_param = 1;
         points;
         data_read = false;
         fitted = false;
@@ -131,8 +133,6 @@ classdef UI < handle % subclass of handle is fucking important...
             % reset instance
             ui.reset_instance();
             
-            
-            
             ui.fileinfo.name = name;
             ui.fileinfo.path = [path name];
             
@@ -147,7 +147,6 @@ classdef UI < handle % subclass of handle is fucking important...
             end
             ui.fileinfo.size = [str2double(dims{1})+1 str2double(dims{2})+1 str2double(dims{3})+offset];
                     % end of fix
-            
             % get max number of samples per point (should be at /0/0/0/sisa)
             info = h5info(ui.fileinfo.path, '/0/0/0/sisa');
             ui.fileinfo.size(4) = length(info.Datasets);
@@ -159,24 +158,24 @@ classdef UI < handle % subclass of handle is fucking important...
             else
                 ui.fileinfo.finished = false;
             end
-
+            
             % get scanned points
             tmp = h5read(ui.fileinfo.path, '/PATH/DATA');
             tmp = tmp.Name;
-            
+        tic
             % create map between string and position in data
             ui.points = containers.Map;
             for i = 1:length(tmp) - 1
                 vec = str2double(strsplit(tmp{i}, '/'))+[1 1 offset];
-                if strcmp(tmp{i}, fin) && ui.fileinfo.size(4) == 1
-                    break;
-                else
-                    ui.points(tmp{i}) = vec;
+                ui.points(tmp{i}) = vec;
+                if strcmp(tmp{i}, fin)
+                    break
                 end
             end
-
+        toc
             % get number of scanned points
-            ui.fileinfo.np = length(ui.points);
+            ui.fileinfo.np = ui.points.Count;
+            
             
             % UI stuff
             set(ui.h.text, 'string', ui.fileinfo.path);
@@ -187,7 +186,7 @@ classdef UI < handle % subclass of handle is fucking important...
             if ui.fileinfo.size(3) > 1 
                 set(ui.h.zslider, 'min', 1, 'max', ui.fileinfo.size(3),...
                                   'visible', 'on',...
-                                  'SliderStep', [1 1]/(ui.fileinfo.size(3)-1));
+                                  'SliderStep', [1 5]/(ui.fileinfo.size(3)-1));
                 set(ui.h.zbox, 'visible', 'on');
             else 
                 set(ui.h.zbox, 'visible', 'off');
@@ -197,39 +196,52 @@ classdef UI < handle % subclass of handle is fucking important...
             if ui.fileinfo.size(4) > 1 
                 set(ui.h.saslider, 'min', 1, 'max', ui.fileinfo.size(4),...
                                   'visible', 'on',...
-                                  'SliderStep', [1 1]/(ui.fileinfo.size(4)-1));
+                                  'SliderStep', [1 5]/(ui.fileinfo.size(4)-1));
                 set(ui.h.sabox, 'visible', 'on');
             else 
                 set(ui.h.sabox, 'visible', 'off');
                 set(ui.h.saslider, 'visible', 'off');
             end
             
-            ui.plot_array(1);
+            ui.plot_array();
         end
         
         function readHDF5(ui, varargin)
             k = keys(ui.points);
             for i = 1:ui.fileinfo.np
                 ind = ui.points(k{i});
-                if ui.fileinfo.size(4) > 1
-                    info = h5info(ui.fileinfo.path, ['/' k{i} '/sisa']);
-                    samples = length(info.Datasets);
-                else 
-                    samples = 1;
-                end
-                for j = 1:samples
-                    ui.data(ind(1), ind(2), ind(3), j, :) = h5read(ui.fileinfo.path, ['/' k{i} '/sisa/' num2str(j)]);
+                if ui.fileinfo.size(4) > 1 % multiple samples per point
+                    % every point should have exactly as many samples
+                    % as the first point, except for the last one
+                    if i == ui.fileinfo.np % get number of samples for last point
+                        info = h5info(ui.fileinfo.path, ['/' k{i} '/sisa']);
+                        samples = length(info.Datasets); 
+                    else % take number of samples of first point
+                        samples = ui.fileinfo.size(4);
+                    end
+                    for j = 1:samples % iterate over all samples
+                        ui.data(ind(1), ind(2), ind(3), j, :) = h5read(ui.fileinfo.path, ['/' k{i} '/sisa/' num2str(j)]);
+                    end
+                else % only one sample anyways
+                    ui.data(ind(1), ind(2), ind(3), 1, :) = h5read(ui.fileinfo.path, ['/' k{i} '/sisa/1']);
                 end
             end
+            ui.data_read = true;
+            
+            % UI stuff
+            set(ui.h.pb, 'visible', 'off');
         end
         
-        function plot_array(ui, z, sample, param ,varargin)
+        function plot_array(ui, varargin)
+            z = ui.current_z;
+            sample = ui.current_sa;
+            param = ui.current_param;
             axis(ui.h.axes);
             if ~ui.data_read
 %                 plot_data = zeros(ui.fileinfo.size(1), ui.fileinfo.size(2),...
 %                                   ui.fileinfo.size(3),  ui.fileinfo.size(4));
                 
-                % if the poin has been measured, set to 1; else to 0
+                % if the point has been measured, set to 1; else to 0
                 vals = values(ui.points);
                 for i = 1:ui.fileinfo.np
                     tmp = vals{i};
@@ -242,15 +254,14 @@ classdef UI < handle % subclass of handle is fucking important...
             
             % plot
             hold on
-            hmap(plot_data(:,:)');
+            hmap(squeeze(plot_data(:, :, z, sample))');
             hold off
         end
         
         function update_plot(ui, varargin)
             switch varargin{1}
                 case ui.h.zslider
-                    z = get(ui.h.zslider, 'value');
-                    
+                    z = round(get(ui.h.zslider, 'value'));
                     sample = ui.current_sa;
                     
                 case ui.h.zbox
@@ -263,7 +274,7 @@ classdef UI < handle % subclass of handle is fucking important...
                     sample = ui.current_sa;
                     
                 case ui.h.saslider
-                    sample = get(ui.h.saslider, 'value');
+                    sample = round(get(ui.h.saslider, 'value'));
                     z = ui.current_z;
                     
                 case ui.h.sabox
@@ -284,7 +295,8 @@ classdef UI < handle % subclass of handle is fucking important...
             set(ui.h.sabox, 'string', num2str(sample));
             ui.current_z = z;
             ui.current_sa = sample;
-            plot_array(ui, z, sample); % needs input from ui.h.param
+            
+            ui.plot_array(); % needs input from ui.h.param
         end
         
         function aplot_click(ui, varargin)
@@ -313,6 +325,10 @@ classdef UI < handle % subclass of handle is fucking important...
                 ui.points = containers.Map;
             end
         end
+        
+        function read_ini(ui)
+            % stuff
+        end
     end
     
 end
@@ -328,10 +344,9 @@ function hmap(data, cmap)
     hold on
     for i = 1:max_x-1
         for j = 1:max_y-1
-            line([0 max_x]+.5,[j j]+.5, 'color', [.7 .7 .7]);
-            line([i i]+.5, [0 max_y]+.5, 'color', [.7 .7 .7]);
+            line([0 max_x]+.5,[j j]+.5, 'color', [.7 .7 .7], 'HitTest', 'off');
+            line([i i]+.5, [0 max_y]+.5, 'color', [.7 .7 .7], 'HitTest', 'off');
         end
     end
     hold off
 end
-

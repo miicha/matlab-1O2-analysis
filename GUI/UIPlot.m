@@ -37,7 +37,7 @@ classdef UIPlot < handle
                            '/' num2str(plt.cp(3)-1) '/sisa/' num2str(ui.current_sa)];
                 plt.data = h5read(ui.fileinfo.path, dataset);
             else
-                plt.data = ui.data(plt.cp(1), plt.cp(2), plt.cp(3), ui.current_sa);
+                plt.data = squeeze(ui.data(plt.cp(1), plt.cp(2), plt.cp(3), ui.current_sa, :));
             end
             if ui.fitted
                 plt.model = ui.model;
@@ -48,7 +48,18 @@ classdef UIPlot < handle
         function plotdata(plt, ui)
             plt.getdata(ui);
             axis(plt.h.axes);
-            plot(plt.data);
+            
+            datal = plt.data;
+            x = 0:(length(datal)-1);
+            x = x*ui.channel_width;
+            
+            plot(x, datal, '.');
+            
+            [~, pulse] = max(datal);
+            m = max(datal((pulse + 30):end));
+            m = m*1.1;
+            ylim([0 m]);
+            xlim([0 length(datal)+1]);
         end
         
         function plotfit(plt)
