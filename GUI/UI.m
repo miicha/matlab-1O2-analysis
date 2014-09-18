@@ -9,9 +9,9 @@ classdef UI < handle % subclass of handle is fucking important...
                           'name', '', 'np', 0); 
         data;       % source data from HDF5
         params;     % fit params, size(params) = [x y z length(fitparams)]
-        model;      % fit model, should be global
+        model = 1;      % fit model, should be global  
         channel_width = 1;   % should be determines from file
-        
+           
         file_opened = 0;
         current_z = 1;
         current_sa = 1;
@@ -20,107 +20,151 @@ classdef UI < handle % subclass of handle is fucking important...
         data_read = false;
         fitted = false;
         
-        h = struct();                      % handles
+        models = containers.Map({'1. A*(exp(-t/t1)-exp(-t/t2))+offset' '2.' '3.'},...
+                        {@(x) x.^2 @(x) x.^2 @(x) x.^2})
+                    
+        h = struct();        % handles
     end
 
     
     methods
         % create new instance with basic controls
         function ui = UI()
-            %init:
+            %% initialize all UI objects:
             ui.h.f = figure();
-            
-            ui.h.axes = axes();
+            ui.h.menu = uimenu();
+
+            ui.h.plotpanel = uipanel();
+
+            ui.h.axes = axes('parent', ui.h.plotpanel);
+            ui.h.legend = axes('parent', ui.h.plotpanel);
+            ui.h.plttxt = uicontrol(ui.h.plotpanel);
+            ui.h.zslider = uicontrol(ui.h.plotpanel);
+            ui.h.zbox = uicontrol(ui.h.plotpanel);
+            ui.h.saslider = uicontrol(ui.h.plotpanel);
+            ui.h.sabox = uicontrol(ui.h.plotpanel);
+            ui.h.param = uicontrol(ui.h.plotpanel);
+
+            ui.h.bottombar = uipanel();
+            ui.h.path = uicontrol(ui.h.bottombar);
             
             ui.h.pb = uicontrol();
-            ui.h.menu = uimenu();
-            ui.h.text = uicontrol();
-            
-            ui.h.zslider = uicontrol();
-            ui.h.zbox = uicontrol();
-            
-            ui.h.saslider = uicontrol();
-            ui.h.sabox = uicontrol();
-            
-            ui.h.param = uicontrol();
-            
+
             ui.h.fitpanel = uipanel();
+
+            ui.h.fittxt = uicontrol(ui.h.fitpanel);
             ui.h.drpd = uicontrol(ui.h.fitpanel);
 
-            % further defs:
+            
+            %% Figure, menu, bottombar
             set(ui.h.f, 'units', 'pixels',...
-                        'position', [200 200 1000 500],...
+                        'position', [200 200 1000 600],...
                         'numbertitle', 'off',...
+                        'menubar', 'none',...
                         'name', 'SISA Scan',...
-                        'resize', 'on');
+                        'resize', 'on',...
+                        'ResizeFcn', @ui.resize);
                     
-            set(ui.h.text, 'units', 'pixels',...
-                           'style', 'text',...
-                           'string', ui.fileinfo.path,...
-                           'position', [100 10 200 30]);
-    
-            % open HDF5 file
-            set(ui.h.pb,  'units', 'pixels',...
-                          'style', 'push',...
-                          'position', [10 20 70 30],...
-                          'string', 'open',...
-                          'callback', @ui.openHDF5);
-
             set(ui.h.menu, 'Label', 'Datei');
             uimenu(ui.h.menu, 'label', 'Datei öffnen...',...
                               'callback', @ui.openHDF5);
-
+            
+            set(ui.h.bottombar, 'units', 'pixels',...
+                                'position', [0 0 1000 18],...
+                                'BorderType', 'EtchedOut');
+                            
+            set(ui.h.path, 'units', 'pixels',...
+                           'style', 'text',...
+                           'string', ui.fileinfo.path,...
+                           'HorizontalAlignment', 'left',...
+                           'BackgroundColor', get(ui.h.f, 'Color'),...
+                           'ForegroundColor', [.3 .3 .3],...
+                           'FontSize', 9,...
+                           'position', [0 0 1000 15]);
+            
+            %% Plot
+            set(ui.h.plotpanel, 'units', 'pixels',...
+                                'position', [270 28 500 500]);
+            
             set(ui.h.axes, 'units', 'pixels',...
-                           'position', [40 80 400 400],...
+                           'position', [50 50 400 400],...
                            'xtick', [], 'ytick', [],...
                            'ButtonDownFcn', @ui.aplot_click);
-                       
+                                  
+            set(ui.h.legend, 'units', 'pixels',...
+                             'position', [50 22 400 20],...
+                             'xtick', [], 'ytick', [],...
+                             'visible', 'off');
+                                     
+            set(ui.h.plttxt, 'units', 'pixels',...
+                             'style', 'text',...
+                             'position', [50 452 250 20],...
+                             'horizontalalignment', 'left',...
+                             'FontSize', 9,...
+                             'string', '');
+                                                       
             set(ui.h.zslider, 'units', 'pixels',...
-                               'style', 'slider',...
-                               'position', [450 80 20 370],...
-                               'value', 1,...
-                               'visible', 'off',...
-                               'callback', @ui.update_plot);
+                              'style', 'slider',...
+                              'position', [460 50 20 370],...
+                              'value', 1,...
+                              'visible', 'off',...
+                              'callback', @ui.update_plot);
                            
             set(ui.h.zbox, 'units', 'pixels',...
                            'style', 'edit',...
                            'string', '1',...
-                           'position', [450 460 20, 20],...
+                           'position', [460 430 20, 20],...
                            'callback', @ui.update_plot,...
                            'visible', 'off');
             
             set(ui.h.saslider, 'units', 'pixels',...
                                'style', 'slider',...
-                               'position', [15 80 20 370],... 
+                               'position', [20 80 20 370],... 
                                'value', 1,...
                                'visible', 'off',...
                                'callback', @ui.update_plot);
                            
             set(ui.h.sabox, 'units', 'pixels',...
-                           'style', 'edit',...
-                           'string', '1',...
-                           'position', [15 460 20, 20],...
-                           'callback', @ui.update_plot,...
-                           'visible', 'off');
-                       
-                       
+                            'style', 'edit',...
+                            'string', '1',...
+                            'position', [20 460 20 20],...
+                            'callback', @ui.update_plot,...
+                            'visible', 'off');
+             
+            % not activate yet
             set(ui.h.param, 'units', 'pixels',...
-                           'style', 'popupmenu',...
-                           'string', {'bl', 'bli', 'blu'},...
-                           'position', [40 60 100 15],...
-                           'visible', 'off',...
-                           'callback', @ui.update_plot);
+                            'style', 'popupmenu',...
+                            'string', {'bl', 'bli', 'blu'},...
+                            'position', [40 60 100 15],...
+                            'visible', 'off',...
+                            'callback', @ui.update_plot);
+                        
+            %% pushbutton
+            set(ui.h.pb,  'units', 'pixels',...
+                          'style', 'push',...
+                          'position', [10 20 70 30],...
+                          'string', 'open',...
+                          'callback', @ui.openHDF5);
             
-            % Fit-Panel:
+            %% Fit-Panel:
             set(ui.h.fitpanel, 'units', 'pixels',...
-                               'position', [480 100 300 300],...
+                               'position', [10 50 250 300],...
                                'title', 'Fit-Optionen')
 
             % select fit model
+            set(ui.h.fittxt, 'units', 'pixels',...
+                             'style', 'text',...
+                             'position', [35 260 50 15],...
+                             'string', 'Fitmodell:');
+            
             set(ui.h.drpd, 'units', 'pixels',...
                            'style', 'popupmenu',...
-                           'string', {'bl', 'bli', 'blu'},...
-                           'position', [40 250 100 15]);
+                           'string', keys(ui.models),...
+                           'value', ui.model,...
+                           'position', [40 245 200 15],...
+                           'callback', @ui.set_model);
+                       
+            ui.resize();
         end
         
         % open HDF5 file and get infos
@@ -132,7 +176,6 @@ classdef UI < handle % subclass of handle is fucking important...
             end
             % reset instance
             ui.reset_instance();
-            
             ui.fileinfo.name = name;
             ui.fileinfo.path = [path name];
             
@@ -162,8 +205,11 @@ classdef UI < handle % subclass of handle is fucking important...
             % get scanned points
             tmp = h5read(ui.fileinfo.path, '/PATH/DATA');
             tmp = tmp.Name;
-        tic
             % create map between string and position in data
+                % Performance problem here. Not using a map and computing
+                % the position in the vector from the string on the fly is
+                % almost as slow (-.1s). Might try to only save a matrix of
+                % indices and compute the strring from that.
             ui.points = containers.Map;
             for i = 1:length(tmp) - 1
                 vec = str2double(strsplit(tmp{i}, '/'))+[1 1 offset];
@@ -172,15 +218,14 @@ classdef UI < handle % subclass of handle is fucking important...
                     break
                 end
             end
-        toc
             % get number of scanned points
             ui.fileinfo.np = ui.points.Count;
             
             
             % UI stuff
-            set(ui.h.text, 'string', ui.fileinfo.path);
+            set(ui.h.path, 'string', ui.fileinfo.path);
             set(ui.h.f, 'name', ['SISA Scan - ' name]);
-            set(ui.h.pb, 'string', 'Einlesen', 'callback', @ui.readHDF5);
+            set(ui.h.pb, 'string', 'Einlesen', 'callback', @ui.readHDF5, 'visible', 'on');
             set(ui.h.axes, 'xlim', [.5 ui.fileinfo.size(1)+.5], 'ylim', [.5 ui.fileinfo.size(2)+.5]);
             % handle z-scans
             if ui.fileinfo.size(3) > 1 
@@ -230,34 +275,9 @@ classdef UI < handle % subclass of handle is fucking important...
             
             % UI stuff
             set(ui.h.pb, 'visible', 'off');
+            ui.plot_array();
         end
-        
-        function plot_array(ui, varargin)
-            z = ui.current_z;
-            sample = ui.current_sa;
-            param = ui.current_param;
-            axis(ui.h.axes);
-            if ~ui.data_read
-%                 plot_data = zeros(ui.fileinfo.size(1), ui.fileinfo.size(2),...
-%                                   ui.fileinfo.size(3),  ui.fileinfo.size(4));
                 
-                % if the point has been measured, set to 1; else to 0
-                vals = values(ui.points);
-                for i = 1:ui.fileinfo.np
-                    tmp = vals{i};
-                    plot_data(tmp(1), tmp(2), tmp(3)) = 1;
-                end
-                % Memo to self: Don't try using HeatMaps... seriously.        
-            else
-                plot_data = ui.data(:, :, z, sample, param);
-            end
-            
-            % plot
-            hold on
-            hmap(squeeze(plot_data(:, :, z, sample))');
-            hold off
-        end
-        
         function update_plot(ui, varargin)
             switch varargin{1}
                 case ui.h.zslider
@@ -299,6 +319,47 @@ classdef UI < handle % subclass of handle is fucking important...
             ui.plot_array(); % needs input from ui.h.param
         end
         
+        function plot_array(ui, varargin)
+            z = ui.current_z;
+            sample = ui.current_sa;
+            param = ui.current_param;
+            axes(ui.h.axes);
+            if ~ui.data_read
+                plot_data = zeros(ui.fileinfo.size(1), ui.fileinfo.size(2));
+                % if the point has been measured, set to 1; else to 0
+                vals = values(ui.points);
+                for i = 1:ui.fileinfo.np
+                    tmp = vals{i};
+                    plot_data(tmp(1), tmp(2)) = 1;
+                end
+                set(ui.h.plttxt, 'string', 'Gescannte Punkte:');
+            elseif ~ui.fitted
+                plot_data = max(ui.data(:, :, z, sample, 50:end), [], 5);
+                set(ui.h.plttxt, 'string', 'Amplitude (abgeschätzt):');
+            elseif ui.fitted
+                plot_data = ui.params(:, :, z, param);
+                set(ui.h.plttxt, 'string', ['Parameter ' num2str(ui.current_param) ' :']);
+            end
+            
+            % plot
+            % Memo to self: Don't try using HeatMaps... seriously. 
+            hold on
+            hmap(squeeze(plot_data(:, :))');
+            hold off
+             
+            if min(plot_data) < max(plot_data)
+                axes(ui.h.legend);
+                l_data = min(min(plot_data)):round(max(max(plot_data))/20):max(max(plot_data));
+                hold on
+                hmap(squeeze(l_data));
+                hold off
+                xlim([.5 length(l_data)+.5])
+                set(ui.h.legend, 'visible', 'on');
+                set(ui.h.legend, 'XTick', [1 length(l_data)]);
+                set(ui.h.legend, 'XTickLabel', {num2str(l_data(1)) num2str(l_data(end))});
+            end
+        end
+
         function aplot_click(ui, varargin)
             if ~strcmp(ui.fileinfo.path, '')
                 cp = get(ui.h.axes, 'CurrentPoint');
@@ -308,26 +369,83 @@ classdef UI < handle % subclass of handle is fucking important...
                 end
             end
         end
-        
     end
     
     methods (Access = private)
         function reset_instance(ui)
             if ui.file_opened
-                clear('ui.data', 'ui.params', 'ui.model');
+                clear('ui.data', 'ui.points', 'ui.params');
                 ui.fileinfo = struct('path', '', 'size', [0 0 0],...
                                      'name', '', 'np', 0); 
                 ui.file_opened = 0;
                 ui.current_z = 1;
+                ui.current_sa = 1;
+                ui.current_param = 1;
                 ui.data_read = false;
                 ui.fitted = false;  
-                ui.file_opened = 1;
-                ui.points = containers.Map;
+                ui.model = 1;      % fit model, should be global  
+                ui.channel_width = 1;   % should be determines from file
+                set(ui.h.legend, 'visible', 'off');
+                delete(allchild(ui.h.legend));
             end
+            ui.file_opened = 1;
         end
         
         function read_ini(ui)
             % stuff
+        end
+        
+        function set_model(ui, varargin)
+            ui.model = get(ui.h.drpd, 'value');
+        end
+        
+        function resize(ui, varargin)
+            % resize elements in figure to match
+            fP = get(ui.h.f, 'Position');
+            
+            pP = get(ui.h.plotpanel, 'Position');
+            pP(3:4) = [(fP(3)-pP(1))-10 (fP(4)-pP(2))-10];
+            set(ui.h.plotpanel, 'Position', pP);
+            
+            aP = get(ui.h.axes, 'Position');
+            aP(3:4) = [(pP(3)-aP(1))-50 (pP(4)-aP(2))-50];
+            set(ui.h.axes, 'Position', aP);
+            
+            tmp = get(ui.h.legend, 'position');
+            tmp(3) = aP(3);
+            set(ui.h.legend, 'position', tmp);
+            
+            tmp = get(ui.h.plttxt, 'position');
+            tmp(2) = aP(2)+aP(4)+2;
+            set(ui.h.plttxt, 'position', tmp);
+            
+            tmp = get(ui.h.zslider, 'position');
+            tmp(1) = aP(1) + aP(3) + 10;
+            tmp(4) = aP(4) - 30;
+            set(ui.h.zslider, 'position', tmp);
+            
+            tmp = get(ui.h.zbox, 'position');
+            tmp(1) = aP(1) + aP(3) + 10;
+            tmp(2) = aP(1) + aP(4) - 20;
+            set(ui.h.zbox, 'position', tmp);
+            
+            tmp = get(ui.h.saslider, 'position');
+            tmp(4) = aP(4) - 30;
+            set(ui.h.saslider, 'position', tmp);
+            
+            tmp = get(ui.h.sabox, 'position');
+            tmp(4) = aP(1) + aP(4) - 20;
+            set(ui.h.sabox, 'position', tmp);
+            
+%             ui.h.param
+            
+            bP = get(ui.h.bottombar, 'Position');
+            bP(3) = fP(3);
+            set(ui.h.bottombar, 'Position', bP);
+            
+            bP = get(ui.h.path, 'Position');
+            bP(3) = fP(3);
+            set(ui.h.path, 'Position', bP);
         end
     end
     
@@ -344,8 +462,8 @@ function hmap(data, cmap)
     hold on
     for i = 1:max_x-1
         for j = 1:max_y-1
-            line([0 max_x]+.5,[j j]+.5, 'color', [.7 .7 .7], 'HitTest', 'off');
-            line([i i]+.5, [0 max_y]+.5, 'color', [.7 .7 .7], 'HitTest', 'off');
+            line([0 max_x]+.5,[j j]+.5, 'color', [.6 .6 .6], 'HitTest', 'off');
+            line([i i]+.5, [0 max_y]+.5, 'color', [.6 .6 .6], 'HitTest', 'off');
         end
     end
     hold off
