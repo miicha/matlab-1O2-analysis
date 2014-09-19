@@ -154,6 +154,10 @@ classdef UIPlot < handle
             plt.fitparams = p;
             plt.fitted = true;
             plt.plotfit();
+            for i = 1:plt.n_param
+                str = sprintf('%1.2f', p(i));
+                set(plt.h.pe{i}, 'string', str);
+            end
         end
         
         function set_model(plt, varargin)
@@ -204,12 +208,12 @@ classdef UIPlot < handle
                  plt.h.pe{i} = uicontrol(plt.h.param, 'units', 'pixels',...
                                                       'style', 'edit',...
                                                       'string', '1',...
-                                                      'position', [10+(i-1)*100 25 35 20]);
+                                                      'position', [10+(i-1)*100 25 45 20]);
                  plt.h.pd{i} = uicontrol(plt.h.param, 'units', 'pixels',...
                                                       'style', 'text',...
                                                       'string', '+-',...
                                                       'HorizontalAlignment', 'left',...
-                                                      'position', [45+(i-1)*100 25 30 20]); 
+                                                      'position', [55+(i-1)*100 25 30 20]); 
                  plt.h.pc{i} = uicontrol(plt.h.param, 'units', 'pixels',...
                                                       'style', 'checkbox',...
                                                       'string', 'fix',...
@@ -220,7 +224,7 @@ classdef UIPlot < handle
             else
                 set(plt.h.param, 'visible', 'on');
                 pP = get(plt.h.param, 'position');
-                pP(3) = 45+(n_param-1)*100+30+10;
+                pP(3) = 45+(n_param-1)*100+45+10;
                 set(plt.h.param, 'position', pP);
             end
             plt.n_param = n_param;
