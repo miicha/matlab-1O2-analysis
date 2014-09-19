@@ -18,8 +18,13 @@ classdef UI < handle % subclass of handle is fucking important...
         data_read = false;
         fitted = false;
         
-        models = containers.Map({'1. A*(exp(-t/t1)-exp(-t/t2))+offset' '2.' '3.'},...
-                        {@(x) x.^2 @(x) x.^2 @(x) x.^2})
+        models = containers.Map(...
+                        {'1. A*(exp(-t/t1)-exp(-t/t2))+B*exp(-t/t3)+offset' ... 
+                         '2. A*(exp(-t/t1)-exp(-t/t2))+offset' ...
+                         '3.'},...
+                        {@(A, t1, t2, B, t3, offset, t) A*(exp(-t/t1)-exp(-t/t2))+B*exp(-t/t3)+offset ...
+                         @(A, t1, t2, offset, t) A*(exp(-t/t1)-exp(-t/t2))+offset ...
+                         @(x) x.^2})
                     
         h = struct();        % handles
     end
@@ -43,7 +48,7 @@ classdef UI < handle % subclass of handle is fucking important...
                 ui.h.param = uicontrol(ui.h.plotpanel);
 
             ui.h.bottombar = uipanel();
-                ui.h.path = uicontrol(ui.h.bottombar);
+                ui.h.info = uicontrol(ui.h.bottombar);
             
             ui.h.pb = uicontrol();
 
@@ -68,7 +73,7 @@ classdef UI < handle % subclass of handle is fucking important...
                                 'position', [0 0 1000 18],...
                                 'BorderType', 'EtchedOut');
                             
-            set(ui.h.path, 'units', 'pixels',...
+            set(ui.h.info, 'units', 'pixels',...
                            'style', 'text',...
                            'string', ui.fileinfo.path,...
                            'HorizontalAlignment', 'left',...
@@ -229,36 +234,15 @@ classdef UI < handle % subclass of handle is fucking important...
             
             
             % UI stuff
-            set(ui.h.path, 'string', ui.fileinfo.path);
             set(ui.h.f, 'name', ['SISA Scan - ' name]);
             set(ui.h.pb, 'string', 'Einlesen', 'callback', @ui.readHDF5, 'visible', 'on');
-            set(ui.h.axes, 'xlim', [.5 ui.fileinfo.size(1)+.5], 'ylim', [.5 ui.fileinfo.size(2)+.5]);
-            % handle z-scans
-            if ui.fileinfo.size(3) > 1 
-                set(ui.h.zslider, 'min', 1, 'max', ui.fileinfo.size(3),...
-                                  'visible', 'on',...
-                                  'SliderStep', [1 5]/(ui.fileinfo.size(3)-1));
-                set(ui.h.zbox, 'visible', 'on');
-            else 
-                set(ui.h.zbox, 'visible', 'off');
-                set(ui.h.zslider, 'visible', 'off');
-            end
-            % handle multiple samples
-            if ui.fileinfo.size(4) > 1 
-                set(ui.h.saslider, 'min', 1, 'max', ui.fileinfo.size(4),...
-                                  'visible', 'on',...
-                                  'SliderStep', [1 5]/(ui.fileinfo.size(4)-1));
-                set(ui.h.sabox, 'visible', 'on');
-            else 
-                set(ui.h.sabox, 'visible', 'off');
-                set(ui.h.saslider, 'visible', 'off');
-            end
             
+            ui.update_infos();
+            ui.update_sliders();
             ui.plot_array();
         end
-        
+
         function readHDF5(ui, varargin)
-            tic
             k = keys(ui.points);
             for i = 1:ui.fileinfo.np
                 ind = ui.points(k{i});
@@ -279,12 +263,16 @@ classdef UI < handle % subclass of handle is fucking important...
                 end
             end
             ui.data_read = true;
-            toc
+            tmp = size(ui.data);
+            ui.fileinfo.size = tmp(1:4);
+            
             % UI stuff
             set(ui.h.pb, 'visible', 'off');
+            ui.update_infos();
+            ui.update_sliders();
             ui.plot_array();
         end
-                
+
         function update_plot(ui, varargin)
             switch varargin{1}
                 case ui.h.zslider
@@ -325,25 +313,62 @@ classdef UI < handle % subclass of handle is fucking important...
             
             ui.plot_array(); % needs input from ui.h.param
         end
+
+        function update_sliders(ui)
+            set(ui.h.axes, 'xlim', [.5 ui.fileinfo.size(1)+.5], 'ylim', [.5 ui.fileinfo.size(2)+.5]);
+            % handle z-scans
+            if ui.fileinfo.size(3) > 1 
+                set(ui.h.zslider, 'min', 1, 'max', ui.fileinfo.size(3),...
+                                  'visible', 'on',...
+                                  'SliderStep', [1 5]/(ui.fileinfo.size(3)-1));
+                set(ui.h.zbox, 'visible', 'on');
+            else 
+                set(ui.h.zbox, 'visible', 'off');
+                set(ui.h.zslider, 'visible', 'off');
+            end
+            % handle multiple samples
+            if ui.fileinfo.size(4) > 1 
+                set(ui.h.saslider, 'min', 1, 'max', ui.fileinfo.size(4),...
+                                  'visible', 'on',...
+                                  'SliderStep', [1 5]/(ui.fileinfo.size(4)-1));
+                set(ui.h.sabox, 'visible', 'on');
+            else 
+                set(ui.h.sabox, 'visible', 'off');
+                set(ui.h.saslider, 'visible', 'off');
+            end
+        end
         
+        function update_infos(ui)
+            str = [ui.fileinfo.path '  |   Dimensionen: ' num2str(ui.fileinfo.size)];
+            if ui.fitted
+                str = [str '   |   Daten global gefittet.'];
+            elseif ui.data_read
+                str = [str '   |    Daten eingelesen.'];
+            end
+            set(ui.h.info, 'string', str);
+        end
+
         function plot_array(ui, varargin)
             z = ui.current_z;
             sample = ui.current_sa;
             param = ui.current_param;
+            
             axes(ui.h.axes);
             if ~ui.data_read
-                plot_data = zeros(ui.fileinfo.size(1), ui.fileinfo.size(2));
+                plot_data = zeros(ui.fileinfo.size(1), ui.fileinfo.size(2),...
+                                  ui.fileinfo.size(3));
                 % if the point has been measured, set to 1; else to 0
                 vals = values(ui.points);
                 for i = 1:ui.fileinfo.np
                     tmp = vals{i};
-                    plot_data(tmp(1), tmp(2)) = 1;
+                    plot_data(tmp(1), tmp(2), tmp(3)) = 1;
                 end
                 set(ui.h.plttxt, 'string', 'Gescannte Punkte:');
                 cla
                 hold on
-                hmap(squeeze(plot_data(:, :))', true);
+                hmap(squeeze(plot_data(:, :, z))', true);
                 hold off
+                
                 return
             elseif ~ui.fitted
                 plot_data = max(ui.data(:, :, z, sample, 50:end), [], 5);
@@ -457,9 +482,9 @@ classdef UI < handle % subclass of handle is fucking important...
             bP(3) = fP(3);
             set(ui.h.bottombar, 'Position', bP);
             
-            bP = get(ui.h.path, 'Position');
+            bP = get(ui.h.info, 'Position');
             bP(3) = fP(3);
-            set(ui.h.path, 'Position', bP);
+            set(ui.h.info, 'Position', bP);
         end
     end
     
