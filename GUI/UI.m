@@ -7,8 +7,12 @@ classdef UI < handle % subclass of handle is fucking important...
                           'name', '', 'np', 0); 
         data;       % source data from HDF5
         params;     % fit params, size(params) = [x y z length(fitparams)]
-        model = 1;      % fit model, should be global  
-        channel_width = 1;   % should be determines from file
+        model = '1. A*(exp(-t/t1)-exp(-t/t2))+offset';      % fit model, should be global  
+        
+        channel_width = 20/1000;   % should be determined from file
+                                   % needs UI element
+        t_offset = 15;   % excitation is over after t_offset channels after 
+                         % maximum counts were reached - needs UI element
            
         file_opened = 0;
         current_z = 1;
@@ -18,13 +22,24 @@ classdef UI < handle % subclass of handle is fucking important...
         data_read = false;
         fitted = false;
         
+%         models = containers.Map(...
+%                         {'1. A*(exp(-t/t1)-exp(-t/t2))+B*exp(-t/t3)+offset' ... 
+%                          '2. A*(exp(-t/t1)-exp(-t/t2))+offset' ...
+%                          '3.'},...
+%                         {@(A, t1, t2, B, t3, offset, t) A*(exp(-t/t1)-exp(-t/t2))+B*exp(-t/t3)+offset ...
+%                          @(A, t1, t2, offset, t) A*(exp(-t/t1)-exp(-t/t2))+offset ...
+%                          @(x) x.^2})
+                     
         models = containers.Map(...
-                        {'1. A*(exp(-t/t1)-exp(-t/t2))+B*exp(-t/t3)+offset' ... 
-                         '2. A*(exp(-t/t1)-exp(-t/t2))+offset' ...
-                         '3.'},...
-                        {@(A, t1, t2, B, t3, offset, t) A*(exp(-t/t1)-exp(-t/t2))+B*exp(-t/t3)+offset ...
-                         @(A, t1, t2, offset, t) A*(exp(-t/t1)-exp(-t/t2))+offset ...
-                         @(x) x.^2})
+                 {'1. A*(exp(-t/t1)-exp(-t/t2))+offset'...
+                  '2. A*(exp(-t/t1)-exp(-t/t2))+B*exp(-t/t3)+offset'...
+                  '3.'},...
+                 {...
+                    % function, lower bounds, upper bounds, names of arguments
+                    {@(p, t) p(1)*(exp(-t/p(2))-exp(-t/p(3)))+p(4), [0 0 0 0], [inf inf inf inf], {'A', 't1', 't2', 'offset'} }...
+                    {@(p, t) p(1)*(exp(-t/p(2))-exp(-t/p(3)))+p(4)*exp(-t/p(5))+p(6), [0 0 0 0 0 0], [inf inf inf inf inf inf], {'A', 't1', 't2', 'B', 't3', 'off'} }...
+                    {}...
+                 })
                     
         h = struct();        % handles
     end
@@ -104,11 +119,12 @@ classdef UI < handle % subclass of handle is fucking important...
                                      
             set(ui.h.plttxt, 'units', 'pixels',...
                              'style', 'text',...
-                             'position', [50 452 250 20],...
+                             'string', 'Parameter',...
+                             'position', [50 452 100 20],...
                              'HorizontalAlignment', 'left',...
                              'BackgroundColor', get(ui.h.plotpanel, 'BackgroundColor'),...
                              'FontSize', 9,...
-                             'string', '');
+                             'visible', 'off');
                                                        
             set(ui.h.zslider, 'units', 'pixels',...
                               'style', 'slider',...
@@ -138,11 +154,11 @@ classdef UI < handle % subclass of handle is fucking important...
                             'callback', @ui.update_plot,...
                             'visible', 'off');
 
-            % not activated yet
             set(ui.h.param, 'units', 'pixels',...
                             'style', 'popupmenu',...
-                            'string', {'bl', 'bli', 'blu'},...
-                            'position', [40 60 100 15],...
+                            'string', {},...
+                            'position', [120 470 80 20],...
+                            'FontSize', 9,...
                             'visible', 'off',...
                             'callback', @ui.update_plot);
 
@@ -169,7 +185,7 @@ classdef UI < handle % subclass of handle is fucking important...
             set(ui.h.drpd, 'units', 'pixels',...
                            'style', 'popupmenu',...
                            'string', keys(ui.models),...
-                           'value', ui.model,...
+                           'value', 1,...
                            'position', [15 245 220 15],...
                            'callback', @ui.set_model);
                    
@@ -187,6 +203,9 @@ classdef UI < handle % subclass of handle is fucking important...
             end
             % reset instance
             ui.reset_instance();
+            
+            disp('metadaten einlesen');
+            
             ui.fileinfo.name = name;
             ui.fileinfo.path = [path name];
             
@@ -235,14 +254,14 @@ classdef UI < handle % subclass of handle is fucking important...
             
             % UI stuff
             set(ui.h.f, 'name', ['SISA Scan - ' name]);
-            set(ui.h.pb, 'string', 'Einlesen', 'callback', @ui.readHDF5, 'visible', 'on');
             
-            ui.update_infos();
             ui.update_sliders();
-            ui.plot_array();
+            ui.readHDF5();
         end
 
         function readHDF5(ui, varargin)
+            disp('daten einlesen');
+            
             k = keys(ui.points);
             for i = 1:ui.fileinfo.np
                 ind = ui.points(k{i});
@@ -267,9 +286,16 @@ classdef UI < handle % subclass of handle is fucking important...
             ui.fileinfo.size = tmp(1:4);
             
             % UI stuff
+            t = keys(ui.models);
+            t = ui.models(t{get(ui.h.drpd, 'value')});
+             
+            set(ui.h.plttxt, 'visible', 'on');
+            set(ui.h.param, 'visible', 'on',...
+                            'string', t{4});
             set(ui.h.pb, 'visible', 'off');
             ui.update_infos();
             ui.update_sliders();
+            ui.estimate_parameters();
             ui.plot_array();
         end
 
@@ -278,6 +304,7 @@ classdef UI < handle % subclass of handle is fucking important...
                 case ui.h.zslider
                     z = round(get(ui.h.zslider, 'value'));
                     sample = ui.current_sa;
+                    p = ui.current_param;
                     
                 case ui.h.zbox
                     z = round(str2double(get(ui.h.zbox, 'string')));
@@ -287,10 +314,12 @@ classdef UI < handle % subclass of handle is fucking important...
                         z = 1;
                     end
                     sample = ui.current_sa;
+                    p = ui.current_param;
                     
                 case ui.h.saslider
                     sample = round(get(ui.h.saslider, 'value'));
                     z = ui.current_z;
+                    p = ui.current_param;
                     
                 case ui.h.sabox
                     sample = round(str2double(get(ui.h.sabox, 'string')));
@@ -300,7 +329,12 @@ classdef UI < handle % subclass of handle is fucking important...
                         sample = 1;
                     end
                     z = ui.current_z;
+                    p = ui.current_param;
                     
+                case ui.h.param
+                    p = get(ui.h.param, 'value');
+                    z = ui.current_z;
+                    sample = ui.current_sa;
                 otherwise
                     0;
             end
@@ -308,8 +342,10 @@ classdef UI < handle % subclass of handle is fucking important...
             set(ui.h.zbox, 'string', num2str(z));
             set(ui.h.saslider, 'value', sample);
             set(ui.h.sabox, 'string', num2str(sample));
+            set(ui.h.param, 'value', p);
             ui.current_z = z;
             ui.current_sa = sample;
+            ui.current_param = p;
             
             ui.plot_array(); % needs input from ui.h.param
         end
@@ -354,30 +390,8 @@ classdef UI < handle % subclass of handle is fucking important...
             param = ui.current_param;
             
             axes(ui.h.axes);
-            if ~ui.data_read
-                plot_data = zeros(ui.fileinfo.size(1), ui.fileinfo.size(2),...
-                                  ui.fileinfo.size(3));
-                % if the point has been measured, set to 1; else to 0
-                vals = values(ui.points);
-                for i = 1:ui.fileinfo.np
-                    tmp = vals{i};
-                    plot_data(tmp(1), tmp(2), tmp(3)) = 1;
-                end
-                set(ui.h.plttxt, 'string', 'Gescannte Punkte:');
-                cla
-                hold on
-                hmap(squeeze(plot_data(:, :, z))', true);
-                hold off
-                
-                return
-            elseif ~ui.fitted
-                plot_data = max(ui.data(:, :, z, sample, 50:end), [], 5);
-                set(ui.h.plttxt, 'string', 'Amplitude (abgeschätzt):');
-            elseif ui.fitted
-                plot_data = ui.params(:, :, z, param);
-                set(ui.h.plttxt, 'string', ['Parameter ' num2str(ui.current_param) ' :']);
-            end
-            
+            plot_data = ui.params(:, :, z, sample, param);
+
             % plot
             % Memo to self: Don't try using HeatMaps... seriously. 
             cla
@@ -387,10 +401,10 @@ classdef UI < handle % subclass of handle is fucking important...
              
             if min(plot_data) < max(plot_data)
                 axes(ui.h.legend);
-                l_data = min(min(plot_data)):round(max(max(plot_data))/20):max(max(plot_data));
+                l_data = min(min(plot_data)):max(max(plot_data))/20:max(max(plot_data));
                 cla
                 hold on
-                hmap(squeeze(l_data));
+                hmap(l_data);
                 hold off
                 xlim([.5 length(l_data)+.5])
                 set(ui.h.legend, 'visible', 'on');
@@ -406,6 +420,35 @@ classdef UI < handle % subclass of handle is fucking important...
                 if isKey(ui.points, [num2str(cp(1)-1) '/' num2str(cp(2)-1) '/' num2str(ui.current_z-1) ])
                     plt = UIPlot(cp, ui);
                 end
+            end
+        end
+        
+        function estimate_parameters(ui)
+            disp('parameter abschätzen');
+            p = values(ui.points);
+            switch ui.model
+                case '1. A*(exp(-t/t1)-exp(-t/t2))+offset'
+                    for i = 1:ui.fileinfo.np
+                        for j = 1:ui.fileinfo.size(4)
+                            d = ui.data(p{i}(1), p{i}(2), p{i}(3), j, :);
+                            [~, peak] = max(d);
+                            [A, t1] = max(d((peak+ui.t_offset):end)); % Amplitude, first time
+                            param(1) = A;
+                            param(2) = t1*ui.channel_width;
+                            param(4) = mean(d(end-100:end));
+                            d = d-param(4);
+                            A = A-param(4);
+                            try % not very robust...
+                                t2 = find(abs(d-round(A/2.7))<50);
+                                t2 = t2(t2 > t1);
+                                param(3) = (t2(1) - t1)*ui.channel_width;
+                            catch
+                                param(3) = 10;
+                            end
+                            
+                            ui.params(p{i}(1), p{i}(2), p{i}(3), j, :) = param;
+                        end
+                    end
             end
         end
     end
@@ -435,6 +478,13 @@ classdef UI < handle % subclass of handle is fucking important...
         end
         
         function set_model(ui, varargin)
+            ui.estimate_parameters();
+            t = keys(ui.models);
+            t = ui.models(t{get(ui.h.drpd, 'value')});
+             
+            set(ui.h.plttxt, 'visible', 'on');
+            set(ui.h.param, 'visible', 'on',...
+                            'string', t{4});
             ui.model = get(ui.h.drpd, 'value');
         end
         
@@ -457,6 +507,10 @@ classdef UI < handle % subclass of handle is fucking important...
             tmp = get(ui.h.plttxt, 'position');
             tmp(2) = aP(2)+aP(4)+2;
             set(ui.h.plttxt, 'position', tmp);
+            
+            tmp = get(ui.h.param, 'position');
+            tmp(2) = aP(2)+aP(4)+6;
+            set(ui.h.param, 'position', tmp);
             
             tmp = get(ui.h.zslider, 'position');
             tmp(1) = aP(1) + aP(3) + 10;

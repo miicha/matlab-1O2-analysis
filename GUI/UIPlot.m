@@ -7,6 +7,7 @@ classdef UIPlot < handle
         data;
         sp;                     % starting point for fit
         n_param;
+        params;
         fitted = false;
         fitparams;
         cfit;
@@ -23,11 +24,14 @@ classdef UIPlot < handle
                 plt.fitted = true;
             end
             if ui.model
-                m = keys(plt.models);
-                plt.model = plt.models(m{ui.model});
+                plt.model = plt.models(ui.model);
             end
             plt.cp = [cp ui.current_z ui.current_sa];
             plt.getdata(ui);
+            tmp = ui.models(ui.model);
+            plt.n_param = length(tmp{2});
+            
+            plt.params = ui.params(plt.cp(1), plt.cp(2), plt.cp(3), plt.cp(4), :);
 
             %% initialize UI objects
             
@@ -66,7 +70,7 @@ classdef UIPlot < handle
             set(plt.h.drpd, 'units', 'pixels',...
                             'style', 'popupmenu',...
                             'string', keys(ui.models),...
-                            'value', ui.model,...
+                            'value', 1,...
                             'position', [10 5 200 27],...
                             'FontSize', 9,...
                             'callback', @plt.set_model);
@@ -162,7 +166,10 @@ classdef UIPlot < handle
         
         function set_model(plt, varargin)
             m = keys(plt.models);
-            plt.model = plt.models(m{get(plt.h.drpd, 'value')});
+            n = m{get(plt.h.drpd, 'value')};
+            tmp = plt.models(n);
+            plt.n_param = length(tmp{2});
+            plt.model = plt.models(n);
             plt.generate_param();
         end
         
@@ -189,25 +196,14 @@ classdef UIPlot < handle
                 delete(plt.h.pd{i});
                 delete(plt.h.pc{i});
                 clear('plt.h.pe', 'plt.h.pd', 'plt.h.pc');
-            end
-            n_param = 0;
-            for i = 1:10
-                p = num2cell(ones(i, 1));
-                try 
-                    plt.model(p{:});
-                catch
-                    continue
-                end
-                n_param = i-1;
-                break
-            end
-            plt.h.pe = cell(n_param, 1);
-            plt.h.pd = cell(n_param, 1);
-            plt.h.pc = cell(n_param, 1);
-            for i = 1:n_param
+            end           
+            plt.h.pe = cell(plt.n_param, 1);
+            plt.h.pd = cell(plt.n_param, 1);
+            plt.h.pc = cell(plt.n_param, 1);
+            for i = 1:plt.n_param
                  plt.h.pe{i} = uicontrol(plt.h.param, 'units', 'pixels',...
                                                       'style', 'edit',...
-                                                      'string', '1',...
+                                                      'string', sprintf('%1.2f', plt.params(i)),...
                                                       'position', [10+(i-1)*100 25 45 20]);
                  plt.h.pd{i} = uicontrol(plt.h.param, 'units', 'pixels',...
                                                       'style', 'text',...
@@ -219,15 +215,15 @@ classdef UIPlot < handle
                                                       'string', 'fix',...
                                                       'position', [10+(i-1)*100 5 50 15]); 
             end
-            if n_param == 0
+            if plt.n_param == 0
                 set(plt.h.param, 'visible', 'off');
             else
                 set(plt.h.param, 'visible', 'on');
                 pP = get(plt.h.param, 'position');
-                pP(3) = 45+(n_param-1)*100+45+10;
+                pP(3) = 45+(plt.n_param-1)*100+45+10;
                 set(plt.h.param, 'position', pP);
             end
-            plt.n_param = n_param;
+            plt.n_param = plt.n_param;
         end
     end
     
