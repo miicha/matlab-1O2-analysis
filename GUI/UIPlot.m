@@ -5,13 +5,16 @@ classdef UIPlot < handle
     properties
         cp;                     % current point
         data;
+        res;
         sp;                     % starting point for fit
         n_param;
         params;
         fitted = false;
-        fitparams;
         cfit;
         model;
+        t_offset;
+        channel_width;
+        
         models;
         h = struct();           % handles
     end
@@ -30,6 +33,8 @@ classdef UIPlot < handle
             plt.getdata(ui);
             tmp = ui.models(ui.model);
             plt.n_param = length(tmp{2});
+            plt.t_offset = ui.t_offset;
+            plt.channel_width = ui.channel_width;
             
             plt.params = ui.params(plt.cp(1), plt.cp(2), plt.cp(3), plt.cp(4), :);
 
@@ -87,9 +92,6 @@ classdef UIPlot < handle
             plt.h.pe = cell(1, 1);
             plt.h.pd = cell(1, 1);
             plt.h.pc = cell(1, 1);
-
-            %% pushbutton
-
                       
             %% draw plot
             plt.plotdata();
@@ -126,16 +128,16 @@ classdef UIPlot < handle
         
         function plotfit(plt)
             x = plt.data(2, :);
+            x = x(10:end)+15*plt.channel_width;
 
             plt.plotdata();
             axes(plt.h.axes);
             hold on
-%             plot(plt.data(2, :), feval(, 'r');
-            plot(plt.cfit);
+            plot(x,  plt.model{1}(plt.params, x), 'r');
             hold off
             axes(plt.h.res);
             hold on
-%             plot(x, fity-plt.data(1,:), 'b.');
+            plot(x, plt.res, 'b.');
             line([0 max(x)], [0 0], 'Color', 'r');
             xlim([0 max(x)]);
         end
@@ -143,19 +145,15 @@ classdef UIPlot < handle
         function fit(plt, varargin)
             x = plt.data(2, :);
             y = plt.data(1, :);
-            x = x(10:end)+10*20/1000;
+            x = x(10:end)+15*plt.channel_width;
             y = y(10:end);
             w = sqrt(y);
-            for i = 1:plt.n_param
-                sp(i) = str2double(get(plt.h.pe{i}, 'string'));
-            end
+
             plt.set_model();
-            [f, gof] = fitdata(x, y, plt.model, sp, w);
-            p = coeffvalues(f);
-            p_e = confint(f);
-            chisq = gof.rmse/gof.dfe;
-            plt.cfit = f;
-            plt.fitparams = p;
+            [p, err_o, chi, res] = chisqfit(x, y, w, plt.model{1}, plt.params);
+            
+            plt.params = p;
+            plt.res = res;
             plt.fitted = true;
             plt.plotfit();
             for i = 1:plt.n_param
@@ -170,6 +168,7 @@ classdef UIPlot < handle
             tmp = plt.models(n);
             plt.n_param = length(tmp{2});
             plt.model = plt.models(n);
+            plt.params = UI.estimate_parameters_p(plt.data(1, :), n, plt.t_offset, plt.channel_width);
             plt.generate_param();
         end
         

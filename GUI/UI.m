@@ -426,29 +426,11 @@ classdef UI < handle % subclass of handle is fucking important...
         function estimate_parameters(ui)
             disp('parameter abschätzen');
             p = values(ui.points);
-            switch ui.model
-                case '1. A*(exp(-t/t1)-exp(-t/t2))+offset'
-                    for i = 1:ui.fileinfo.np
-                        for j = 1:ui.fileinfo.size(4)
-                            d = ui.data(p{i}(1), p{i}(2), p{i}(3), j, :);
-                            [~, peak] = max(d);
-                            [A, t1] = max(d((peak+ui.t_offset):end)); % Amplitude, first time
-                            param(1) = A;
-                            param(2) = t1*ui.channel_width;
-                            param(4) = mean(d(end-100:end));
-                            d = d-param(4);
-                            A = A-param(4);
-                            try % not very robust...
-                                t2 = find(abs(d-round(A/2.7))<50);
-                                t2 = t2(t2 > t1);
-                                param(3) = (t2(1) - t1)*ui.channel_width;
-                            catch
-                                param(3) = 10;
-                            end
-                            
-                            ui.params(p{i}(1), p{i}(2), p{i}(3), j, :) = param;
-                        end
-                    end
+            for i = 1:ui.fileinfo.np
+                for j = 1:ui.fileinfo.size(4)
+                    d = ui.data(p{i}(1), p{i}(2), p{i}(3), j, :);
+                    ui.params(p{i}(1), p{i}(2), p{i}(3), j, :) = ui.estimate_parameters_p(d, ui.model, ui.t_offset, ui.channel_width);
+                end
             end
         end
     end
@@ -539,6 +521,30 @@ classdef UI < handle % subclass of handle is fucking important...
             bP = get(ui.h.info, 'Position');
             bP(3) = fP(3);
             set(ui.h.info, 'Position', bP);
+        end
+    end
+    
+    methods (Static=true)
+        function [param] = estimate_parameters_p(d, model, offset, cw)
+            switch model
+                case '1. A*(exp(-t/t1)-exp(-t/t2))+offset'
+                    [~, peak] = max(d);
+                    [A, t1] = max(d((peak+offset):end)); % Amplitude, first time
+                    param(1) = A;
+                    param(2) = t1*cw;
+                    param(4) = mean(d(end-100:end));
+                    d = d-param(4);
+                    A = A-param(4);
+                    try % not very robust...
+                        t2 = find(abs(d-round(A/2.7))<50);
+                        t2 = t2(t2 > t1);
+                        param(3) = (t2(1) - t1)*cw;
+                    catch
+                        param(3) = 10;
+                    end
+                case ''
+                otherwise
+            end
         end
     end
     
