@@ -32,12 +32,12 @@ classdef UI < handle % subclass of handle is fucking important...
                      
         models = containers.Map(...
                  {'1. A*(exp(-t/t1)-exp(-t/t2))+offset'...
-                  '2. A*(exp(-t/t1)-exp(-t/t2))+B*exp(-t/t3)+offset'...
+                  '2. A*(exp(-t/t1)-exp(-t/t2))+B*exp(-t/t2)+offset'...
                   '3.'},...
                  {...
                     % function, lower bounds, upper bounds, names of arguments
                     {@(p, t) p(1)*(exp(-t/p(2))-exp(-t/p(3)))+p(4), [0 0 0 0], [inf inf inf inf], {'A', 't1', 't2', 'offset'} }...
-                    {@(p, t) p(1)*(exp(-t/p(2))-exp(-t/p(3)))+p(4)*exp(-t/p(5))+p(6), [0 0 0 0 0 0], [inf inf inf inf inf inf], {'A', 't1', 't2', 'B', 't3', 'off'} }...
+                    {@(p, t) p(1)*(exp(-t/p(2))-exp(-t/p(3)))+p(4)*exp(-t/p(3))+p(5), [0 0 0 0 0], [inf inf inf inf inf], {'A', 't1', 't2', 'B', 'off'} }...
                     {}...
                  })
                     
@@ -338,6 +338,13 @@ classdef UI < handle % subclass of handle is fucking important...
                 otherwise
                     0;
             end
+            if z > ui.fileinfo.size(3)
+                z = ui.fileinfo.size(3);
+            end
+            if z > ui.fileinfo.size(4)
+                sample = ui.fileinfo.size(4);
+            end
+            
             set(ui.h.zslider, 'value', z);
             set(ui.h.zbox, 'string', num2str(z));
             set(ui.h.saslider, 'value', sample);
@@ -425,11 +432,14 @@ classdef UI < handle % subclass of handle is fucking important...
         
         function estimate_parameters(ui)
             disp('parameter abschätzen');
+            n = ui.models(ui.model);
+            ui.params = zeros(ui.fileinfo.size(1), ui.fileinfo.size(2),...
+                              ui.fileinfo.size(3), ui.fileinfo.size(4), length(n{2}));
             p = values(ui.points);
             for i = 1:ui.fileinfo.np
                 for j = 1:ui.fileinfo.size(4)
                     d = ui.data(p{i}(1), p{i}(2), p{i}(3), j, :);
-                    ui.params(p{i}(1), p{i}(2), p{i}(3), j, :) = ui.estimate_parameters_p(d, ui.model, ui.t_offset, ui.channel_width);
+                    ui.params(p{i}(1), p{i}(2), p{i}(3), j, :) = UI.estimate_parameters_p(d, ui.model, ui.t_offset, ui.channel_width);
                 end
             end
         end
@@ -460,14 +470,15 @@ classdef UI < handle % subclass of handle is fucking important...
         end
         
         function set_model(ui, varargin)
-            ui.estimate_parameters();
             t = keys(ui.models);
-            t = ui.models(t{get(ui.h.drpd, 'value')});
+            str = t{get(ui.h.drpd, 'value')};
+            t = ui.models(str);
              
             set(ui.h.plttxt, 'visible', 'on');
             set(ui.h.param, 'visible', 'on',...
                             'string', t{4});
-            ui.model = get(ui.h.drpd, 'value');
+            ui.model = str;
+            ui.estimate_parameters();
         end
         
         function resize(ui, varargin)
@@ -531,19 +542,25 @@ classdef UI < handle % subclass of handle is fucking important...
                     [~, peak] = max(d);
                     [A, t1] = max(d((peak+offset):end)); % Amplitude, first time
                     param(1) = A;
-                    param(2) = t1*cw;
+                    param(3) = t1*cw;
                     param(4) = mean(d(end-100:end));
                     d = d-param(4);
                     A = A-param(4);
-                    try % not very robust...
-                        t2 = find(abs(d-round(A/2.7))<50);
-                        t2 = t2(t2 > t1);
-                        param(3) = (t2(1) - t1)*cw;
-                    catch
-                        param(3) = 10;
-                    end
-                case ''
-                otherwise
+                    t2 = find(abs(d < round(A/2.7)));
+                    t2 = t2(t2 > t1);
+                    param(2) = (t2(1) - t1)*cw;
+                case '2. A*(exp(-t/t1)-exp(-t/t2))+B*exp(-t/t2)+offset'
+                    [~, peak] = max(d);
+                    [A, t1] = max(d((peak+offset):end)); % Amplitude, first time
+                    param(1) = A;
+                    param(3) = t1*cw;
+                    param(4) = A/4;
+                    param(5) = mean(d(end-100:end));
+                    d = d-param(5);
+                    A = A-param(5);
+                    t2 = find(abs(d < round(A/2.7)));
+                    t2 = t2(t2 > t1);
+                    param(2) = (t2(1) - t1)*cw;
             end
         end
     end

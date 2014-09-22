@@ -147,7 +147,7 @@ classdef UIPlot < handle
             y = plt.data(1, :);
             x = x(10:end)+15*plt.channel_width;
             y = y(10:end);
-            w = sqrt(y);
+            w = sqrt(y)+1;
 
             plt.set_model();
             [p, err_o, chi, res] = chisqfit(x, y, w, plt.model{1}, plt.params);
