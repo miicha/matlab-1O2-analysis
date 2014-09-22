@@ -128,32 +128,35 @@ classdef UIPlot < handle
         
         function plotfit(plt)
             x = plt.data(2, :);
-            x = x(10:end)+15*plt.channel_width;
-
+            p = num2cell(plt.params);
+            fitdata = plt.model{1}(p{:}, x);
+            
             plt.plotdata();
             axes(plt.h.axes);
             hold on
-            plot(x,  plt.model{1}(plt.params, x), 'r');
+            plot(x,  fitdata, 'r');
             hold off
             axes(plt.h.res);
+            plot(x, (plt.data(1,:)-fitdata)./sqrt(plt.data(1,:)), 'b.');
             hold on
-            plot(x, plt.res, 'b.');
             line([0 max(x)], [0 0], 'Color', 'r');
             xlim([0 max(x)]);
+            ylim([-20 20]);
+            hold off
         end
         
         function fit(plt, varargin)
-            x = plt.data(2, :);
-            y = plt.data(1, :);
+            x = plt.data(2, :)';
+            y = plt.data(1, :)';
             x = x(10:end)+15*plt.channel_width;
             y = y(10:end);
             w = sqrt(y)+1;
-
             plt.set_model();
-            [p, err_o, chi, res] = chisqfit(x, y, w, plt.model{1}, plt.params);
+            
+            [p] = fitdata(plt.model, x, y, w, plt.params);
             
             plt.params = p;
-            plt.res = res;
+%             plt.res = res;
             plt.fitted = true;
             plt.plotfit();
             for i = 1:plt.n_param
