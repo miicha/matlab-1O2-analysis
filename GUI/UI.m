@@ -19,6 +19,7 @@ classdef UI < handle % subclass of handle is fucking important...
         current_z = 1;
         current_sa = 1;
         current_param = 1;
+        overlay = 0;
         points;
         data_read = false;
         fitted = false;
@@ -61,7 +62,13 @@ classdef UI < handle % subclass of handle is fucking important...
                 ui.h.info = uicontrol(ui.h.bottombar);
             
             ui.h.pb = uicontrol();
-
+            
+            ui.h.ov_controls = uipanel();
+                ui.h.ov_box = uicontrol(ui.h.ov_controls);
+                ui.h.ov_drpd = uicontrol(ui.h.ov_controls);
+                ui.h.ov_rel = uicontrol(ui.h.ov_controls);
+                ui.h.ov_val = uicontrol(ui.h.ov_controls);
+            
             ui.h.fitpanel = uipanel();
                 ui.h.fittxt = uicontrol(ui.h.fitpanel);
                 ui.h.drpd = uicontrol(ui.h.fitpanel);
@@ -99,7 +106,6 @@ classdef UI < handle % subclass of handle is fucking important...
             
             set(ui.h.axes, 'units', 'pixels',...
                            'position', [50 50 400 400],...
-                           'xtick', [], 'ytick', [],...
                            'Color', get(ui.h.plotpanel, 'BackgroundColor'),...
                            'XColor', get(ui.h.plotpanel, 'BackgroundColor'),...
                            'YColor', get(ui.h.plotpanel, 'BackgroundColor'),...
@@ -182,7 +188,36 @@ classdef UI < handle % subclass of handle is fucking important...
                           'position', [10 20 70 30],...
                           'string', 'open',...
                           'callback', @ui.openHDF5);
-
+            
+            %% overlay control
+            set(ui.h.ov_controls, 'units', 'pixels',...
+                                  'position', [10 360 250 200]);
+        
+            set(ui.h.ov_box, 'units', 'pixels',...
+                             'style', 'checkbox',...
+                             'position', [15 100 60 30],...
+                             'string', 'Overlay',...
+                             'callback', @ui.toggle_overlay);
+                         
+            set(ui.h.ov_drpd, 'units', 'pixels',...
+                             'style', 'popupmenu',...
+                             'position', [35 75 60 30],...
+                             'string', {''},...
+                             'callback', @ui.change_overlay_cond);
+                         
+            set(ui.h.ov_rel, 'units', 'pixels',...
+                             'style', 'popupmenu',...
+                             'position', [96 75 30 30],...
+                             'string', {'<', '>'},...
+                             'callback', @ui.change_overlay_cond);
+            
+            set(ui.h.ov_val, 'units', 'pixels',...
+                             'style', 'edit',...
+                             'position', [127 83 60 22],...
+                             'string', '123',...
+                             'callback', @ui.change_overlay_cond); 
+                         
+        
             %% Fit-Panel:
             set(ui.h.fitpanel, 'units', 'pixels',...
                                'position', [10 50 250 300],...
@@ -306,6 +341,7 @@ classdef UI < handle % subclass of handle is fucking important...
             set(ui.h.plttxt, 'visible', 'on');
             set(ui.h.param, 'visible', 'on',...
                             'string', t{4});
+            set(ui.h.ov_drpd, 'string', t{4});
             set(ui.h.pb, 'string', 'Fit', 'callback', @ui.fit_all);
             ui.update_infos();
             ui.update_sliders();
@@ -418,9 +454,10 @@ classdef UI < handle % subclass of handle is fucking important...
             cla
             hold on
             hmap(squeeze(plot_data(:, :))');
-            
-            if find(ui.fit_selection)
-                overlay(squeeze(ui.fit_selection(:, :, z, sample))');
+            hold off
+            hold on
+            if ui.overlay
+                plot_overlay(squeeze(ui.fit_selection(:, :, z, sample))');
                 hold off
             end
              
@@ -475,12 +512,6 @@ classdef UI < handle % subclass of handle is fucking important...
                     d = ui.data(p{i}(1), p{i}(2), p{i}(3), j, :);
                     ps = UI.estimate_parameters_p(d, ui.model, ui.t_offset, ui.channel_width);
                     ui.params(p{i}(1), p{i}(2), p{i}(3), j, :) = ps;
-                    % not sure if that's the smart way to do it...
-                    if ps(1) - ps(end) > 100
-                        ui.fit_selection(p{i}(1), p{i}(2), p{i}(3), j) = 1;
-                    else
-                        ui.fit_selection(p{i}(1), p{i}(2), p{i}(3), j) = 0;
-                    end
                 end
             end
             ui.fitted = false;
@@ -544,6 +575,8 @@ classdef UI < handle % subclass of handle is fucking important...
             set(ui.h.plttxt, 'visible', 'on');
             set(ui.h.param, 'visible', 'on',...
                             'string', t{4});
+            set(ui.h.ov_drpd, 'string', t{4});
+            
             ui.model = str;
             ui.estimate_parameters();
         end
@@ -602,6 +635,45 @@ classdef UI < handle % subclass of handle is fucking important...
             bP(3) = fP(3);
             set(ui.h.info, 'Position', bP);
         end
+        
+        function toggle_overlay(ui, varargin)
+            ui.overlay = ~ui.overlay;
+            ui.plot_array;
+        end
+        
+        function change_overlay_cond(ui, varargin)
+            switch get(ui.h.ov_rel, 'value')
+                case 1
+                    for i = 1:ui.fileinfo.size(1)
+                        for j = 1:ui.fileinfo.size(2)
+                            for k = 1:ui.fileinfo.size(3)
+                                for l = 1:ui.fileinfo.size(4)
+                                    if ui.params(i, j, k, l, get(ui.h.ov_drpd, 'value')) < str2double(get(ui.h.ov_val, 'string'))
+                                        ui.fit_selection(i, j, k, l) = 0;
+                                    else
+                                        ui.fit_selection(i, j, k, l) = 1;
+                                    end
+                                end
+                            end
+                        end
+                    end
+                case 2
+                    for i = 1:ui.fileinfo.size(1)
+                        for j = 1:ui.fileinfo.size(2)
+                            for k = 1:ui.fileinfo.size(3)
+                                for l = 1:ui.fileinfo.size(4)
+                                    if ui.params(i, j, k, l, get(ui.h.ov_drpd, 'value')) > str2double(get(ui.h.ov_val, 'string'))
+                                        ui.fit_selection(i, j, k, l) = 0;
+                                    else
+                                        ui.fit_selection(i, j, k, l) = 1;
+                                    end
+                                end
+                            end
+                        end
+                    end
+            end
+            ui.plot_array();
+        end
     end
     
     methods (Static=true)
@@ -636,7 +708,7 @@ classdef UI < handle % subclass of handle is fucking important...
     
 end
 
-function overlay(data)
+function plot_overlay(data)
     [m, n] = size(data);
     image = ones(m, n, 3);
     image(:, :, 1) = (image(:, :, 1) - data);
