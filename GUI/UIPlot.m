@@ -228,7 +228,6 @@ classdef UIPlot < handle
                 pP(3) = 45+(plt.n_param-1)*100+45+10;
                 set(plt.h.param, 'position', pP);
             end
-            plt.n_param = plt.n_param;
         end
     end
     

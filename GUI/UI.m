@@ -64,7 +64,7 @@ classdef UI < handle % subclass of handle is fucking important...
             ui.h.pb = uicontrol();
             
             ui.h.ov_controls = uipanel();
-                ui.h.ov_box = uicontrol(ui.h.ov_controls);
+                ui.h.ov_switch = uicontrol(ui.h.ov_controls);
                 ui.h.ov_drpd = uicontrol(ui.h.ov_controls);
                 ui.h.ov_rel = uicontrol(ui.h.ov_controls);
                 ui.h.ov_val = uicontrol(ui.h.ov_controls);
@@ -72,6 +72,9 @@ classdef UI < handle % subclass of handle is fucking important...
             ui.h.fitpanel = uipanel();
                 ui.h.fittxt = uicontrol(ui.h.fitpanel);
                 ui.h.drpd = uicontrol(ui.h.fitpanel);
+                ui.h.bounds = uipanel(ui.h.fitpanel);
+                    ui.h.bounds_txt1 = uicontrol(ui.h.bounds);
+                    ui.h.bounds_txt2 = uicontrol(ui.h.bounds);
 
             %% Figure, menu, bottombar
             set(ui.h.f, 'units', 'pixels',...
@@ -193,7 +196,7 @@ classdef UI < handle % subclass of handle is fucking important...
             set(ui.h.ov_controls, 'units', 'pixels',...
                                   'position', [10 360 250 200]);
         
-            set(ui.h.ov_box, 'units', 'pixels',...
+            set(ui.h.ov_switch, 'units', 'pixels',...
                              'style', 'checkbox',...
                              'position', [15 100 60 30],...
                              'string', 'Overlay',...
@@ -237,7 +240,28 @@ classdef UI < handle % subclass of handle is fucking important...
                            'value', 1,...
                            'position', [15 245 220 15],...
                            'callback', @ui.set_model);
-                   
+                       
+            set(ui.h.bounds, 'units', 'pixels',...
+                               'position', [15 50 185 180],...
+                               'title', 'Grenzen',...
+                               'FontSize', 9);
+                           
+            set(ui.h.bounds_txt1, 'units', 'pixels',...
+                                  'position', [55 145 50 15],...
+                                  'style', 'text',...
+                                  'string', 'untere',...
+                                  'horizontalAlignment', 'left',...
+                                  'FontSize', 9);
+                              
+            set(ui.h.bounds_txt2, 'units', 'pixels',...
+                                  'position', [115 145 50 15],...
+                                  'style', 'text',...
+                                  'string', 'obere',...
+                                  'horizontalAlignment', 'left',...
+                                  'FontSize', 9);
+            ui.h.lb = cell(1, 1);
+            ui.h.ub = cell(1, 1);
+            ui.h.n = cell(1, 1);
                        
                        
             ui.resize();
@@ -486,7 +510,7 @@ classdef UI < handle % subclass of handle is fucking important...
                         end
                     end
                 case 'alt'
-                    if ~strcmp(ui.fileinfo.path, '')
+                    if ~strcmp(ui.fileinfo.path, '') && get(ui.h.ov_switch, 'value') 
                         cp = get(ui.h.axes, 'CurrentPoint');
                         cp = round(cp(1, 1:2));
                         if isKey(ui.points, [num2str(cp(1)-1) '/' num2str(cp(2)-1) '/' num2str(ui.current_z-1) ])
@@ -525,7 +549,7 @@ classdef UI < handle % subclass of handle is fucking important...
                 for j = 1:ui.fileinfo.size(2)
                     for k = 1:ui.fileinfo.size(3)
                         for l = 1:ui.fileinfo.size(4)
-                            if ui.fit_selection(i, j, k, l)
+                            if ui.fit_selection(i, j, k, l) || ~get(ui.h.ov_switch, 'value')
                                 n = n + 1;
                                 y = squeeze(ui.data(i, j, k, l, :));
                                 x = (1:length(ui.data))'*ui.channel_width;
@@ -571,14 +595,25 @@ classdef UI < handle % subclass of handle is fucking important...
             t = keys(ui.models);
             str = t{get(ui.h.drpd, 'value')};
             t = ui.models(str);
-             
-            set(ui.h.plttxt, 'visible', 'on');
-            set(ui.h.param, 'visible', 'on',...
-                            'string', t{4});
-            set(ui.h.ov_drpd, 'string', t{4});
-            
+
             ui.model = str;
-            ui.estimate_parameters();
+            ui.generate_bounds();
+            if ui.data_read
+                ui.estimate_parameters();
+                set(ui.h.plttxt, 'visible', 'on');
+                set(ui.h.param, 'visible', 'on',...
+                                'string', t{4});
+            end
+            set(ui.h.ov_drpd, 'string', t{4});
+        end
+        
+        function set_bounds(ui, varargin)
+            m = ui.models(ui.model);
+            for i = 1:length(m{4});
+                m{2}(i) = str2double(get(ui.h.lb{i}, 'string'));
+                m{3}(i) = str2double(get(ui.h.ub{i}, 'string'));
+            end
+            ui.models(ui.model) = m;
         end
         
         function resize(ui, varargin)
@@ -673,6 +708,37 @@ classdef UI < handle % subclass of handle is fucking important...
                     end
             end
             ui.plot_array();
+        end
+        
+        function generate_bounds(ui)
+            m = ui.models(ui.model);
+            n = length(m{4});
+
+            for i = 1:length(ui.h.lb)
+                delete(ui.h.lb{i});
+                delete(ui.h.ub{i});
+                delete(ui.h.n{i});
+            end 
+            ui.h.lb = cell(n, 1);
+            ui.h.ub = cell(n, 1);
+            ui.h.n = cell(n, 1);
+            for i = 1:n
+                ui.h.lb{i} = uicontrol(ui.h.bounds, 'units', 'pixels',...
+                                                    'style', 'edit',...
+                                                    'string', sprintf('%1.2f', m{2}(i)),...
+                                                    'position', [55 155-i*23-10 45 20],...
+                                                    'callback', @ui.set_bounds);
+                ui.h.ub{i} = uicontrol(ui.h.bounds, 'units', 'pixels',...
+                                                    'style', 'edit',...
+                                                    'string', sprintf('%1.2f', m{3}(i)),...
+                                                    'position', [115 155-i*23-10 45 20],...
+                                                    'callback', @ui.set_bounds);
+                ui.h.n{i} = uicontrol(ui.h.bounds, 'units', 'pixels',...
+                                                    'style', 'text',...
+                                                    'string', m{4}{i},...
+                                                    'horizontalAlignment', 'left',...
+                                                    'position', [15 155-i*23-14 40 20]);
+            end
         end
     end
     
