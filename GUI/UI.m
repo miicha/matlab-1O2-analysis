@@ -7,6 +7,7 @@ classdef UI < handle % subclass of handle is fucking important...
                           'name', '', 'np', 0); 
         data;       % source data from HDF5
         params;     % fit params, size(params) = [x y z length(fitparams)]
+        fit_selection;
         model = '1. A*(exp(-t/t1)-exp(-t/t2))+offset';      % fit model, should be global  
         
         channel_width = 20/1000;   % should be determined from file
@@ -28,7 +29,7 @@ classdef UI < handle % subclass of handle is fucking important...
                   '3.'},...
                  {...
                     % function, lower bounds, upper bounds, names of arguments
-                    {@(A, t1, t2, offset, t) A*(exp(-t/t1)-exp(-t/t2))+offset, [0 0 0 0], [inf inf inf inf], {'A', 't1', 't2', 'offset'} }...
+                    {@(A, t1, t2, offset, t) A*(exp(-t/t1)-exp(-t/t2))+offset, [0 0 0 0], [1000 10 10 500], {'A', 't1', 't2', 'offset'} }...
                     {@(A, t1, t2, B, offset, t) A*(exp(-t/t1)-exp(-t/t2))+B*exp(-t/t2)+offset, [0 0 0 0 0], [inf inf inf inf inf], {'A', 't1', 't2', 'B', 'offset'} }...
                     {}...
                  })
@@ -284,7 +285,7 @@ classdef UI < handle % subclass of handle is fucking important...
             set(ui.h.plttxt, 'visible', 'on');
             set(ui.h.param, 'visible', 'on',...
                             'string', t{4});
-            set(ui.h.pb, 'visible', 'off');
+            set(ui.h.pb, 'string', 'Fit', 'callback', @ui.fit_all);
             ui.update_infos();
             ui.update_sliders();
             ui.estimate_parameters();
@@ -431,9 +432,42 @@ classdef UI < handle % subclass of handle is fucking important...
             for i = 1:ui.fileinfo.np
                 for j = 1:ui.fileinfo.size(4)
                     d = ui.data(p{i}(1), p{i}(2), p{i}(3), j, :);
-                    ui.params(p{i}(1), p{i}(2), p{i}(3), j, :) = UI.estimate_parameters_p(d, ui.model, ui.t_offset, ui.channel_width);
+                    ps = UI.estimate_parameters_p(d, ui.model, ui.t_offset, ui.channel_width);
+                    ui.params(p{i}(1), p{i}(2), p{i}(3), j, :) = ps;
+                    % not sure if that's the smart way to do it...
+                    if ps(1) - ps(end) > 100
+                        ui.fit_selection(p{i}(1), p{i}(2), p{i}(3), j) = 1;
+                    else
+                        ui.fit_selection(p{i}(1), p{i}(2), p{i}(3), j) = 0;
+                    end
                 end
             end
+            ui.fitted = false;
+        end
+        
+        function fit_all(ui, varargin)
+            max = length(find(ui.fit_selection));
+            wb = waitbar(0, 'Fortschritt');
+            n = 0;
+            for i = 1:ui.fileinfo.size(1)
+                for j = 1:ui.fileinfo.size(2)
+                    for k = 1:ui.fileinfo.size(3)
+                        for l = 1:ui.fileinfo.size(4)
+                            if ui.fit_selection(i, j, k, l)
+                                n = n + 1;
+                                y = squeeze(ui.data(i, j, k, l, :));
+                                x = (1:length(ui.data))'*ui.channel_width;
+                                w = sqrt(y);
+                                p = fitdata(ui.models(ui.model), x(10:end), y(10:end), w(10:end), ui.params(i, j, k, l, :)); 
+                                ui.params(i, j, k, l, :) = p;
+                                waitbar(n/max, wb, 'Fortschritt');
+                            end
+                        end
+                    end
+                end
+            end
+            close(wb);
+            ui.fitted = true;
         end
     end
     

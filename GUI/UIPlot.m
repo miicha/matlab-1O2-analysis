@@ -21,7 +21,7 @@ classdef UIPlot < handle
     
     methods
         function plt = UIPlot(cp, ui)
-            %% get data
+            %% get data from main UI
             plt.models = ui.models;
             if ui.fitted
                 plt.fitted = true;
@@ -124,6 +124,9 @@ classdef UIPlot < handle
             plot(x, datal, '.');
             ylim([0 m]);
             xlim([0 max(x)]);
+            if plt.fitted
+                plt.plotfit();
+            end
         end
         
         function plotfit(plt)
@@ -131,7 +134,6 @@ classdef UIPlot < handle
             p = num2cell(plt.params);
             fitdata = plt.model{1}(p{:}, x);
             
-            plt.plotdata();
             axes(plt.h.axes);
             hold on
             plot(x,  fitdata, 'r');
@@ -151,13 +153,14 @@ classdef UIPlot < handle
             x = x(10:end)+15*plt.channel_width;
             y = y(10:end);
             w = sqrt(y)+1;
-            plt.set_model();
+%             plt.set_model();
             
             [p] = fitdata(plt.model, x, y, w, plt.params);
             
             plt.params = p;
 %             plt.res = res;
             plt.fitted = true;
+            plt.plotdata();
             plt.plotfit();
             for i = 1:plt.n_param
                 str = sprintf('%1.2f', p(i));
