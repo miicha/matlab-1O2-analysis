@@ -143,12 +143,12 @@ classdef UIPlot < handle
             hold off
             axes(plt.h.res);
             residues = (plt.data((plt.t_offset+plt.t_zero):end)-...
-                 fitdata((plt.t_offset+plt.t_zero):end))./sqrt(plt.data((plt.t_offset+plt.t_zero):end));
+                 fitdata((plt.t_offset+plt.t_zero):end))./sqrt(1+plt.data((plt.t_offset+plt.t_zero):end));
             plot(plt.x_data((plt.t_offset+plt.t_zero):end), residues, 'b.');
             hold on
             plot(plt.x_data(1:(plt.t_offset+plt.t_zero)),...
                  (plt.data(1:(plt.t_offset+plt.t_zero))-...
-                 fitdata(1:(plt.t_offset+plt.t_zero)))./sqrt(plt.data(1:(plt.t_offset+plt.t_zero))), 'r.');
+                 fitdata(1:(plt.t_offset+plt.t_zero)))./sqrt(1+plt.data(1:(plt.t_offset+plt.t_zero))), 'r.');
             line([0 max(plt.x_data)], [0 0], 'Color', 'r');
             xlim([0 max(plt.x_data)]);
             m = max([abs(max(residues)) abs(min(residues))]);

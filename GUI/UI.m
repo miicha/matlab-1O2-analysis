@@ -619,6 +619,7 @@ classdef UI < handle % subclass of handle is fucking important...
                 set(ui.h.plttxt, 'visible', 'on');
                 set(ui.h.param, 'visible', 'on',...
                                 'string', t{4});
+                ui.plot_array();
             end
             set(ui.h.ov_drpd, 'string', t{4});
         end
