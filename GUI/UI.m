@@ -104,7 +104,8 @@ classdef UI < handle % subclass of handle is fucking important...
                            'XColor', get(ui.h.plotpanel, 'BackgroundColor'),...
                            'YColor', get(ui.h.plotpanel, 'BackgroundColor'),...
                            'ButtonDownFcn', @ui.aplot_click);
-                                  
+                       
+                                 
             set(ui.h.legend, 'units', 'pixels',...
                              'position', [50 22 400 20],...
                              'xtick', [], 'ytick', [],...
@@ -297,7 +298,7 @@ classdef UI < handle % subclass of handle is fucking important...
             ui.data_read = true;
             tmp = size(ui.data);
             ui.fileinfo.size = tmp(1:4);
-            
+            ui.fit_selection = zeros(tmp(1), tmp(2), tmp(3), tmp(4));
             % UI stuff
             t = keys(ui.models);
             t = ui.models(t{get(ui.h.drpd, 'value')});
@@ -417,7 +418,11 @@ classdef UI < handle % subclass of handle is fucking important...
             cla
             hold on
             hmap(squeeze(plot_data(:, :))');
-            hold off
+            
+            if find(ui.fit_selection)
+                overlay(squeeze(ui.fit_selection(:, :, z, sample))');
+                hold off
+            end
              
             if min(plot_data) < max(plot_data)
                 axes(ui.h.legend);
@@ -434,12 +439,28 @@ classdef UI < handle % subclass of handle is fucking important...
         end
 
         function aplot_click(ui, varargin)
-            if ~strcmp(ui.fileinfo.path, '')
-                cp = get(ui.h.axes, 'CurrentPoint');
-                cp = round(cp(1, 1:2));
-                if isKey(ui.points, [num2str(cp(1)-1) '/' num2str(cp(2)-1) '/' num2str(ui.current_z-1) ])
-                    plt = UIPlot(cp, ui);
-                end
+            switch get(ui.h.f, 'SelectionType')
+                case 'normal'
+                    if ~strcmp(ui.fileinfo.path, '')
+                        cp = get(ui.h.axes, 'CurrentPoint');
+                        cp = round(cp(1, 1:2));
+                        if isKey(ui.points, [num2str(cp(1)-1) '/' num2str(cp(2)-1) '/' num2str(ui.current_z-1) ])
+                            plt = UIPlot(cp, ui);
+                        end
+                    end
+                case 'alt'
+                    if ~strcmp(ui.fileinfo.path, '')
+                        cp = get(ui.h.axes, 'CurrentPoint');
+                        cp = round(cp(1, 1:2));
+                        if isKey(ui.points, [num2str(cp(1)-1) '/' num2str(cp(2)-1) '/' num2str(ui.current_z-1) ])
+                            if ui.fit_selection(cp(1), cp(2), ui.current_z, ui.current_sa) == 0
+                                ui.fit_selection(cp(1), cp(2), ui.current_z, ui.current_sa) = 1;
+                            else
+                                ui.fit_selection(cp(1), cp(2), ui.current_z, ui.current_sa) = 0;
+                            end
+                        end
+                    end
+                    ui.plot_array();
             end
         end
         
@@ -613,6 +634,18 @@ classdef UI < handle % subclass of handle is fucking important...
         end
     end
     
+end
+
+function overlay(data)
+    [m, n] = size(data);
+    image = ones(m, n, 3);
+    image(:, :, 1) = (image(:, :, 1) - data);
+    for i = 2:3
+        image(:, :, i) = (image(:, :, i) - data)*0.2;
+    end
+    im = imagesc(image);
+    set(im, 'HitTest', 'off',...
+            'AlphaData', image(:,:,1)*.4);
 end
 
 function hmap(data, grid, cmap)
