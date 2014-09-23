@@ -5,14 +5,16 @@ classdef UIPlot < handle
     properties
         cp;                     % current point
         data;
+        x_data;
         res;
-        sp;                     % starting point for fit
         n_param;
-        params;
+        est_params;             % estimated parameters
+        fit_params;             % fitted parameters
         fitted = false;
         cfit;
         model;
         t_offset;
+        t_zero;
         channel_width;
         
         models;
@@ -23,9 +25,6 @@ classdef UIPlot < handle
         function plt = UIPlot(cp, ui)
             %% get data from main UI
             plt.models = ui.models;
-            if ui.fitted
-                plt.fitted = true;
-            end
             if ui.model
                 plt.model = plt.models(ui.model);
             end
@@ -34,9 +33,18 @@ classdef UIPlot < handle
             tmp = ui.models(ui.model);
             plt.n_param = length(tmp{2});
             plt.t_offset = ui.t_offset;
+            plt.t_zero = ui.t_zero;
+
             plt.channel_width = ui.channel_width;
             
-            plt.params = ui.params(plt.cp(1), plt.cp(2), plt.cp(3), plt.cp(4), :);
+            plt.est_params = squeeze(ui.est_params(plt.cp(1), plt.cp(2), plt.cp(3), plt.cp(4), :));
+            plt.fit_params = squeeze(ui.fit_params(plt.cp(1), plt.cp(2), plt.cp(3), plt.cp(4), :));
+            
+            if ~isnan(plt.fit_params)
+                plt.fitted = true;
+            end
+%             plt.model = ui.model;
+
 
             %% initialize UI objects
             
@@ -104,60 +112,63 @@ classdef UIPlot < handle
                            '/' num2str(plt.cp(3)-1) '/sisa/' num2str(ui.current_sa)];
                 plt.data(1, :) = h5read(ui.fileinfo.path, dataset);
             else
-                plt.data(1, :) = squeeze(ui.data(plt.cp(1), plt.cp(2), plt.cp(3), ui.current_sa, :));
+                plt.data = squeeze(ui.data(plt.cp(1), plt.cp(2), plt.cp(3), ui.current_sa, :));
+                plt.x_data = ui.x_data;
             end
-%             if ui.fitted
-%                 plt.model = ui.model;
-%                 plt.fitparams = ui.params(plt.cp(1), plt.cp(2), plt.cp(3), ui.current_sa, :);
-%             end
-            x = 0:(length(plt.data(1, :))-1);
-            plt.data(2, :) = x*ui.channel_width;
         end
         
         function plotdata(plt)
-            datal = plt.data(1, :);
-            x = plt.data(2, :);
-            [~, pulse] = max(datal);
-            m = max(datal((pulse + 30):end));
+            datal = plt.data;
+            m = max(datal((plt.t_offset+plt.t_zero):end));
             m = m*1.1;
             axes(plt.h.axes);
-            plot(x, datal, '.');
+            plot(plt.x_data(1:(plt.t_offset+plt.t_zero)), datal(1:(plt.t_offset+plt.t_zero)), '.r');
+            hold on
+            plot(plt.x_data((plt.t_offset+plt.t_zero):end), datal((plt.t_offset+plt.t_zero):end), '.b');
+            hold off
             ylim([0 m]);
-            xlim([0 max(x)]);
+            xlim([0 max(plt.x_data)]);
             if plt.fitted
                 plt.plotfit();
             end
         end
         
         function plotfit(plt)
-            x = plt.data(2, :);
-            p = num2cell(plt.params);
-            fitdata = plt.model{1}(p{:}, x);
+            p = num2cell(plt.fit_params);
+            fitdata = plt.model{1}(p{:}, plt.x_data);
             
             axes(plt.h.axes);
             hold on
-            plot(x,  fitdata, 'r');
+            plot(plt.x_data,  fitdata, 'r');
             hold off
             axes(plt.h.res);
-            plot(x, (plt.data(1,:)-fitdata)./sqrt(plt.data(1,:)), 'b.');
+            residues = (plt.data((plt.t_offset+plt.t_zero):end)-...
+                 fitdata((plt.t_offset+plt.t_zero):end))./sqrt(plt.data((plt.t_offset+plt.t_zero):end));
+            plot(plt.x_data((plt.t_offset+plt.t_zero):end), residues, 'b.');
             hold on
-            line([0 max(x)], [0 0], 'Color', 'r');
-            xlim([0 max(x)]);
-            ylim([-20 20]);
+            plot(plt.x_data(1:(plt.t_offset+plt.t_zero)),...
+                 (plt.data(1:(plt.t_offset+plt.t_zero))-...
+                 fitdata(1:(plt.t_offset+plt.t_zero)))./sqrt(plt.data(1:(plt.t_offset+plt.t_zero))), 'r.');
+            line([0 max(plt.x_data)], [0 0], 'Color', 'r');
+            xlim([0 max(plt.x_data)]);
+            m = max([abs(max(residues)) abs(min(residues))]);
+            ylim([-m m]);
             hold off
         end
         
         function fit(plt, varargin)
-            x = plt.data(2, :)';
-            y = plt.data(1, :)';
-            x = x(10:end)+15*plt.channel_width;
-            y = y(10:end);
-            w = sqrt(y)+1;
+            x = plt.x_data((plt.t_zero+plt.t_offset):end);
+            y = plt.data((plt.t_zero+plt.t_offset):end);
+            w = sqrt(y+1);
 %             plt.set_model();
+            for i = 1:plt.n_param
+                start(i) = str2double(get(plt.h.pe{i}, 'string'));
+            end
+                
+
+            [p] = fitdata(plt.model, x, y, w, start);
             
-            [p] = fitdata(plt.model, x, y, w, plt.params);
-            
-            plt.params = p;
+            plt.fit_params = p;
 %             plt.res = res;
             plt.fitted = true;
             plt.plotdata();
@@ -172,9 +183,10 @@ classdef UIPlot < handle
             m = keys(plt.models);
             n = m{get(plt.h.drpd, 'value')};
             tmp = plt.models(n);
+            plt.fitted = false;
             plt.n_param = length(tmp{2});
             plt.model = plt.models(n);
-            plt.params = UI.estimate_parameters_p(plt.data(1, :), n, plt.t_offset, plt.channel_width);
+            plt.est_params = UI.estimate_parameters_p(plt.data, n, plt.t_zero, plt.t_offset, plt.channel_width);
             plt.generate_param();
         end
         
@@ -195,6 +207,11 @@ classdef UIPlot < handle
         end
         
         function generate_param(plt)
+            if plt.fitted
+                par = plt.fit_params;
+            else
+                par = plt.est_params;
+            end
             for i = 1:length(plt.h.pe)
                 delete(plt.h.pe{i});
                 set(plt.h.pd{i}, 'visible', 'off');
@@ -208,7 +225,7 @@ classdef UIPlot < handle
             for i = 1:plt.n_param
                  plt.h.pe{i} = uicontrol(plt.h.param, 'units', 'pixels',...
                                                       'style', 'edit',...
-                                                      'string', sprintf('%1.2f', plt.params(i)),...
+                                                      'string', sprintf('%1.2f', par(i)),...
                                                       'position', [10+(i-1)*100 25 45 20]);
                  plt.h.pd{i} = uicontrol(plt.h.param, 'units', 'pixels',...
                                                       'style', 'text',...

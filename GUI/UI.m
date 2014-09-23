@@ -6,7 +6,9 @@ classdef UI < handle % subclass of handle is fucking important...
         fileinfo = struct('path', '', 'size', [0 0 0 0],...
                           'name', '', 'np', 0); 
         data;       % source data from HDF5
-        params;     % fit params, size(params) = [x y z length(fitparams)]
+        x_data;          % time data
+        fit_params;     % fit params, size(params) = [x y z length(fitparams)]
+        est_params;     % estimated parameters
         fit_selection;
         model = '1. A*(exp(-t/t1)-exp(-t/t2))+offset';      % fit model, should be global  
         
@@ -14,6 +16,7 @@ classdef UI < handle % subclass of handle is fucking important...
                                    % needs UI element
         t_offset = 15;   % excitation is over after t_offset channels after 
                          % maximum counts were reached - needs UI element
+        t_zero = 0;      % channel, in which the maximum of the excitation was reached
            
         file_opened = 0;
         current_z = 1;
@@ -30,7 +33,7 @@ classdef UI < handle % subclass of handle is fucking important...
                   '3.'},...
                  {...
                     % function, lower bounds, upper bounds, names of arguments
-                    {@(A, t1, t2, offset, t) A*(exp(-t/t1)-exp(-t/t2))+offset, [0 0 0 0], [1000 10 10 500], {'A', 't1', 't2', 'offset'} }...
+                    {@(A, t1, t2, offset, t) A*(exp(-t/t1)-exp(-t/t2))+offset, [0 0 0 0], [inf inf inf inf], {'A', 't1', 't2', 'offset'} }...
                     {@(A, t1, t2, B, offset, t) A*(exp(-t/t1)-exp(-t/t2))+B*exp(-t/t2)+offset, [0 0 0 0 0], [inf inf inf inf inf], {'A', 't1', 't2', 'B', 'offset'} }...
                     {}...
                  })
@@ -265,6 +268,7 @@ classdef UI < handle % subclass of handle is fucking important...
                        
                        
             ui.resize();
+            ui.set_model();
         end
         
         % open HDF5 file and get infos
@@ -335,29 +339,35 @@ classdef UI < handle % subclass of handle is fucking important...
         function readHDF5(ui, varargin)
             disp('daten einlesen');
             
+            time_zero = 0;
             k = keys(ui.points);
             for i = 1:ui.fileinfo.np
                 ind = ui.points(k{i});
-                if ui.fileinfo.size(4) > 1 % multiple samples per point
-                    % every point should have exactly as many samples
-                    % as the first point, except for the last one
-                    if i == ui.fileinfo.np % get number of samples for last point
-                        info = h5info(ui.fileinfo.path, ['/' k{i} '/sisa']);
-                        samples = length(info.Datasets); 
-                    else % take number of samples of first point
-                        samples = ui.fileinfo.size(4);
-                    end
-                    for j = 1:samples % iterate over all samples
-                        ui.data(ind(1), ind(2), ind(3), j, :) = h5read(ui.fileinfo.path, ['/' k{i} '/sisa/' num2str(j)]);
-                    end
-                else % only one sample anyways
-                    ui.data(ind(1), ind(2), ind(3), 1, :) = h5read(ui.fileinfo.path, ['/' k{i} '/sisa/1']);
+                % every point should have exactly as many samples
+                % as the first point, except for the last one
+                if i == ui.fileinfo.np % get number of samples for last point
+                    info = h5info(ui.fileinfo.path, ['/' k{i} '/sisa']);
+                    samples = length(info.Datasets); 
+                else % take number of samples of first point
+                    samples = ui.fileinfo.size(4);
+                end
+                for j = 1:samples % iterate over all samples
+                    d = h5read(ui.fileinfo.path, ['/' k{i} '/sisa/' num2str(j)]);
+                    ui.data(ind(1), ind(2), ind(3), j, :) = d;
+                    [~, t] = max(d(1:end));
+%                     t = t + 10;
+                    time_zero = (time_zero + t)/2;
                 end
             end
+            
+            ui.t_zero = round(time_zero);
+            ui.x_data = ((1:length(ui.data(1, 1, 1, 1, :)))-ui.t_zero)'*ui.channel_width;
             ui.data_read = true;
             tmp = size(ui.data);
             ui.fileinfo.size = tmp(1:4);
-            ui.fit_selection = zeros(tmp(1), tmp(2), tmp(3), tmp(4));
+            
+            ui.fit_selection = ones(tmp(1), tmp(2), tmp(3), tmp(4));
+            
             % UI stuff
             t = keys(ui.models);
             t = ui.models(t{get(ui.h.drpd, 'value')});
@@ -369,6 +379,7 @@ classdef UI < handle % subclass of handle is fucking important...
             set(ui.h.pb, 'string', 'Fit', 'callback', @ui.fit_all);
             ui.update_infos();
             ui.update_sliders();
+            ui.set_model();
             ui.estimate_parameters();
             ui.plot_array();
         end
@@ -471,7 +482,7 @@ classdef UI < handle % subclass of handle is fucking important...
             param = ui.current_param;
             
             axes(ui.h.axes);
-            plot_data = ui.params(:, :, z, sample, param);
+            plot_data = ui.est_params(:, :, z, sample, param);
 
             % plot
             % Memo to self: Don't try using HeatMaps... seriously. 
@@ -528,21 +539,25 @@ classdef UI < handle % subclass of handle is fucking important...
         function estimate_parameters(ui)
             disp('parameter abschätzen');
             n = ui.models(ui.model);
-            ui.params = zeros(ui.fileinfo.size(1), ui.fileinfo.size(2),...
+            ui.est_params = zeros(ui.fileinfo.size(1), ui.fileinfo.size(2),...
                               ui.fileinfo.size(3), ui.fileinfo.size(4), length(n{2}));
             p = values(ui.points);
             for i = 1:ui.fileinfo.np
                 for j = 1:ui.fileinfo.size(4)
                     d = ui.data(p{i}(1), p{i}(2), p{i}(3), j, :);
-                    ps = UI.estimate_parameters_p(d, ui.model, ui.t_offset, ui.channel_width);
-                    ui.params(p{i}(1), p{i}(2), p{i}(3), j, :) = ps;
+                    ps = UI.estimate_parameters_p(d, ui.model, ui.t_zero, ui.t_offset, ui.channel_width);
+                    ui.est_params(p{i}(1), p{i}(2), p{i}(3), j, :) = ps;
                 end
             end
             ui.fitted = false;
         end
         
         function fit_all(ui, varargin)
-            max = length(find(ui.fit_selection));
+            if get(ui.h.ov_switch, 'value')
+                ma = length(find(ui.fit_selection));
+            else
+                ma = prod(ui.fileinfo.size);
+            end
             wb = waitbar(0, 'Fortschritt');
             n = 0;
             for i = 1:ui.fileinfo.size(1)
@@ -551,12 +566,12 @@ classdef UI < handle % subclass of handle is fucking important...
                         for l = 1:ui.fileinfo.size(4)
                             if ui.fit_selection(i, j, k, l) || ~get(ui.h.ov_switch, 'value')
                                 n = n + 1;
-                                y = squeeze(ui.data(i, j, k, l, :));
-                                x = (1:length(ui.data))'*ui.channel_width;
-                                w = sqrt(y);
-                                p = fitdata(ui.models(ui.model), x(10:end), y(10:end), w(10:end), ui.params(i, j, k, l, :)); 
-                                ui.params(i, j, k, l, :) = p;
-                                waitbar(n/max, wb, 'Fortschritt');
+                                y = squeeze(ui.data(i, j, k, l, (ui.t_offset+ui.t_zero):end));
+                                x = ui.x_data((ui.t_zero + ui.t_offset):end);
+                                w = sqrt(y)+1;
+                                p = fitdata(ui.models(ui.model), x, y, w, ui.est_params(i, j, k, l, :)); 
+                                ui.fit_params(i, j, k, l, :) = p;
+                                waitbar(n/ma, wb, 'Fortschritt');
                             end
                         end
                     end
@@ -570,7 +585,7 @@ classdef UI < handle % subclass of handle is fucking important...
     methods (Access = private)
         function reset_instance(ui)
             if ui.file_opened
-                clear('ui.data', 'ui.points', 'ui.params');
+                clear('ui.data', 'ui.points', 'ui.est_params');
                 ui.fileinfo = struct('path', '', 'size', [0 0 0],...
                                      'name', '', 'np', 0); 
                 ui.file_opened = 0;
@@ -595,7 +610,8 @@ classdef UI < handle % subclass of handle is fucking important...
             t = keys(ui.models);
             str = t{get(ui.h.drpd, 'value')};
             t = ui.models(str);
-
+            ui.fit_params = nan(ui.fileinfo.size(1), ui.fileinfo.size(2),...
+                                ui.fileinfo.size(3), ui.fileinfo.size(4), length(t{4}));
             ui.model = str;
             ui.generate_bounds();
             if ui.data_read
@@ -683,7 +699,7 @@ classdef UI < handle % subclass of handle is fucking important...
                         for j = 1:ui.fileinfo.size(2)
                             for k = 1:ui.fileinfo.size(3)
                                 for l = 1:ui.fileinfo.size(4)
-                                    if ui.params(i, j, k, l, get(ui.h.ov_drpd, 'value')) < str2double(get(ui.h.ov_val, 'string'))
+                                    if ui.est_params(i, j, k, l, get(ui.h.ov_drpd, 'value')) < str2double(get(ui.h.ov_val, 'string'))
                                         ui.fit_selection(i, j, k, l) = 0;
                                     else
                                         ui.fit_selection(i, j, k, l) = 1;
@@ -697,7 +713,7 @@ classdef UI < handle % subclass of handle is fucking important...
                         for j = 1:ui.fileinfo.size(2)
                             for k = 1:ui.fileinfo.size(3)
                                 for l = 1:ui.fileinfo.size(4)
-                                    if ui.params(i, j, k, l, get(ui.h.ov_drpd, 'value')) > str2double(get(ui.h.ov_val, 'string'))
+                                    if ui.est_params(i, j, k, l, get(ui.h.ov_drpd, 'value')) > str2double(get(ui.h.ov_val, 'string'))
                                         ui.fit_selection(i, j, k, l) = 0;
                                     else
                                         ui.fit_selection(i, j, k, l) = 1;
@@ -743,11 +759,10 @@ classdef UI < handle % subclass of handle is fucking important...
     end
     
     methods (Static=true)
-        function [param] = estimate_parameters_p(d, model, offset, cw)
+        function [param] = estimate_parameters_p(d, model, t_zero, t_offset, cw)
             switch model
                 case '1. A*(exp(-t/t1)-exp(-t/t2))+offset'
-                    [~, peak] = max(d);
-                    [A, t1] = max(d((peak+offset):end)); % Amplitude, first time
+                    [A, t1] = max(d((t_zero + t_offset):end)); % Amplitude, first time
                     param(1) = A;
                     param(3) = t1*cw;
                     param(4) = mean(d(end-100:end));
@@ -757,8 +772,7 @@ classdef UI < handle % subclass of handle is fucking important...
                     t2 = t2(t2 > t1);
                     param(2) = (t2(1) - t1)*cw;
                 case '2. A*(exp(-t/t1)-exp(-t/t2))+B*exp(-t/t2)+offset'
-                    [~, peak] = max(d);
-                    [A, t1] = max(d((peak+offset):end)); % Amplitude, first time
+                    [A, t1] = max(d((t_zero + t_offset):end)); % Amplitude, first time
                     param(1) = A;
                     param(3) = t1*cw;
                     param(4) = A/4;
