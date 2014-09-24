@@ -156,8 +156,8 @@ classdef UIPlot < handle
             plot(plt.x_data(1:(plt.t_offset+plt.t_zero)),...
                  (plt.data(1:(plt.t_offset+plt.t_zero))-...
                  fitdata(1:(plt.t_offset+plt.t_zero)))./sqrt(1+plt.data(1:(plt.t_offset+plt.t_zero))), 'r.');
-            line([0 max(plt.x_data)], [0 0], 'Color', 'r');
-            xlim([min(plt.x_data) max(plt.x_data)]);
+            line([min(plt.x_data)-1 max(plt.x_data)+1], [0 0], 'Color', 'r');
+            xlim([min(plt.x_data)-1 max(plt.x_data)+1]);
             m = max([abs(max(residues)) abs(min(residues))]);
             ylim([-m m]);
             hold off
@@ -174,7 +174,7 @@ classdef UIPlot < handle
                 start(i) = str2double(get(plt.h.pe{i}, 'string'));
                 if get(plt.h.pc{i}, 'value')
                     ind = ind + 1;
-                    fix{ind} = plt.model{4}(i);
+                    fix{ind} = plt.model{4}{i};
                 end
             end
             
