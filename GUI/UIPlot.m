@@ -71,7 +71,8 @@ classdef UIPlot < handle
             %% plot
 
             set(plt.h.axes, 'units', 'pixels',...
-                            'position', [50 260 900 400]);
+                            'position', [50 260 900 400],...
+                            'ButtonDownFcn', @plt.plot_click);
                         
             set(plt.h.res, 'units', 'pixels',...
                             'position', [50 110 900 130]);
@@ -121,13 +122,18 @@ classdef UIPlot < handle
             datal = plt.data;
             m = max(datal((plt.t_offset+plt.t_zero):end));
             m = m*1.1;
+            
             axes(plt.h.axes);
-            plot(plt.x_data(1:(plt.t_offset+plt.t_zero)), datal(1:(plt.t_offset+plt.t_zero)), '.r');
+            cla
             hold on
+            plot(plt.x_data(1:(plt.t_offset+plt.t_zero)), datal(1:(plt.t_offset+plt.t_zero)), '.r');
             plot(plt.x_data((plt.t_offset+plt.t_zero):end), datal((plt.t_offset+plt.t_zero):end), '.b');
+            line([0 0], [0 m], 'Color', [0 1 0]);
+            line([plt.t_offset plt.t_offset]*plt.channel_width, [0 m], 'Color', [0 1 1]);
             hold off
+            
             ylim([0 m]);
-            xlim([0 max(plt.x_data)]);
+            xlim([min(plt.x_data)-1 max(plt.x_data)+1]);
             if plt.fitted
                 plt.plotfit();
             end
@@ -141,6 +147,7 @@ classdef UIPlot < handle
             hold on
             plot(plt.x_data,  fitdata, 'r');
             hold off
+            
             axes(plt.h.res);
             residues = (plt.data((plt.t_offset+plt.t_zero):end)-...
                  fitdata((plt.t_offset+plt.t_zero):end))./sqrt(1+plt.data((plt.t_offset+plt.t_zero):end));
@@ -150,7 +157,7 @@ classdef UIPlot < handle
                  (plt.data(1:(plt.t_offset+plt.t_zero))-...
                  fitdata(1:(plt.t_offset+plt.t_zero)))./sqrt(1+plt.data(1:(plt.t_offset+plt.t_zero))), 'r.');
             line([0 max(plt.x_data)], [0 0], 'Color', 'r');
-            xlim([0 max(plt.x_data)]);
+            xlim([min(plt.x_data) max(plt.x_data)]);
             m = max([abs(max(residues)) abs(min(residues))]);
             ylim([-m m]);
             hold off
@@ -188,22 +195,6 @@ classdef UIPlot < handle
             plt.model = plt.models(n);
             plt.est_params = UI.estimate_parameters_p(plt.data, n, plt.t_zero, plt.t_offset, plt.channel_width);
             plt.generate_param();
-        end
-        
-        function resize(plt, varargin)
-            fP = get(plt.h.f, 'position');
-            
-            aP = get(plt.h.axes, 'position');
-            aP(3:4) = fP(3:4) - aP(1:2) - 50;
-            set(plt.h.axes, 'position', aP);
-            
-            aP = get(plt.h.res, 'position');
-            aP(3) = fP(3) - aP(1) - 50;
-            set(plt.h.res, 'position', aP);
-            
-            fpP = get(plt.h.fitpanel, 'position');
-            fpP(3) = fP(3) - fpP(1) - 50;
-            set(plt.h.fitpanel, 'position', fpP);
         end
         
         function generate_param(plt)
@@ -246,7 +237,40 @@ classdef UIPlot < handle
                 set(plt.h.param, 'position', pP);
             end
         end
+        
+        function plot_click(plt, varargin)
+            cpoint = get(plt.h.axes, 'CurrentPoint');
+            cpoint = cpoint(1, 1);
+             switch get(plt.h.f, 'SelectionType')
+                case 'normal'
+                    plt.t_zero = plt.t_zero + round(cpoint/plt.channel_width);
+                    plt.x_data = ((1:length(plt.data))-plt.t_zero)'*plt.channel_width;
+                    plt.plotdata()
+                case 'alt'
+                    plt.t_offset = round(cpoint/plt.channel_width);
+                    plt.fit();
+                    plt.plotdata()
+             end
+        end
+    end
+    
+    methods (Access = private)
+        function resize(plt, varargin)
+            fP = get(plt.h.f, 'position');
+            
+            aP = get(plt.h.axes, 'position');
+            aP(3:4) = fP(3:4) - aP(1:2) - 50;
+            set(plt.h.axes, 'position', aP);
+            
+            aP = get(plt.h.res, 'position');
+            aP(3) = fP(3) - aP(1) - 50;
+            set(plt.h.res, 'position', aP);
+            
+            fpP = get(plt.h.fitpanel, 'position');
+            fpP(3) = fP(3) - fpP(1) - 50;
+            set(plt.h.fitpanel, 'position', fpP);
+        end
+
     end
     
 end
-

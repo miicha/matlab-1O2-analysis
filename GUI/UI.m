@@ -22,6 +22,7 @@ classdef UI < handle % subclass of handle is fucking important...
         current_z = 1;
         current_sa = 1;
         current_param = 1;
+        disp_fit_params = 0;
         overlay = 0;
         points;
         data_read = false;
@@ -60,6 +61,9 @@ classdef UI < handle % subclass of handle is fucking important...
                 ui.h.saslider = uicontrol(ui.h.plotpanel);
                 ui.h.sabox = uicontrol(ui.h.plotpanel);
                 ui.h.param = uicontrol(ui.h.plotpanel);
+                ui.h.fit_est = uibuttongroup(ui.h.plotpanel);
+                    ui.h.fit_par = uicontrol();
+                    ui.h.est_par = uicontrol();
 
             ui.h.bottombar = uipanel();
                 ui.h.info = uicontrol(ui.h.bottombar);
@@ -127,7 +131,7 @@ classdef UI < handle % subclass of handle is fucking important...
                                      
             set(ui.h.plttxt, 'units', 'pixels',...
                              'style', 'text',...
-                             'string', 'Parameter',...
+                             'string', 'Parameter:',...
                              'position', [50 452 100 20],...
                              'HorizontalAlignment', 'left',...
                              'BackgroundColor', get(ui.h.plotpanel, 'BackgroundColor'),...
@@ -186,7 +190,35 @@ classdef UI < handle % subclass of handle is fucking important...
                                'BackgroundColor', get(ui.h.plotpanel, 'BackgroundColor'),...
                                'string', '100',...
                                'horizontalAlignment', 'left',...
-                               'position', [460 22 35 17]);
+                               'position', [460 22 35 17]);  
+                           
+            set(ui.h.est_par, 'units', 'pixels',...
+                              'style', 'radiobutton',...
+                              'visible', 'on',...
+                              'FontSize', 9,...
+                              'BackgroundColor', get(ui.h.plotpanel, 'BackgroundColor'),...
+                              'string', 'abgeschätzt',...
+                              'horizontalAlignment', 'left',...
+                              'position', [10 1 100 17],...
+                              'parent', ui.h.fit_est);
+                           
+            set(ui.h.fit_par, 'units', 'pixels',...
+                              'style', 'radiobutton',...
+                              'visible', 'on',...
+                              'FontSize', 9,...
+                              'BackgroundColor', get(ui.h.plotpanel, 'BackgroundColor'),...
+                              'string', 'gefittet',...
+                              'horizontalAlignment', 'left',...
+                              'position', [115 1 60 17],...
+                              'parent', ui.h.fit_est,...
+                              'visible', 'off');
+                          
+            set(ui.h.fit_est, 'units', 'pixels',...
+                              'BackgroundColor', get(ui.h.plotpanel, 'BackgroundColor'),...
+                              'BorderType', 'none',...
+                              'SelectionChangeFcn', @ui.change_par_source,...
+                              'position', [220 445 200 21],...
+                              'visible', 'off');
 
             %% pushbutton
             set(ui.h.pb,  'units', 'pixels',...
@@ -245,10 +277,10 @@ classdef UI < handle % subclass of handle is fucking important...
                            'callback', @ui.set_model);
                        
             set(ui.h.bounds, 'units', 'pixels',...
-                               'position', [15 50 185 180],...
-                               'title', 'Grenzen',...
-                               'FontSize', 9);
-                           
+                             'position', [15 50 185 180],...
+                             'title', 'Grenzen',...
+                             'FontSize', 9);
+                          
             set(ui.h.bounds_txt1, 'units', 'pixels',...
                                   'position', [55 145 50 15],...
                                   'style', 'text',...
@@ -355,7 +387,6 @@ classdef UI < handle % subclass of handle is fucking important...
                     d = h5read(ui.fileinfo.path, ['/' k{i} '/sisa/' num2str(j)]);
                     ui.data(ind(1), ind(2), ind(3), j, :) = d;
                     [~, t] = max(d(1:end));
-%                     t = t + 10;
                     time_zero = (time_zero + t)/2;
                 end
             end
@@ -373,6 +404,7 @@ classdef UI < handle % subclass of handle is fucking important...
             t = ui.models(t{get(ui.h.drpd, 'value')});
              
             set(ui.h.plttxt, 'visible', 'on');
+            set(ui.h.fit_est, 'visible', 'on');
             set(ui.h.param, 'visible', 'on',...
                             'string', t{4});
             set(ui.h.ov_drpd, 'string', t{4});
@@ -482,8 +514,11 @@ classdef UI < handle % subclass of handle is fucking important...
             param = ui.current_param;
             
             axes(ui.h.axes);
-            plot_data = ui.est_params(:, :, z, sample, param);
-
+            if ui.disp_fit_params
+                plot_data = ui.fit_params(:, :, z, sample, param);
+            else
+                plot_data = ui.est_params(:, :, z, sample, param);
+            end
             % plot
             % Memo to self: Don't try using HeatMaps... seriously. 
             cla
@@ -507,32 +542,6 @@ classdef UI < handle % subclass of handle is fucking important...
                 set(ui.h.legend, 'visible', 'on');
                 set(ui.h.tick_min, 'visible', 'on', 'string', num2str(l_data(1),4));
                 set(ui.h.tick_max, 'visible', 'on', 'string', num2str(l_data(end),4));
-            end
-        end
-
-        function aplot_click(ui, varargin)
-            switch get(ui.h.f, 'SelectionType')
-                case 'normal'
-                    if ~strcmp(ui.fileinfo.path, '')
-                        cp = get(ui.h.axes, 'CurrentPoint');
-                        cp = round(cp(1, 1:2));
-                        if isKey(ui.points, [num2str(cp(1)-1) '/' num2str(cp(2)-1) '/' num2str(ui.current_z-1) ])
-                            plt = UIPlot(cp, ui);
-                        end
-                    end
-                case 'alt'
-                    if ~strcmp(ui.fileinfo.path, '') && get(ui.h.ov_switch, 'value') 
-                        cp = get(ui.h.axes, 'CurrentPoint');
-                        cp = round(cp(1, 1:2));
-                        if isKey(ui.points, [num2str(cp(1)-1) '/' num2str(cp(2)-1) '/' num2str(ui.current_z-1) ])
-                            if ui.fit_selection(cp(1), cp(2), ui.current_z, ui.current_sa) == 0
-                                ui.fit_selection(cp(1), cp(2), ui.current_z, ui.current_sa) = 1;
-                            else
-                                ui.fit_selection(cp(1), cp(2), ui.current_z, ui.current_sa) = 0;
-                            end
-                        end
-                    end
-                    ui.plot_array();
             end
         end
         
@@ -578,11 +587,51 @@ classdef UI < handle % subclass of handle is fucking important...
                 end
             end
             close(wb);
+            set(ui.h.fit_par, 'visible', 'on');
             ui.fitted = true;
         end
     end
     
     methods (Access = private)
+        function aplot_click(ui, varargin)
+            switch get(ui.h.f, 'SelectionType')
+                case 'normal'
+                    if ~strcmp(ui.fileinfo.path, '')
+                        cp = get(ui.h.axes, 'CurrentPoint');
+                        cp = round(cp(1, 1:2));
+                        if isKey(ui.points, [num2str(cp(1)-1) '/' num2str(cp(2)-1) '/' num2str(ui.current_z-1) ])
+                            plt = UIPlot(cp, ui);
+                        end
+                    end
+                case 'alt'
+                    if ~strcmp(ui.fileinfo.path, '') && get(ui.h.ov_switch, 'value') 
+                        cp = get(ui.h.axes, 'CurrentPoint');
+                        cp = round(cp(1, 1:2));
+                        if isKey(ui.points, [num2str(cp(1)-1) '/' num2str(cp(2)-1) '/' num2str(ui.current_z-1) ])
+                            if ui.fit_selection(cp(1), cp(2), ui.current_z, ui.current_sa) == 0
+                                ui.fit_selection(cp(1), cp(2), ui.current_z, ui.current_sa) = 1;
+                            else
+                                ui.fit_selection(cp(1), cp(2), ui.current_z, ui.current_sa) = 0;
+                            end
+                        end
+                    end
+                    ui.plot_array();
+            end
+        end
+        
+        function change_par_source(ui, varargin)
+            ov = get(varargin{2}.OldValue, 'String');
+            nv = get(varargin{2}.NewValue, 'String');
+            if ~strcmp(ov, nv)
+                if strcmp(nv, get(ui.h.fit_par, 'string'))
+                    ui.disp_fit_params = true;
+                else
+                    ui.disp_fit_params = false;
+                end
+                ui.plot_array();
+            end
+        end
+        
         function reset_instance(ui)
             if ui.file_opened
                 clear('ui.data', 'ui.points', 'ui.est_params');
@@ -660,6 +709,10 @@ classdef UI < handle % subclass of handle is fucking important...
             tmp = get(ui.h.param, 'position');
             tmp(2) = aP(2)+aP(4)+6;
             set(ui.h.param, 'position', tmp);
+            
+            tmp = get(ui.h.fit_est, 'position');
+            tmp(2) = aP(2)+aP(4)+6;
+            set(ui.h.fit_est, 'position', tmp);
             
             tmp = get(ui.h.zslider, 'position');
             tmp(1) = aP(1) + aP(3) + 10;
