@@ -43,7 +43,7 @@ classdef UIPlot < handle
             if ~isnan(plt.fit_params)
                 plt.fitted = true;
             end
-%             plt.model = ui.model;
+            model_sel = ui.model;
 
 
             %% initialize UI objects
@@ -66,13 +66,13 @@ classdef UIPlot < handle
                          'numbertitle', 'off',...
                          'name',  ['SISA Scan - ' ui.fileinfo.name ' - ' num2str(plt.cp)],...
                          'resize', 'on',...
-                         'ResizeFcn', @plt.resize);
+                         'ResizeFcn', @plt.resize,...
+                         'WindowButtonUpFcn', @plt.stop_dragging);
                   
             %% plot
 
             set(plt.h.axes, 'units', 'pixels',...
-                            'position', [50 260 900 400],...
-                            'ButtonDownFcn', @plt.plot_click);
+                            'position', [50 260 900 400]);
                         
             set(plt.h.res, 'units', 'pixels',...
                             'position', [50 110 900 130]);
@@ -83,8 +83,8 @@ classdef UIPlot < handle
             
             set(plt.h.drpd, 'units', 'pixels',...
                             'style', 'popupmenu',...
-                            'string', keys(ui.models),...
-                            'value', 1,...
+                            'string', keys(plt.models),...
+                            'value', find(strcmp(keys(plt.models), model_sel)),...
                             'position', [10 5 200 27],...
                             'FontSize', 9,...
                             'callback', @plt.set_model);
@@ -128,8 +128,9 @@ classdef UIPlot < handle
             hold on
             plot(plt.x_data(1:(plt.t_offset+plt.t_zero)), datal(1:(plt.t_offset+plt.t_zero)), '.r');
             plot(plt.x_data((plt.t_offset+plt.t_zero):end), datal((plt.t_offset+plt.t_zero):end), '.b');
-            line([0 0], [0 m], 'Color', [0 1 0]);
-            line([plt.t_offset plt.t_offset]*plt.channel_width, [0 m], 'Color', [0 1 1]);
+            
+            plt.h.zeroline = line([0 0], [0 m], 'Color', [0 1 0], 'ButtonDownFcn', @plt.plot_click);
+            plt.h.offsetline = line([plt.t_offset plt.t_offset]*plt.channel_width, [0 m], 'Color', [0 1 1], 'ButtonDownFcn', @plt.plot_click);
             hold off
             
             ylim([0 m]);
@@ -248,18 +249,32 @@ classdef UIPlot < handle
         end
         
         function plot_click(plt, varargin)
+            switch varargin{1}
+                case plt.h.zeroline
+                    set(plt.h.f, 'WindowButtonMotionFcn', @plt.plot_drag_zero);
+                case plt.h.offsetline
+                    set(plt.h.f, 'WindowButtonMotionFcn', @plt.plot_drag_offs);
+            end
+        end
+        
+        function plot_drag_zero(plt, varargin)
             cpoint = get(plt.h.axes, 'CurrentPoint');
             cpoint = cpoint(1, 1);
-             switch get(plt.h.f, 'SelectionType')
-                case 'normal'
-                    plt.t_zero = plt.t_zero + round(cpoint/plt.channel_width);
-                    plt.x_data = ((1:length(plt.data))-plt.t_zero)'*plt.channel_width;
-                    plt.plotdata()
-                case 'alt'
-                    plt.t_offset = round(cpoint/plt.channel_width);
-                    plt.fit();
-                    plt.plotdata()
-             end
+            plt.t_zero = plt.t_zero + round(cpoint/plt.channel_width);
+            plt.x_data = ((1:length(plt.data))-plt.t_zero)'*plt.channel_width;
+            plt.plotdata()
+        end
+        
+        function plot_drag_offs(plt, varargin)
+            cpoint = get(plt.h.axes, 'CurrentPoint');
+            cpoint = cpoint(1, 1);
+            plt.t_offset = round(cpoint/plt.channel_width);
+%             plt.fit();
+            plt.plotdata()
+        end
+        
+        function stop_dragging(plt, varargin)
+            set(plt.h.f, 'WindowButtonMotionFcn', '');
         end
     end
     

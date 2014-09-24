@@ -45,7 +45,7 @@ classdef UI < handle % subclass of handle is fucking important...
     
     methods
         % create new instance with basic controls
-        function ui = UI()
+        function ui = UI(path)
             %% initialize all UI objects:
             ui.h.f = figure();
             ui.h.menu = uimenu();
@@ -301,14 +301,27 @@ classdef UI < handle % subclass of handle is fucking important...
                        
             ui.resize();
             ui.set_model();
+            
+            if nargin == 1
+                pause(.1);
+                ui.openHDF5(path);
+            end
         end
         
         % open HDF5 file and get infos
         function openHDF5(ui, varargin)
-            % get path of file from user
-            [name, path] = uigetfile('*.h5', 'HDF5-Datei auswählen');
-            if ~ischar(name) || ~ischar(path) % no file selected
-                return
+            if ischar(varargin{1})
+                r = regexp(varargin{1}, '[/|\\]\w*\.h5');
+                if ~isempty(r)
+                    path = varargin{1}(1:r(end));
+                    name = varargin{1}((r(end)+1):end);
+                end
+            else
+                % get path of file from user
+                [name, path] = uigetfile('*.h5', 'HDF5-Datei auswählen');
+                if ~ischar(name) || ~ischar(path) % no file selected
+                    return
+                end
             end
             % reset instance
             ui.reset_instance();
