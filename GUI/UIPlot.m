@@ -118,7 +118,10 @@ classdef UIPlot < handle
             end
         end
         
-        function plotdata(plt)
+        function plotdata(plt, realtime)
+            if nargin < 2
+                realtime = false;
+            end
             datal = plt.data;
             m = max(datal((plt.t_offset+plt.t_zero):end));
             m = m*1.1;
@@ -135,7 +138,7 @@ classdef UIPlot < handle
             
             ylim([0 m]);
             xlim([min(plt.x_data)-1 max(plt.x_data)+1]);
-            if plt.fitted
+            if plt.fitted && ~realtime
                 plt.plotfit();
             end
         end
@@ -262,19 +265,19 @@ classdef UIPlot < handle
             cpoint = cpoint(1, 1);
             plt.t_zero = plt.t_zero + round(cpoint/plt.channel_width);
             plt.x_data = ((1:length(plt.data))-plt.t_zero)'*plt.channel_width;
-            plt.plotdata()
+            plt.plotdata(true)
         end
         
         function plot_drag_offs(plt, varargin)
             cpoint = get(plt.h.axes, 'CurrentPoint');
             cpoint = cpoint(1, 1);
             plt.t_offset = round(cpoint/plt.channel_width);
-%             plt.fit();
-            plt.plotdata()
+            plt.plotdata(true)
         end
         
         function stop_dragging(plt, varargin)
             set(plt.h.f, 'WindowButtonMotionFcn', '');
+            plt.plotdata();
         end
     end
     
