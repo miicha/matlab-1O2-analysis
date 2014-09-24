@@ -168,12 +168,21 @@ classdef UIPlot < handle
             y = plt.data((plt.t_zero+plt.t_offset):end);
             w = sqrt(y+1);
 %             plt.set_model();
+            ind  = 0;
+            fix = {};
             for i = 1:plt.n_param
                 start(i) = str2double(get(plt.h.pe{i}, 'string'));
+                if get(plt.h.pc{i}, 'value')
+                    ind = ind + 1;
+                    fix{ind} = plt.model{4}(i);
+                end
             end
-                
-
-            [p] = fitdata(plt.model, x, y, w, start);
+            
+            if ind == plt.n_param
+                error('kann ohne params nich fitten...');
+            end
+            
+            [p] = fitdata(plt.model, x, y, w, start, fix);
             
             plt.fit_params = p;
 %             plt.res = res;
