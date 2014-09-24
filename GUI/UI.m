@@ -14,7 +14,7 @@ classdef UI < handle % subclass of handle is fucking important...
         
         channel_width = 20/1000;   % should be determined from file
                                    % needs UI element
-        t_offset = 15;   % excitation is over after t_offset channels after 
+        t_offset = 25;   % excitation is over after t_offset channels after 
                          % maximum counts were reached - needs UI element
         t_zero = 0;      % channel, in which the maximum of the excitation was reached
            
@@ -34,8 +34,8 @@ classdef UI < handle % subclass of handle is fucking important...
                   '3.'},...
                  {...
                     % function, lower bounds, upper bounds, names of arguments
-                    {@(A, t1, t2, offset, t) A*(exp(-t/t1)-exp(-t/t2))+offset, [0 0 0 0], [inf inf inf inf], {'A', 't1', 't2', 'offset'} }...
-                    {@(A, t1, t2, B, offset, t) A*(exp(-t/t1)-exp(-t/t2))+B*exp(-t/t2)+offset, [0 0 0 0 0], [inf inf inf inf inf], {'A', 't1', 't2', 'B', 'offset'} }...
+                    {@(A, t1, t2, offset, t) A*(exp(-t/t1)-exp(-t/t2))+offset, [1 0.1 0.1 1], [10000 100 10 1000], {'A', 't1', 't2', 'offset'} }...
+                    {@(A, t1, t2, B, offset, t) A*(exp(-t/t1)-exp(-t/t2))+B*exp(-t/t2)+offset, [1 0.1 0.1 1 1], [10000 100 10 10000 1000], {'A', 't1', 't2', 'B', 'offset'} }...
                     {}...
                  })
                     
@@ -390,12 +390,12 @@ classdef UI < handle % subclass of handle is fucking important...
                 ind = ui.points(k{i});
                 % every point should have exactly as many samples
                 % as the first point, except for the last one
-                if i == ui.fileinfo.np % get number of samples for last point
+%                 if i == ui.fileinfo.np % get number of samples for last point
                     info = h5info(ui.fileinfo.path, ['/' k{i} '/sisa']);
                     samples = length(info.Datasets); 
-                else % take number of samples of first point
-                    samples = ui.fileinfo.size(4);
-                end
+%                 else % take number of samples of first point
+%                     samples = ui.fileinfo.size(4);
+%                 end
                 for j = 1:samples % iterate over all samples
                     d = h5read(ui.fileinfo.path, ['/' k{i} '/sisa/' num2str(j)]);
                     ui.data(ind(1), ind(2), ind(3), j, :) = d;
@@ -835,7 +835,7 @@ classdef UI < handle % subclass of handle is fucking important...
                     param(4) = mean(d(end-100:end));
                     d = d-param(4);
                     A = A-param(4);
-                    t2 = find(abs(d < round(A/2.7)));
+                    t2 = find(abs(d <= round(A/2.7)));
                     t2 = t2(t2 > t1);
                     param(2) = (t2(1) - t1)*cw;
                 case '2. A*(exp(-t/t1)-exp(-t/t2))+B*exp(-t/t2)+offset'
@@ -846,7 +846,7 @@ classdef UI < handle % subclass of handle is fucking important...
                     param(5) = mean(d(end-100:end));
                     d = d-param(5);
                     A = A-param(5);
-                    t2 = find(abs(d < round(A/2.7)));
+                    t2 = find(abs(d <= round(A/2.7)));
                     t2 = t2(t2 > t1);
                     param(2) = (t2(1) - t1)*cw;
             end

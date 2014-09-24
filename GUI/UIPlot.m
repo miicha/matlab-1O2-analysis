@@ -3,6 +3,7 @@ classdef UIPlot < handle
     %   Detailed explanation goes here
     
     properties
+        ui;
         cp;                     % current point
         data;
         x_data;
@@ -24,6 +25,8 @@ classdef UIPlot < handle
     methods
         function plt = UIPlot(cp, ui)
             %% get data from main UI
+            plt.ui = ui;                % keep refs to the memory in which
+                                        % the UI object is saved
             plt.models = ui.models;
             if ui.model
                 plt.model = plt.models(ui.model);
@@ -56,6 +59,7 @@ classdef UIPlot < handle
             plt.h.fitpanel = uipanel();
                 plt.h.drpd = uicontrol(plt.h.fitpanel);
                 plt.h.pb = uicontrol(plt.h.fitpanel);
+                plt.h.pb_glob = uicontrol(plt.h.fitpanel);
                 plt.h.param = uipanel(plt.h.fitpanel);
 
             
@@ -94,6 +98,12 @@ classdef UIPlot < handle
                           'string', 'Fit',...
                           'FontSize', 9,...
                           'callback', @plt.fit);
+                      
+            set(plt.h.pb_glob, 'units', 'pixels',...
+                          'position', [110 35 100 30],...
+                          'string', 'globalisieren',...
+                          'FontSize', 9,...
+                          'callback', @plt.globalize)
                         
             set(plt.h.param, 'units', 'pixels',...
                              'position', [250 10 600 55]);
@@ -278,6 +288,12 @@ classdef UIPlot < handle
         function stop_dragging(plt, varargin)
             set(plt.h.f, 'WindowButtonMotionFcn', '');
             plt.plotdata();
+        end
+        
+        function globalize(plt, varargin)
+            plt.ui.t_offset = plt.t_offset;
+            plt.ui.t_zero = plt.t_zero;
+            plt.ui.x_data = plt.x_data;
         end
     end
     
