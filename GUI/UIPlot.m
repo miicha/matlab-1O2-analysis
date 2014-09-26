@@ -149,11 +149,14 @@ classdef UIPlot < handle
             axes(plt.h.axes);
             cla
             hold on
-            plot(plt.x_data(1:(plt.t_offset+plt.t_zero)), datal(1:(plt.t_offset+plt.t_zero)), '.r');
+            plot(plt.x_data(1:(plt.t_offset+plt.t_zero)), datal(1:(plt.t_offset+plt.t_zero)), '.', 'Color', [.8 .8 1]);
             plot(plt.x_data((plt.t_offset+plt.t_zero):end), datal((plt.t_offset+plt.t_zero):end), '.b');
             
-            plt.h.zeroline = line([0 0], [0 realmax], 'Color', [0 1 0], 'ButtonDownFcn', @plt.plot_click);
-            plt.h.offsetline = line([plt.t_offset plt.t_offset]*plt.channel_width, [0 realmax], 'Color', [0 1 1], 'ButtonDownFcn', @plt.plot_click);
+            plt.h.zeroline = line([0 0], [0 realmax], 'Color', [0 1 0],... 
+                      'ButtonDownFcn', @plt.plot_click, 'LineWidth', 1.5, 'LineStyle', '--');
+            plt.h.offsetline = line([plt.t_offset plt.t_offset]*plt.channel_width,...
+                [0 realmax], 'Color', [0 1 1], 'ButtonDownFcn', @plt.plot_click, 'LineWidth', 2,...
+                'LineStyle', '--');
             hold off
             
             xlim([min(plt.x_data)-1 max(plt.x_data)+1]);
@@ -171,7 +174,7 @@ classdef UIPlot < handle
             
             axes(plt.h.axes);
             hold on
-            plot(plt.x_data,  fitdata, 'r');
+            plot(plt.x_data,  fitdata, 'r', 'LineWidth', 2);
             hold off
             
             axes(plt.h.res);
@@ -181,8 +184,9 @@ classdef UIPlot < handle
             hold on
             plot(plt.x_data(1:(plt.t_offset+plt.t_zero)),...
                  (plt.data(1:(plt.t_offset+plt.t_zero))-...
-                 fitdata(1:(plt.t_offset+plt.t_zero)))./sqrt(1+plt.data(1:(plt.t_offset+plt.t_zero))), 'r.');
-            line([min(plt.x_data)-1 max(plt.x_data)+1], [0 0], 'Color', 'r');
+                 fitdata(1:(plt.t_offset+plt.t_zero)))./...
+                 sqrt(1+plt.data(1:(plt.t_offset+plt.t_zero))), '.', 'Color', [.8 .8 1]);
+            line([min(plt.x_data)-1 max(plt.x_data)+1], [0 0], 'Color', 'r', 'LineWidth', 2);
             xlim([min(plt.x_data)-1 max(plt.x_data)+1]);
             m = max([abs(max(residues)) abs(min(residues))]);
             ylim([-m m]);

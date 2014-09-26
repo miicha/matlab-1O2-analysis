@@ -29,7 +29,7 @@ classdef UI < handle % subclass of handle is fucking important...
         points;
         data_read = false;
         fitted = false;
-                     
+        
         models = containers.Map(...
                  {'1. A*(exp(-t/t1)-exp(-t/t2))+offset'...
                   '2. A*(exp(-t/t1)-exp(-t/t2))+B*exp(-t/t2)+offset'...
@@ -428,7 +428,6 @@ classdef UI < handle % subclass of handle is fucking important...
             ui.update_infos();
             ui.update_sliders();
             ui.set_model();
-            ui.estimate_parameters();
             ui.plot_array();
         end
 
@@ -529,7 +528,6 @@ classdef UI < handle % subclass of handle is fucking important...
             sample = ui.current_sa;
             param = ui.current_param;
             fsel = ui.fit_selection(:, :, z, sample);
-            clear('plot_data');
             if ui.disp_fit_params
                 plot_data = ui.fit_params(:, :, z, sample, param);
             else
@@ -672,11 +670,7 @@ classdef UI < handle % subclass of handle is fucking important...
             end
             ui.file_opened = 1;
         end
-        
-        function read_ini(ui)
-            % stuff
-        end
-        
+                
         function set_model(ui, varargin)
             t = keys(ui.models);
             str = t{get(ui.h.drpd, 'value')};
@@ -886,7 +880,7 @@ function hmap(data, grid, cmap)
     end
     im = imagesc(data);
     set(im, 'HitTest', 'off');
-%     colormap(cmap);
+    colormap(cmap);
     if grid
         [max_x, max_y] = size(data');
         hold on
