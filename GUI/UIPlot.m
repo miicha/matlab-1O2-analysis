@@ -11,6 +11,8 @@ classdef UIPlot < handle
         n_param;
         est_params;             % estimated parameters
         fit_params;             % fitted parameters
+        fit_params_err;         % ertimated errors of fitted parameters
+        chisq;                  % chisquared
         fitted = false;
         cfit;
         model;
@@ -60,6 +62,7 @@ classdef UIPlot < handle
                 plt.h.drpd = uicontrol(plt.h.fitpanel);
                 plt.h.pb = uicontrol(plt.h.fitpanel);
                 plt.h.pb_glob = uicontrol(plt.h.fitpanel);
+                plt.h.gof = uicontrol(plt.h.fitpanel);
                 plt.h.param = uipanel(plt.h.fitpanel);
 
             
@@ -104,9 +107,15 @@ classdef UIPlot < handle
                           'string', 'globalisieren',...
                           'FontSize', 9,...
                           'callback', @plt.globalize)
-                        
+                      
+            set(plt.h.gof, 'units', 'pixels',...
+                           'style', 'text',...
+                           'FontSize', 9,...
+                           'string', {'Chi^2/DoF:', ''},...
+                           'position', [225 10 60 45]);
+                       
             set(plt.h.param, 'units', 'pixels',...
-                             'position', [250 10 600 55]);
+                             'position', [300 10 600 55]);
                          
             plt.h.pe = cell(1, 1);
             plt.h.pd = cell(1, 1);
@@ -133,6 +142,7 @@ classdef UIPlot < handle
                 realtime = false;
             end
             datal = plt.data;
+            realmax = max(datal);
             m = max(datal((plt.t_offset+plt.t_zero):end));
             m = m*1.1;
             
@@ -142,14 +152,16 @@ classdef UIPlot < handle
             plot(plt.x_data(1:(plt.t_offset+plt.t_zero)), datal(1:(plt.t_offset+plt.t_zero)), '.r');
             plot(plt.x_data((plt.t_offset+plt.t_zero):end), datal((plt.t_offset+plt.t_zero):end), '.b');
             
-            plt.h.zeroline = line([0 0], [0 m], 'Color', [0 1 0], 'ButtonDownFcn', @plt.plot_click);
-            plt.h.offsetline = line([plt.t_offset plt.t_offset]*plt.channel_width, [0 m], 'Color', [0 1 1], 'ButtonDownFcn', @plt.plot_click);
+            plt.h.zeroline = line([0 0], [0 realmax], 'Color', [0 1 0], 'ButtonDownFcn', @plt.plot_click);
+            plt.h.offsetline = line([plt.t_offset plt.t_offset]*plt.channel_width, [0 realmax], 'Color', [0 1 1], 'ButtonDownFcn', @plt.plot_click);
             hold off
             
-            ylim([0 m]);
             xlim([min(plt.x_data)-1 max(plt.x_data)+1]);
-            if plt.fitted && ~realtime
-                plt.plotfit();
+            if ~realtime
+                ylim([0 m]);
+                if plt.fitted
+                    plt.plotfit();
+                end
             end
         end
         
@@ -180,10 +192,12 @@ classdef UIPlot < handle
         function fit(plt, varargin)
             x = plt.x_data((plt.t_zero+plt.t_offset):end);
             y = plt.data((plt.t_zero+plt.t_offset):end);
-            w = sqrt(y+1);
+            w = sqrt(y);
+            w(w == 0) = 1;
 %             plt.set_model();
             ind  = 0;
             fix = {};
+            start = zeros(plt.n_param, 1);
             for i = 1:plt.n_param
                 start(i) = str2double(get(plt.h.pe{i}, 'string'));
                 if get(plt.h.pc{i}, 'value')
@@ -196,17 +210,23 @@ classdef UIPlot < handle
                 error('kann ohne params nich fitten...');
             end
             
-            [p] = fitdata(plt.model, x, y, w, start, fix);
+            [p, p_err, chi] = fitdata(plt.model, x, y, w, start, fix);
             
             plt.fit_params = p;
-%             plt.res = res;
+            plt.fit_params_err = p_err;
+            plt.chisq = chi;
             plt.fitted = true;
             plt.plotdata();
             plt.plotfit();
             for i = 1:plt.n_param
                 str = sprintf('%1.2f', p(i));
                 set(plt.h.pe{i}, 'string', str);
+                str = sprintf('+-%1.2f', p_err(i));                
+                set(plt.h.pd{i}, 'string', str);
             end
+            tmp = get(plt.h.gof, 'string');
+            tmp{2} = sprintf('%1.2f', chi);
+            set(plt.h.gof, 'string', tmp);
         end
         
         function set_model(plt, varargin)
@@ -245,7 +265,7 @@ classdef UIPlot < handle
                                                       'style', 'text',...
                                                       'string', '+-',...
                                                       'HorizontalAlignment', 'left',...
-                                                      'position', [55+(i-1)*100 25 30 20]); 
+                                                      'position', [55+(i-1)*100 22 40 20]); 
                  plt.h.pc{i} = uicontrol(plt.h.param, 'units', 'pixels',...
                                                       'style', 'checkbox',...
                                                       'string', 'fix',...

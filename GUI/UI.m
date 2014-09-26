@@ -8,6 +8,8 @@ classdef UI < handle % subclass of handle is fucking important...
         data;       % source data from HDF5
         x_data;          % time data
         fit_params;     % fit params, size(params) = [x y z length(fitparams)]
+        fit_params_err;
+        fit_chisq;
         est_params;     % estimated parameters
         fit_selection;
         model = '1. A*(exp(-t/t1)-exp(-t/t2))+offset';      % fit model, should be global  
@@ -116,6 +118,7 @@ classdef UI < handle % subclass of handle is fucking important...
             
             set(ui.h.axes, 'units', 'pixels',...
                            'position', [50 50 400 400],...
+                           'xtick', [], 'ytick', [],...
                            'Color', get(ui.h.plotpanel, 'BackgroundColor'),...
                            'XColor', get(ui.h.plotpanel, 'BackgroundColor'),...
                            'YColor', get(ui.h.plotpanel, 'BackgroundColor'),...
@@ -525,8 +528,8 @@ classdef UI < handle % subclass of handle is fucking important...
             z = ui.current_z;
             sample = ui.current_sa;
             param = ui.current_param;
-            
-            axes(ui.h.axes);
+            fsel = ui.fit_selection(:, :, z, sample);
+            clear('plot_data');
             if ui.disp_fit_params
                 plot_data = ui.fit_params(:, :, z, sample, param);
             else
@@ -534,19 +537,18 @@ classdef UI < handle % subclass of handle is fucking important...
             end
             % plot
             % Memo to self: Don't try using HeatMaps... seriously. 
+            axes(ui.h.axes);
             cla
             hold on
             hmap(squeeze(plot_data(:, :))');
-            hold off
-            hold on
             if ui.overlay
-                plot_overlay(squeeze(ui.fit_selection(:, :, z, sample))');
-                hold off
+                plot_overlay(squeeze(fsel(:,:))');
             end
-             
-            if min(plot_data) < max(plot_data)
+            hold off
+
+            if min(min(plot_data(~isnan(plot_data)))) < max(max(plot_data(~isnan(plot_data))))
                 axes(ui.h.legend);
-                l_data = min(min(plot_data)):max(max(plot_data))/20:max(max(plot_data));
+                l_data = min(min(plot_data)):(max(max(plot_data))-min(min(plot_data)))/20:max(max(plot_data));
                 cla
                 hold on
                 hmap(l_data);
@@ -590,17 +592,24 @@ classdef UI < handle % subclass of handle is fucking important...
                                 n = n + 1;
                                 y = squeeze(ui.data(i, j, k, l, (ui.t_offset+ui.t_zero):end));
                                 x = ui.x_data((ui.t_zero + ui.t_offset):end);
-                                w = sqrt(y)+1;
-                                p = fitdata(ui.models(ui.model), x, y, w, ui.est_params(i, j, k, l, :)); 
+                                w = sqrt(y);
+                                w(w == 0) = 1;
+                                [p, p_err, chi] = fitdata(ui.models(ui.model), x, y, w, ui.est_params(i, j, k, l, :)); 
                                 ui.fit_params(i, j, k, l, :) = p;
+                                ui.fit_params_err(i, j, k, l, :) = p_err;
+                                ui.fit_chisq(i, j, k, l) = chi;
+
                                 waitbar(n/ma, wb, 'Fortschritt');
                             end
+                            if n == 1
+                                set(ui.h.fit_par, 'visible', 'on');
+                            end
+
                         end
                     end
                 end
             end
             close(wb);
-            set(ui.h.fit_par, 'visible', 'on');
             ui.fitted = true;
         end
     end
@@ -755,8 +764,9 @@ classdef UI < handle % subclass of handle is fucking important...
         end
         
         function toggle_overlay(ui, varargin)
+            ui.change_overlay_cond();
             ui.overlay = ~ui.overlay;
-            ui.plot_array;
+            ui.plot_array();
         end
         
         function change_overlay_cond(ui, varargin)
@@ -876,7 +886,7 @@ function hmap(data, grid, cmap)
     end
     im = imagesc(data);
     set(im, 'HitTest', 'off');
-    colormap(cmap);
+%     colormap(cmap);
     if grid
         [max_x, max_y] = size(data');
         hold on
