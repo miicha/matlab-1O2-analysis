@@ -1,4 +1,4 @@
-# SISA Scan Auswerte-Software
+# SiSa-Scan Auswerte-Software
 
 ## Kurzanleitung
 
@@ -9,3 +9,5 @@
 5. lege anhand der abgeschätzten Parameter eine Auswahl zum Fitten fest (mit der `Overlay`-Checkbox)
 6. passe, falls nötig, obere und untere Grenzen an
 7. fitte alle selektierten Daten
+
+Für Fehler und wünsche bitte unbedingt ein Issue öffnen!
