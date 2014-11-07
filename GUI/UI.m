@@ -36,8 +36,8 @@ classdef UI < handle % subclass of handle is fucking important...
                   '3.'},...
                  {...
                     % function, lower bounds, upper bounds, names of arguments
-                    {@(A, t1, t2, offset, t) A*(exp(-t/t1)-exp(-t/t2))+offset, [1 0.1 0.1 1], [10000 100 10 1000], {'A', 't1', 't2', 'offset'} }...
-                    {@(A, t1, t2, B, offset, t) A*(exp(-t/t1)-exp(-t/t2))+B*exp(-t/t2)+offset, [1 0.1 0.1 1 1], [10000 100 10 10000 1000], {'A', 't1', 't2', 'B', 'offset'} }...
+                    {@(A, t1, t2, offset, t) A*(exp(-t/t1)-exp(-t/t2))+offset, [1 0.1 0.1 1], [500 20 10 50], {'A', 't1', 't2', 'offset'} }...
+                    {@(A, t1, t2, B, offset, t) A*(exp(-t/t1)-exp(-t/t2))+B*exp(-t/t2)+offset, [1 0.1 0.1 1 1], [500 20 10 300 50], {'A', 't1', 't2', 'B', 'offset'} }...
                     {}...
                  })
                     
@@ -482,7 +482,6 @@ classdef UI < handle % subclass of handle is fucking important...
                     z = ui.current_z;
                     sample = ui.current_sa;
                 otherwise
-                    0;
             end
             if z > ui.fileinfo.size(3)
                 z = ui.fileinfo.size(3);
@@ -527,14 +526,17 @@ classdef UI < handle % subclass of handle is fucking important...
             end
         end
         
-        function update_infos(ui)
+        function update_infos(ui, text)
+            if nargin < 2
+                text = '';
+            end
             str = [ui.fileinfo.path '  |   Dimensionen: ' num2str(ui.fileinfo.size)];
             if ui.fitted
                 str = [str '   |   Daten global gefittet.'];
             elseif ui.data_read
                 str = [str '   |    Daten eingelesen.'];
             end
-            set(ui.h.info, 'string', str);
+            set(ui.h.info, 'string', [str text]);
         end
 
         function plot_array(ui, varargin)
@@ -590,12 +592,12 @@ classdef UI < handle % subclass of handle is fucking important...
         end
         
         function fit_all(ui, varargin)
+            ui.fitted = false;
             if get(ui.h.ov_switch, 'value')
                 ma = length(find(ui.fit_selection));
             else
                 ma = prod(ui.fileinfo.size);
             end
-            wb = waitbar(0, 'Fortschritt');
             n = 0;
             for i = 1:ui.fileinfo.size(1)
                 for j = 1:ui.fileinfo.size(2)
@@ -611,19 +613,21 @@ classdef UI < handle % subclass of handle is fucking important...
                                 ui.fit_params(i, j, k, l, :) = p;
                                 ui.fit_params_err(i, j, k, l, :) = p_err;
                                 ui.fit_chisq(i, j, k, l) = chi;
-
-                                waitbar(n/ma, wb, 'Fortschritt');
+                                ui.update_infos(['   |   Fitte ' num2str(n) '/' num2str(ma) '.'])
+%                                 pause(0.1)
                             end
                             if n == 1
                                 set(ui.h.fit_par, 'visible', 'on');
                             end
-
+                            if ui.disp_fit_params
+                                ui.plot_array();
+                            end
                         end
                     end
                 end
             end
-            close(wb);
             ui.fitted = true;
+            ui.update_infos();
         end
     end
     

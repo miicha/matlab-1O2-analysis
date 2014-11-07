@@ -29,10 +29,11 @@ function [params, p_err, chisq] = fitdata(model, x, y, err, start_in, fix)
     
     ft = fittype(func, 'independent', 't');
     fo = fitoptions('Method', 'NonlinearLeastSquares', 'Lower', lbound,...
-                    'upper', ubound, 'weights', err,...
+                    'upper', ubound, 'weights', 1./err,... % <- 1./err is important!
                     'StartPoint', start);
                             
     [fitobject, gof] = fit(x, y, ft, fo);
+    
     params = zeros(length(start_in),1);
     params(fix_ind) = start_in(fix_ind);
     
