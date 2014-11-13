@@ -12,6 +12,7 @@ classdef UI < handle % subclass of handle is fucking important...
         fit_chisq;
         est_params;     % estimated parameters
         fit_selection;
+        cancel_f = false;
         model = '1. A*(exp(-t/t1)-exp(-t/t2))+offset';      % fit model, should be global  
         
         channel_width = 20/1000;   % should be determined from file
@@ -620,6 +621,10 @@ classdef UI < handle % subclass of handle is fucking important...
             
             ov = get(ui.h.ov_switch, 'value');      
             
+            % set cancel button:
+            set(ui.h.pb, 'string', 'Abbrechen', 'callback', @ui.cancel_fit);
+
+            
             ui.fit_chisq = zeros(ui.fileinfo.size(1), ui.fileinfo.size(2), ui.fileinfo.size(3), ui.fileinfo.size(4));
             n = 0;
             for i = 1:ui.fileinfo.size(1)
@@ -644,10 +649,16 @@ classdef UI < handle % subclass of handle is fucking important...
                             if ui.disp_fit_params
                                 ui.plot_array();
                             end
+                            if ui.cancel_f
+                                ui.cancel_f = false;
+                                return
+                            end
                         end
                     end
                 end
             end
+            
+            set(ui.h.pb, 'string', 'Fit', 'callback', @ui.fit_all);
             ui.fitted = true;
             ui.update_infos();
         end
@@ -870,6 +881,12 @@ classdef UI < handle % subclass of handle is fucking important...
                                                     'position', [15 155-i*23-14 40 20],...
                                                     'BackgroundColor', [.85 .85 .85]);
             end
+        end
+        
+        function cancel_fit(ui, varargin)
+            ui.cancel_f = true;
+            
+            set(ui.h.pb, 'string', 'Fit', 'callback', @ui.fit_all);
         end
     end
     
