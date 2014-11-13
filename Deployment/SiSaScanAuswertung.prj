@@ -64,12 +64,12 @@
       <param.log.file />
     </unset>
     <fileset.main>
-      <file>C:\Users\pfitzseb\Dokumente\Matlab\sisa-scan-auswertung\GUI\startUI.m</file>
+      <file>C:\Users\pfitzseb\Dokumente\Matlab\sisa-scan-auswertung\src\startUI.m</file>
     </fileset.main>
     <fileset.resources>
-      <file>C:\Users\pfitzseb\Dokumente\Matlab\sisa-scan-auswertung\GUI\fitdata.m</file>
-      <file>C:\Users\pfitzseb\Dokumente\Matlab\sisa-scan-auswertung\GUI\UI.m</file>
-      <file>C:\Users\pfitzseb\Dokumente\Matlab\sisa-scan-auswertung\GUI\UIPlot.m</file>
+      <file>C:\Users\pfitzseb\Dokumente\Matlab\sisa-scan-auswertung\src\fitdata.m</file>
+      <file>C:\Users\pfitzseb\Dokumente\Matlab\sisa-scan-auswertung\src\UI.m</file>
+      <file>C:\Users\pfitzseb\Dokumente\Matlab\sisa-scan-auswertung\src\UIPlot.m</file>
     </fileset.resources>
     <fileset.package />
     <build-deliverables>
