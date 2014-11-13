@@ -662,16 +662,39 @@ classdef UI < handle % subclass of handle is fucking important...
             ui.fitted = true;
             ui.update_infos();
         end
+        
+        function set_model(ui, varargin)
+            t = keys(ui.models);
+            if isKey(ui.models, varargin)
+                str = varargin{:};
+                set(ui.h.drpd, 'value', find(strcmp(t, str)));
+            else
+                str = t{get(ui.h.drpd, 'value')};
+            end
+            t = ui.models(str);
+            ui.fit_params = nan(ui.fileinfo.size(1), ui.fileinfo.size(2),...
+                                ui.fileinfo.size(3), ui.fileinfo.size(4), length(t{4}));
+            ui.model = str;
+            ui.generate_bounds();
+            if ui.data_read
+                ui.estimate_parameters();
+                set(ui.h.plttxt, 'visible', 'on');
+                set(ui.h.param, 'visible', 'on',...
+                                'string', t{4});
+                ui.plot_array();
+            end
+            set(ui.h.ov_drpd, 'string', t{4});
+        end
     end
     
-    methods (Access = private)
+    methods (Access = private)      
         function aplot_click(ui, varargin)
             switch get(ui.h.f, 'SelectionType')
                 case 'normal'
                     if ~strcmp(ui.fileinfo.path, '')
                         cp = get(ui.h.axes, 'CurrentPoint');
                         cp = round(cp(1, 1:2));
-                        if isKey(ui.points, [num2str(cp(1)-1) '/' num2str(cp(2)-1) '/' num2str(ui.current_z-1) ])
+                        if sum(ui.data(cp(1), cp(2), ui.current_z, ui.current_sa, :))
                             plt = UIPlot(cp, ui);
                         end
                     end
@@ -679,7 +702,7 @@ classdef UI < handle % subclass of handle is fucking important...
                     if ~strcmp(ui.fileinfo.path, '') && get(ui.h.ov_switch, 'value') 
                         cp = get(ui.h.axes, 'CurrentPoint');
                         cp = round(cp(1, 1:2));
-                        if isKey(ui.points, [num2str(cp(1)-1) '/' num2str(cp(2)-1) '/' num2str(ui.current_z-1) ])
+                        if sum(ui.data(cp(1), cp(2), ui.current_z, ui.current_sa, :))
                             if ui.fit_selection(cp(1), cp(2), ui.current_z, ui.current_sa) == 0
                                 ui.fit_selection(cp(1), cp(2), ui.current_z, ui.current_sa) = 1;
                             else
@@ -723,24 +746,6 @@ classdef UI < handle % subclass of handle is fucking important...
             ui.file_opened = 1;
         end
                 
-        function set_model(ui, varargin)
-            t = keys(ui.models);
-            str = t{get(ui.h.drpd, 'value')};
-            t = ui.models(str);
-            ui.fit_params = nan(ui.fileinfo.size(1), ui.fileinfo.size(2),...
-                                ui.fileinfo.size(3), ui.fileinfo.size(4), length(t{4}));
-            ui.model = str;
-            ui.generate_bounds();
-            if ui.data_read
-                ui.estimate_parameters();
-                set(ui.h.plttxt, 'visible', 'on');
-                set(ui.h.param, 'visible', 'on',...
-                                'string', t{4});
-                ui.plot_array();
-            end
-            set(ui.h.ov_drpd, 'string', t{4});
-        end
-        
         function set_bounds(ui, varargin)
             m = ui.models(ui.model);
             for i = 1:length(m{4});

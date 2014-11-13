@@ -16,6 +16,7 @@ classdef UIPlot < handle
         fitted = false;
         cfit;
         model;
+        model_str;
         t_offset;
         t_zero;
         channel_width;
@@ -49,7 +50,7 @@ classdef UIPlot < handle
             if ~isnan(plt.fit_params)
                 plt.fitted = true;
             end
-            model_sel = ui.model;
+            plt.model_str = ui.model;
 
 
             %% initialize UI objects
@@ -92,7 +93,7 @@ classdef UIPlot < handle
             set(plt.h.drpd, 'units', 'pixels',...
                             'style', 'popupmenu',...
                             'string', keys(plt.models),...
-                            'value', find(strcmp(keys(plt.models), model_sel)),...
+                            'value', find(strcmp(keys(plt.models), plt.model_str)),...
                             'position', [10 5 200 27],...
                             'FontSize', 9,...
                             'callback', @plt.set_model);
@@ -254,6 +255,7 @@ classdef UIPlot < handle
             plt.fitted = false;
             plt.n_param = length(tmp{2});
             plt.model = plt.models(n);
+            plt.model_str = n;
             plt.est_params = UI.estimate_parameters_p(plt.data, n, plt.t_zero, plt.t_offset, plt.channel_width);
             plt.generate_param();
         end
@@ -332,7 +334,7 @@ classdef UIPlot < handle
             plt.ui.t_offset = plt.t_offset;
             plt.ui.t_zero = plt.t_zero;
             plt.ui.x_data = plt.x_data;
-            plt.ui.model = plt.model;
+            plt.ui.set_model(plt.model_str);
         end
     end
     
