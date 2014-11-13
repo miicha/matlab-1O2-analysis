@@ -43,8 +43,9 @@ classdef UIPlot < handle
             plt.channel_width = ui.channel_width;
             
             plt.est_params = squeeze(ui.est_params(plt.cp(1), plt.cp(2), plt.cp(3), plt.cp(4), :));
-            plt.fit_params = squeeze(ui.fit_params(plt.cp(1), plt.cp(2), plt.cp(3), plt.cp(4), :));
-            
+%             plt.fit_params = squeeze(ui.fit_params(plt.cp(1), plt.cp(2), plt.cp(3), plt.cp(4), :));
+%             plt.fit_params_err = squeeze(ui.fit_params_err(plt.cp(1), plt.cp(2), plt.cp(3), plt.cp(4), :));
+
             if ~isnan(plt.fit_params)
                 plt.fitted = true;
             end
@@ -111,7 +112,7 @@ classdef UIPlot < handle
             set(plt.h.gof, 'units', 'pixels',...
                            'style', 'text',...
                            'FontSize', 9,...
-                           'string', {'Chi^2/DoF:', ''},...
+                           'string', {'Chi^2/DoF:', num2str(plt.chisq)},...
                            'position', [225 10 60 45]);
                        
             set(plt.h.param, 'units', 'pixels',...
@@ -122,11 +123,12 @@ classdef UIPlot < handle
             plt.h.pc = cell(1, 1);
                       
             %% draw plot
+            plt.generate_param();      
             plt.plotdata();
-            plt.generate_param();
         end
         
         function getdata(plt, ui)
+            plt.chisq = 0;
             if ~ui.data_read
                 dataset = ['/' num2str(plt.cp(1)-1) '/' num2str(plt.cp(2)-1)...
                            '/' num2str(plt.cp(3)-1) '/sisa/' num2str(ui.current_sa)];
@@ -134,6 +136,11 @@ classdef UIPlot < handle
             else
                 plt.data = squeeze(ui.data(plt.cp(1), plt.cp(2), plt.cp(3), ui.current_sa, :));
                 plt.x_data = ui.x_data;
+                if ui.fitted && ui.fit_selection(plt.cp(1), plt.cp(2), plt.cp(3), ui.current_sa)
+                    plt.chisq =  squeeze(ui.fit_chisq(plt.cp(1), plt.cp(2), plt.cp(3), ui.current_sa, :));
+                    plt.fit_params = squeeze(ui.fit_params(plt.cp(1), plt.cp(2), plt.cp(3), plt.cp(4), :));
+                    plt.fit_params_err = squeeze(ui.fit_params_err(plt.cp(1), plt.cp(2), plt.cp(3), plt.cp(4), :));
+                end
             end
         end
         
@@ -191,6 +198,21 @@ classdef UIPlot < handle
             m = max([abs(max(residues)) abs(min(residues))]);
             ylim([-m m]);
             hold off
+            
+            % update UI
+            for i = 1:plt.n_param
+                str = sprintf('%1.2f', plt.fit_params(i));
+                set(plt.h.pe{i}, 'string', str);
+                if plt.fit_params_err(i) < plt.fit_params(i)
+                    str = sprintf('+-%1.2f', plt.fit_params_err(i));   
+                else 
+                    str = '+-NaN';   
+                end
+                set(plt.h.pd{i}, 'string', str);
+            end
+            tmp = get(plt.h.gof, 'string');
+            tmp{2} = sprintf('%1.2f', plt.chisq);
+            set(plt.h.gof, 'string', tmp);
         end
         
         function fit(plt, varargin)
@@ -211,7 +233,8 @@ classdef UIPlot < handle
             end
             
             if ind == plt.n_param
-                error('kann ohne params nich fitten...');
+                msgbox('Kann ohne freie Parameter nicht fitten.', 'Fehler','modal');
+                return;
             end
             
             [p, p_err, chi] = fitdata(plt.model, x, y, w, start, fix);
@@ -222,15 +245,6 @@ classdef UIPlot < handle
             plt.fitted = true;
             plt.plotdata();
             plt.plotfit();
-            for i = 1:plt.n_param
-                str = sprintf('%1.2f', p(i));
-                set(plt.h.pe{i}, 'string', str);
-                str = sprintf('+-%1.2f', p_err(i));                
-                set(plt.h.pd{i}, 'string', str);
-            end
-            tmp = get(plt.h.gof, 'string');
-            tmp{2} = sprintf('%1.2f', chi);
-            set(plt.h.gof, 'string', tmp);
         end
         
         function set_model(plt, varargin)
@@ -318,6 +332,7 @@ classdef UIPlot < handle
             plt.ui.t_offset = plt.t_offset;
             plt.ui.t_zero = plt.t_zero;
             plt.ui.x_data = plt.x_data;
+            plt.ui.model = plt.model;
         end
     end
     

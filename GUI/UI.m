@@ -236,7 +236,8 @@ classdef UI < handle % subclass of handle is fucking important...
             %% overlay control
             set(ui.h.ov_controls, 'units', 'pixels',...
                                   'position', [10 360 250 200],...
-                                  'BackgroundColor', [.85 .85 .85]);
+                                  'BackgroundColor', [.85 .85 .85],...
+                                  'visible', 'off');
         
             set(ui.h.ov_switch, 'units', 'pixels',...
                              'style', 'checkbox',...
@@ -342,9 +343,7 @@ classdef UI < handle % subclass of handle is fucking important...
             end
             % reset instance
             ui.reset_instance();
-            
-            disp('metadaten einlesen');
-            
+                        
             ui.fileinfo.name = name;
             ui.fileinfo.path = [path name];
             
@@ -378,18 +377,21 @@ classdef UI < handle % subclass of handle is fucking important...
                 % Performance problem here. Not using a map and computing
                 % the position in the vector from the string on the fly is
                 % almost as slow (-.1s). Might try to only save a matrix of
-                % indices and compute the strring from that.
+                % indices and compute the string from that.
             ui.points = containers.Map;
             for i = 1:length(tmp) - 1
                 vec = str2double(strsplit(tmp{i}, '/'))+[1 1 offset];
                 ui.points(tmp{i}) = vec;
+                if mod(i, round((length(tmp) - 1)/10)) == 0
+                    ui.update_infos(['   |   Metadaten einlesen ' num2str(i) '.']);
+                end
                 if strcmp(tmp{i}, fin)
                     break
                 end
             end
+
             % get number of scanned points
             ui.fileinfo.np = ui.points.Count;
-            
             
             % UI stuff
             set(ui.h.f, 'name', ['SISA Scan - ' name]);
@@ -398,9 +400,7 @@ classdef UI < handle % subclass of handle is fucking important...
             ui.readHDF5();
         end
 
-        function readHDF5(ui, varargin)
-            disp('daten einlesen');
-            
+        function readHDF5(ui, varargin)          
             time_zero = 0;
             k = keys(ui.points);
             for i = 1:ui.fileinfo.np
@@ -418,6 +418,9 @@ classdef UI < handle % subclass of handle is fucking important...
                     ui.data(ind(1), ind(2), ind(3), j, :) = d;
                     [~, t] = max(d(1:end));
                     time_zero = (time_zero + t)/2;
+                end
+                if mod(i, round(ui.fileinfo.np/20)) == 0
+                    ui.update_infos(['   |   Daten einlesen ' num2str(i) '/' num2str(ui.fileinfo.np) '.']);
                 end
             end
             
@@ -439,6 +442,7 @@ classdef UI < handle % subclass of handle is fucking important...
                             'string', t{4});
             set(ui.h.ov_drpd, 'string', t{4});
             set(ui.h.pb, 'string', 'Fit', 'callback', @ui.fit_all);
+            set(ui.h.ov_controls, 'visible', 'on')
             ui.update_infos();
             ui.update_sliders();
             ui.set_model();
@@ -527,6 +531,7 @@ classdef UI < handle % subclass of handle is fucking important...
         end
         
         function update_infos(ui, text)
+            pause(.0001);                    
             if nargin < 2
                 text = '';
             end
@@ -545,8 +550,15 @@ classdef UI < handle % subclass of handle is fucking important...
             param = ui.current_param;
             fsel = ui.fit_selection(:, :, z, sample);
             if ui.disp_fit_params
-                plot_data = ui.fit_params(:, :, z, sample, param);
+                if param > length(ui.est_params(1, 1, 1, 1, :))
+                    plot_data = ui.fit_chisq;
+                else
+                    plot_data = ui.fit_params(:, :, z, sample, param);
+                end
             else
+                if param > length(ui.est_params(1, 1, 1, 1, :))
+                    param = 1;
+                end
                 plot_data = ui.est_params(:, :, z, sample, param);
             end
             % plot
@@ -575,7 +587,6 @@ classdef UI < handle % subclass of handle is fucking important...
         end
         
         function estimate_parameters(ui)
-            disp('parameter abschätzen');
             n = ui.models(ui.model);
             ui.est_params = zeros(ui.fileinfo.size(1), ui.fileinfo.size(2),...
                               ui.fileinfo.size(3), ui.fileinfo.size(4), length(n{2}));
@@ -585,9 +596,13 @@ classdef UI < handle % subclass of handle is fucking important...
                     d = ui.data(p{i}(1), p{i}(2), p{i}(3), j, :);
                     ps = UI.estimate_parameters_p(d, ui.model, ui.t_zero, ui.t_offset, ui.channel_width);
                     ui.est_params(p{i}(1), p{i}(2), p{i}(3), j, :) = ps;
+                    if mod(i, round(ui.fileinfo.np/20)) == 0
+                        ui.update_infos(['   |   Parameter abschätzen ' num2str(i) '/' num2str(ui.fileinfo.np) '.']);
+                    end
                 end
             end
             ui.fitted = false;
+            ui.update_infos();
             set(ui.h.ov_val, 'string', mean(mean(mean(mean(squeeze(ui.est_params(:, :, :, :, 1)))))));
         end
         
@@ -598,12 +613,20 @@ classdef UI < handle % subclass of handle is fucking important...
             else
                 ma = prod(ui.fileinfo.size);
             end
+            t = keys(ui.models);
+            t = ui.models(t{get(ui.h.drpd, 'value')});
+            set(ui.h.param, 'visible', 'on',...
+                            'string', {t{4}{:}, 'Chi^2'});
+            
+            ov = get(ui.h.ov_switch, 'value');      
+            
+            ui.fit_chisq = zeros(ui.fileinfo.size(1), ui.fileinfo.size(2), ui.fileinfo.size(3), ui.fileinfo.size(4));
             n = 0;
             for i = 1:ui.fileinfo.size(1)
                 for j = 1:ui.fileinfo.size(2)
                     for k = 1:ui.fileinfo.size(3)
                         for l = 1:ui.fileinfo.size(4)
-                            if ui.fit_selection(i, j, k, l) || ~get(ui.h.ov_switch, 'value')
+                            if ui.fit_selection(i, j, k, l) || ~ov
                                 n = n + 1;
                                 y = squeeze(ui.data(i, j, k, l, (ui.t_offset+ui.t_zero):end));
                                 x = ui.x_data((ui.t_zero + ui.t_offset):end);
@@ -614,7 +637,6 @@ classdef UI < handle % subclass of handle is fucking important...
                                 ui.fit_params_err(i, j, k, l, :) = p_err;
                                 ui.fit_chisq(i, j, k, l) = chi;
                                 ui.update_infos(['   |   Fitte ' num2str(n) '/' num2str(ma) '.'])
-%                                 pause(0.1)
                             end
                             if n == 1
                                 set(ui.h.fit_par, 'visible', 'on');
@@ -718,7 +740,7 @@ classdef UI < handle % subclass of handle is fucking important...
         end
         
         function resize(ui, varargin)
-            % resize elements in figure to match
+            % resize elements in figure to match window size
             fP = get(ui.h.f, 'Position');
             
             pP = get(ui.h.plotpanel, 'Position');
