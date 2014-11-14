@@ -344,8 +344,7 @@ classdef UI < handle % subclass of handle is fucking important...
             
             ui.reset_instance();
 
-
-            if regexp(name{1}, '*?.h5')
+            if ~iscell(name) && regexp(name, '*?.h5')
                 ui.fileinfo.name = name;
                 ui.fileinfo.path = [path name];
                 ui.openHDF5();
