@@ -97,7 +97,7 @@ classdef UI < handle % subclass of handle is fucking important...
                     
             set(ui.h.menu, 'Label', 'Datei');
             uimenu(ui.h.menu, 'label', 'Datei öffnen...',...
-                              'callback', @ui.openHDF5);
+                              'callback', @ui.open_file);
             
             set(ui.h.bottombar, 'units', 'pixels',...
                                 'position', [0 0 1000 18],...
@@ -232,7 +232,7 @@ classdef UI < handle % subclass of handle is fucking important...
                           'style', 'push',...
                           'position', [10 20 70 30],...
                           'string', 'open',...
-                          'callback', @ui.openHDF5);
+                          'callback', @ui.open_file);
             
             %% overlay control
             set(ui.h.ov_controls, 'units', 'pixels',...
@@ -327,8 +327,7 @@ classdef UI < handle % subclass of handle is fucking important...
             end
         end
         
-        % open HDF5 file and get infos
-        function openHDF5(ui, varargin)
+        function open_file(ui, varargin)
             if ischar(varargin{1})
                 r = regexp(varargin{1}, '[/|\\]\w*\.h5');
                 if ~isempty(r)
@@ -337,17 +336,28 @@ classdef UI < handle % subclass of handle is fucking important...
                 end
             else
                 % get path of file from user
-                [name, path] = uigetfile('*.h5', 'HDF5-Datei auswählen');
-                if ~ischar(name) || ~ischar(path) % no file selected
+                [name, path] = uigetfile({'*.h5';'*.diff'}, 'HDF5-Datei auswählen', 'MultiSelect', 'on');
+                if (~ischar(name) && ~iscell(name)) || ~ischar(path) % no file selected
                     return
                 end
             end
-            % reset instance
-            ui.reset_instance();
-                        
-            ui.fileinfo.name = name;
-            ui.fileinfo.path = [path name];
             
+            ui.reset_instance();
+
+
+            if regexp(name{1}, '*?.h5')
+                ui.fileinfo.name = name;
+                ui.fileinfo.path = [path name];
+                ui.openHDF5();
+            else
+                ui.fileinfo.name = name;
+                ui.fileinfo.path = path;
+                ui.openDIFF();
+            end
+                
+        end
+        
+        function openHDF5(ui)
             % get dimensions of scan, determine if scan finished
             dims = h5readatt(ui.fileinfo.path, '/PATH/DATA', 'GRID DIMENSIONS');
             dims = strsplit(dims{:}, '/');
@@ -395,12 +405,60 @@ classdef UI < handle % subclass of handle is fucking important...
             ui.fileinfo.np = ui.points.Count;
             
             % UI stuff
-            set(ui.h.f, 'name', ['SISA Scan - ' name]);
+            set(ui.h.f, 'name', ['SISA Scan - ' ui.fileinfo.name]);
             
             ui.update_sliders();
             ui.readHDF5();
         end
 
+        function openDIFF(ui)
+            time_zero = 0;
+            name = ui.fileinfo.name;
+            if iscell(name)
+                for i = 1:length(name)
+                    ui.fileinfo.size = [length(name), 1, 1];
+                    d = dlmread([ui.fileinfo.path name{i}]);
+                    [~, t] = max(d(1:end));
+                    time_zero = (time_zero + t)/2;
+                    ui.data(i, 1, 1, 1,:) = d;
+                end
+                ui.fileinfo.np = length(name);
+            end
+            ui.t_zero = round(time_zero);
+            ui.x_data = ((1:length(ui.data(1, 1, 1, 1, :)))-ui.t_zero)'*ui.channel_width;
+            ui.data_read = true;
+            
+            tmp = size(ui.data);
+            ui.fileinfo.size = tmp(1:4);
+            
+            ui.points = containers.Map;
+            for i = 1:length(name)
+                vec = [i 1 1];
+                ui.points(num2str(vec)) = vec;
+                if mod(i, round(length(name)/10)) == 0
+                    ui.update_infos(['   |   Metadaten einlesen ' num2str(i) '.']);
+                end
+            end
+            
+            ui.fit_selection = ones(tmp(1), tmp(2), tmp(3), tmp(4));
+            
+            % UI stuff
+            t = keys(ui.models);
+            t = ui.models(t{get(ui.h.drpd, 'value')});
+             
+            set(ui.h.plttxt, 'visible', 'on');
+            set(ui.h.fit_est, 'visible', 'on');
+            set(ui.h.param, 'visible', 'on',...
+                            'string', t{4});
+            set(ui.h.ov_drpd, 'string', t{4});
+            set(ui.h.pb, 'string', 'Fit', 'callback', @ui.fit_all);
+            set(ui.h.ov_controls, 'visible', 'on')
+            ui.update_infos();
+            ui.update_sliders();
+            ui.set_model();
+            ui.plot_array();
+        end
+        
         function readHDF5(ui, varargin)          
             time_zero = 0;
             k = keys(ui.points);
@@ -503,7 +561,6 @@ classdef UI < handle % subclass of handle is fucking important...
             ui.current_z = z;
             ui.current_sa = sample;
             ui.current_param = p;
-            
             ui.plot_array();
         end
 

@@ -1,1 +1,1 @@
-deploytool -build SiSaScanAuswertung
+deploytool -package SiSaScanAuswertung
