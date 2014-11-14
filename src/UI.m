@@ -336,7 +336,7 @@ classdef UI < handle % subclass of handle is fucking important...
                 end
             else
                 % get path of file from user
-                [name, path] = uigetfile({'*.h5';'*.diff'}, 'HDF5-Datei auswählen', 'MultiSelect', 'on');
+                [name, path] = uigetfile({'*.h5;*.diff'}, 'HDF5-Datei auswählen', 'MultiSelect', 'on');
                 if (~ischar(name) && ~iscell(name)) || ~ischar(path) % no file selected
                     return
                 end
