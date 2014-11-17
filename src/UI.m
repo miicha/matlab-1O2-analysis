@@ -19,7 +19,7 @@ classdef UI < handle % subclass of handle is fucking important...
                                    % needs UI element
         t_offset = 25;   % excitation is over after t_offset channels after 
                          % maximum counts were reached - needs UI element
-        t_zero = 0;      % channel, in which the maximum of the excitation was reached
+        t_zero = 0;      % channel in which the maximum of the excitation was reached
            
         file_opened = 0;
         current_z = 1;
@@ -458,7 +458,7 @@ classdef UI < handle % subclass of handle is fucking important...
             ui.plot_array();
         end
         
-        function readHDF5(ui, varargin)          
+        function readHDF5(ui, varargin)
             time_zero = 0;
             k = keys(ui.points);
             for i = 1:ui.fileinfo.np
@@ -620,26 +620,30 @@ classdef UI < handle % subclass of handle is fucking important...
             end
             % plot
             % Memo to self: Don't try using HeatMaps... seriously. 
-            axes(ui.h.axes);
-            cla
-            hold on
-            hmap(squeeze(plot_data(:, :))');
-            if ui.overlay
-                plot_overlay(squeeze(fsel(:,:))');
-            end
-            hold off
-
-            if min(min(plot_data(~isnan(plot_data)))) < max(max(plot_data(~isnan(plot_data))))
-                axes(ui.h.legend);
-                l_data = min(min(plot_data)):(max(max(plot_data))-min(min(plot_data)))/20:max(max(plot_data));
+%             axes(ui.h.axes);
+            if gcf == ui.h.f
+                set(ui.h.f, 'CurrentAxes', ui.h.axes);
                 cla
                 hold on
-                hmap(l_data);
+                hmap(squeeze(plot_data(:, :))');
+                if ui.overlay
+                    plot_overlay(squeeze(fsel(:,:))');
+                end
                 hold off
-                xlim([.5 length(l_data)+.5])
-                set(ui.h.legend, 'visible', 'on');
-                set(ui.h.tick_min, 'visible', 'on', 'string', num2str(l_data(1),4));
-                set(ui.h.tick_max, 'visible', 'on', 'string', num2str(l_data(end),4));
+
+                if min(min(plot_data(~isnan(plot_data)))) < max(max(plot_data(~isnan(plot_data))))
+    %                 axes(ui.h.legend);
+                    set(ui.h.f, 'CurrentAxes', ui.h.legend);
+                    l_data = min(min(plot_data)):(max(max(plot_data))-min(min(plot_data)))/20:max(max(plot_data));
+                    cla
+                    hold on
+                    hmap(l_data);
+                    hold off
+                    xlim([.5 length(l_data)+.5])
+                    set(ui.h.legend, 'visible', 'on');
+                    set(ui.h.tick_min, 'visible', 'on', 'string', num2str(l_data(1),4));
+                    set(ui.h.tick_max, 'visible', 'on', 'string', num2str(l_data(end),4));
+                end
             end
         end
         
@@ -659,12 +663,13 @@ classdef UI < handle % subclass of handle is fucking important...
                 end
             end
             ui.fitted = false;
+            ui.fit_chisq = nan(ui.fileinfo.size(1), ui.fileinfo.size(2),...
+                                 ui.fileinfo.size(3), ui.fileinfo.size(4));
             ui.update_infos();
             set(ui.h.ov_val, 'string', mean(mean(mean(mean(squeeze(ui.est_params(:, :, :, :, 1)))))));
         end
         
         function fit_all(ui, varargin)
-            ui.fitted = false;
             if get(ui.h.ov_switch, 'value')
                 ma = length(find(ui.fit_selection));
             else
@@ -680,8 +685,8 @@ classdef UI < handle % subclass of handle is fucking important...
             % set cancel button:
             set(ui.h.pb, 'string', 'Abbrechen', 'callback', @ui.cancel_fit);
 
-            
-            ui.fit_chisq = zeros(ui.fileinfo.size(1), ui.fileinfo.size(2), ui.fileinfo.size(3), ui.fileinfo.size(4));
+            ui.fit_params = zeros(size(ui.est_params));
+            ui.fit_params_err = zeros(size(ui.est_params));
             n = 0;
             for i = 1:ui.fileinfo.size(1)
                 for j = 1:ui.fileinfo.size(2)
@@ -743,7 +748,7 @@ classdef UI < handle % subclass of handle is fucking important...
         end
     end
     
-    methods (Access = private)      
+    methods (Access = private)
         function aplot_click(ui, varargin)
             switch get(ui.h.f, 'SelectionType')
                 case 'normal'
@@ -785,7 +790,7 @@ classdef UI < handle % subclass of handle is fucking important...
         
         function reset_instance(ui)
             if ui.file_opened
-                clear('ui.data', 'ui.points', 'ui.est_params');
+                clear('ui.data', 'ui.points');
                 ui.fileinfo = struct('path', '', 'size', [0 0 0],...
                                      'name', '', 'np', 0); 
                 ui.file_opened = 0;

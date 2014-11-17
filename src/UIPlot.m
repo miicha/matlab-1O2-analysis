@@ -35,6 +35,9 @@ classdef UIPlot < handle
                 plt.model = plt.models(ui.model);
             end
             plt.cp = [cp ui.current_z ui.current_sa];
+            if ~isnan(ui.fit_chisq(plt.cp(1), plt.cp(2), plt.cp(3), plt.cp(4)))
+                plt.fitted = true;
+            end
             plt.getdata(ui);
             tmp = ui.models(ui.model);
             plt.n_param = length(tmp{2});
@@ -47,9 +50,7 @@ classdef UIPlot < handle
 %             plt.fit_params = squeeze(ui.fit_params(plt.cp(1), plt.cp(2), plt.cp(3), plt.cp(4), :));
 %             plt.fit_params_err = squeeze(ui.fit_params_err(plt.cp(1), plt.cp(2), plt.cp(3), plt.cp(4), :));
 
-            if ~isnan(plt.fit_params)
-                plt.fitted = true;
-            end
+
             plt.model_str = ui.model;
 
 
@@ -142,7 +143,7 @@ classdef UIPlot < handle
             else
                 plt.data = squeeze(ui.data(plt.cp(1), plt.cp(2), plt.cp(3), ui.current_sa, :));
                 plt.x_data = ui.x_data;
-                if ui.fitted && ui.fit_selection(plt.cp(1), plt.cp(2), plt.cp(3), ui.current_sa)
+                if plt.fitted
                     plt.chisq =  squeeze(ui.fit_chisq(plt.cp(1), plt.cp(2), plt.cp(3), ui.current_sa, :));
                     plt.fit_params = squeeze(ui.fit_params(plt.cp(1), plt.cp(2), plt.cp(3), plt.cp(4), :));
                     plt.fit_params_err = squeeze(ui.fit_params_err(plt.cp(1), plt.cp(2), plt.cp(3), plt.cp(4), :));
