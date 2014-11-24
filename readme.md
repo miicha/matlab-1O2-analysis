@@ -1,5 +1,13 @@
 # SiSa-Scan Auswerte-Software
 
+## Installation
+Ist die MATLAB Compiler Runtime v8.3 (R2014a) nicht installiert,
+dann bitte den Installer von [hier](https://git.daten.tk/sebastian.pfitzner/sisa-scan-auswertung/raw/master/Deployment/SiSaScanAuswertung/for_redistribution/MyAppInstaller_web.exe)
+herunterladen und ausführen.
+
+Andernfalls reicht es, den Inhalt [dieses](https://git.daten.tk/sebastian.pfitzner/sisa-scan-auswertung/tree/master/Deployment/SiSaScanAuswertung/for_redistribution_files_only)
+Ordners abzuspeichern und die `SiSaScanAuswertung.exe` auszuführen.
+
 ## Kurzanleitung
 
 1. öffne HDF5-File
