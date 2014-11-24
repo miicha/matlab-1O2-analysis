@@ -327,6 +327,9 @@ classdef UIPlot < handle
         function plot_drag_offs(plt, varargin)
             cpoint = get(plt.h.axes, 'CurrentPoint');
             cpoint = cpoint(1, 1);
+            if cpoint/plt.channel_width < 0.01
+                cpoint = 0.01;                
+            end
             plt.t_offset = round(cpoint/plt.channel_width);
             plt.plotdata(true)
         end
