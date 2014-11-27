@@ -288,7 +288,7 @@ classdef UI < handle % subclass of handle is fucking important...
                              'BackgroundColor', [1 1 1]); 
                          
             %% selection control
-            set(ui.h.sel_tab, 'Title', 'Auswahl');
+            set(ui.h.sel_tab, 'Title', 'Auswertung');
             
             set(ui.h.sel_controls, 'BackgroundColor', [.85 .85 .85])
         

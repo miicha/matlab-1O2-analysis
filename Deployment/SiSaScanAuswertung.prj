@@ -70,6 +70,7 @@
       <file>C:\Users\pfitzseb\Dokumente\Matlab\sisa-scan-auswertung\src\fitdata.m</file>
       <file>C:\Users\pfitzseb\Dokumente\Matlab\sisa-scan-auswertung\src\UI.m</file>
       <file>C:\Users\pfitzseb\Dokumente\Matlab\sisa-scan-auswertung\src\UIPlot.m</file>
+	  <file>C:\Users\pfitzseb\Dokumente\Matlab\sisa-scan-auswertung\src\UIGroupPlot.m</file>
     </fileset.resources>
     <fileset.package />
     <build-deliverables>
