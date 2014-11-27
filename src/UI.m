@@ -12,6 +12,7 @@ classdef UI < handle % subclass of handle is fucking important...
         fit_chisq;
         est_params;     % estimated parameters
         fit_selection;
+        selection1;
         cancel_f = false;
         model = '1. A*(exp(-t/t1)-exp(-t/t2))+offset';      % fit model, should be global  
         
@@ -73,11 +74,18 @@ classdef UI < handle % subclass of handle is fucking important...
             
             ui.h.pb = uicontrol();
             
-            ui.h.ov_controls = uipanel();
-                ui.h.ov_switch = uicontrol(ui.h.ov_controls);
-                ui.h.ov_drpd = uicontrol(ui.h.ov_controls);
-                ui.h.ov_rel = uicontrol(ui.h.ov_controls);
-                ui.h.ov_val = uicontrol(ui.h.ov_controls);
+            ui.h.sel_tabs = uitabgroup();
+                ui.h.ov_tab = uitab(ui.h.sel_tabs);
+                    ui.h.ov_controls = uipanel(ui.h.ov_tab);
+                        ui.h.ov_switch = uicontrol(ui.h.ov_controls);
+                        ui.h.ov_drpd = uicontrol(ui.h.ov_controls);
+                        ui.h.ov_rel = uicontrol(ui.h.ov_controls);
+                        ui.h.ov_val = uicontrol(ui.h.ov_controls);
+                ui.h.sel_tab = uitab(ui.h.sel_tabs);
+                        ui.h.sel_controls = uipanel(ui.h.sel_tab);
+                        ui.h.sel_switch = uicontrol(ui.h.sel_controls);
+                        ui.h.sel_btn_plot = uicontrol(ui.h.sel_controls);
+                        ui.h.sel_btn_exp = uicontrol(ui.h.sel_controls);
             
             ui.h.fitpanel = uipanel();
                 ui.h.fittxt = uicontrol(ui.h.fitpanel);
@@ -230,16 +238,23 @@ classdef UI < handle % subclass of handle is fucking important...
             %% pushbutton
             set(ui.h.pb,  'units', 'pixels',...
                           'style', 'push',...
-                          'position', [10 20 70 30],...
+                          'position', [10 20 68 28],...
                           'string', 'open',...
+                          'BackgroundColor', [.8 .8 .8],...
                           'callback', @ui.open_file);
             
+                      
+            %% tabs for switching selection modes
+            set(ui.h.sel_tabs, 'units', 'pixels',...
+                               'position', [10 360 250 200],...
+                               'BackgroundColor', get(ui.h.f, 'Color'),...
+                               'visible', 'off')
+                           
             %% overlay control
-            set(ui.h.ov_controls, 'units', 'pixels',...
-                                  'position', [10 360 250 200],...
-                                  'BackgroundColor', [.85 .85 .85],...
-                                  'visible', 'off');
-        
+            set(ui.h.ov_tab, 'Title', 'Overlay');
+            
+            set(ui.h.ov_controls, 'BackgroundColor', [.85 .85 .85])
+
             set(ui.h.ov_switch, 'units', 'pixels',...
                              'style', 'checkbox',...
                              'position', [15 100 60 30],...
@@ -264,11 +279,35 @@ classdef UI < handle % subclass of handle is fucking important...
             set(ui.h.ov_val, 'units', 'pixels',...
                              'style', 'edit',...
                              'position', [127 83 60 22],...
-                             'string', '123',...
+                             'string', '',...
                              'callback', @ui.change_overlay_cond,...
                              'BackgroundColor', [1 1 1]); 
                          
+            %% selection control
+            set(ui.h.sel_tab, 'Title', 'Auswahl');
+            
+            set(ui.h.sel_controls, 'BackgroundColor', [.85 .85 .85])
         
+            set(ui.h.sel_switch, 'units', 'pixels',...
+                             'style', 'checkbox',...
+                             'position', [15 100 80 30],...
+                             'string', 'Auswahl 1',...
+                             'callback', @ui.toggle_overlay,...
+                             'BackgroundColor', [.85 .85 .85]);
+                         
+             set(ui.h.sel_btn_plot, 'units', 'pixels',...
+                             'style', 'push',...
+                             'position', [15 15 50 20],...
+                             'string', 'Plotten',...
+                             'BackgroundColor', [.85 .85 .85],...
+                             'callback', @ui.plot_selection);
+             
+             set(ui.h.sel_btn_exp, 'units', 'pixels',...
+                             'style', 'push',...
+                             'position', [65 15 70 20],...
+                             'string', 'Exportieren',...
+                             'BackgroundColor', [.85 .85 .85]);
+                         
             %% Fit-Panel:
             set(ui.h.fitpanel, 'units', 'pixels',...
                                'position', [10 50 250 300],...
@@ -451,7 +490,7 @@ classdef UI < handle % subclass of handle is fucking important...
                             'string', t{4});
             set(ui.h.ov_drpd, 'string', t{4});
             set(ui.h.pb, 'string', 'Fit', 'callback', @ui.fit_all);
-            set(ui.h.ov_controls, 'visible', 'on')
+            set(ui.h.sel_tabs, 'visible', 'on')
             ui.update_infos();
             ui.update_sliders();
             ui.set_model();
@@ -489,6 +528,7 @@ classdef UI < handle % subclass of handle is fucking important...
             ui.fileinfo.size = tmp(1:4);
             
             ui.fit_selection = ones(tmp(1), tmp(2), tmp(3), tmp(4));
+            ui.selection1 = zeros(tmp(1), tmp(2), tmp(3), tmp(4));
             
             % UI stuff
             t = keys(ui.models);
@@ -500,10 +540,12 @@ classdef UI < handle % subclass of handle is fucking important...
                             'string', t{4});
             set(ui.h.ov_drpd, 'string', t{4});
             set(ui.h.pb, 'string', 'Fit', 'callback', @ui.fit_all);
-            set(ui.h.ov_controls, 'visible', 'on')
+            set(ui.h.sel_tabs, 'visible', 'on');
+            
             ui.update_infos();
             ui.update_sliders();
             ui.set_model();
+            ui.change_overlay_cond();
             ui.plot_array();
         end
 
@@ -605,7 +647,6 @@ classdef UI < handle % subclass of handle is fucking important...
             z = ui.current_z;
             sample = ui.current_sa;
             param = ui.current_param;
-            fsel = ui.fit_selection(:, :, z, sample);
             if ui.disp_fit_params
                 if param > length(ui.est_params(1, 1, 1, 1, :))
                     plot_data = ui.fit_chisq;
@@ -618,21 +659,24 @@ classdef UI < handle % subclass of handle is fucking important...
                 end
                 plot_data = ui.est_params(:, :, z, sample, param);
             end
-            % plot
+            % plotting:
             % Memo to self: Don't try using HeatMaps... seriously. 
-%             axes(ui.h.axes);
-            if gcf == ui.h.f
-                set(ui.h.f, 'CurrentAxes', ui.h.axes);
+            if gcf == ui.h.f  % don't plot when figure is in background
+                set(ui.h.f, 'CurrentAxes', ui.h.axes); 
                 cla
                 hold on
                 hmap(squeeze(plot_data(:, :))');
                 if ui.overlay
-                    plot_overlay(squeeze(fsel(:,:))');
+                    switch ui.overlay
+                        case 'fit'
+                            plot_overlay(squeeze(ui.fit_selection(:, :, z, sample))');
+                        case '1'
+                            plot_overlay(squeeze(ui.selection1(:, :, z, sample))');
+                    end
                 end
                 hold off
 
                 if min(min(plot_data(~isnan(plot_data)))) < max(max(plot_data(~isnan(plot_data))))
-    %                 axes(ui.h.legend);
                     set(ui.h.f, 'CurrentAxes', ui.h.legend);
                     l_data = min(min(plot_data)):(max(max(plot_data))-min(min(plot_data)))/20:max(max(plot_data));
                     cla
@@ -760,14 +804,17 @@ classdef UI < handle % subclass of handle is fucking important...
                         end
                     end
                 case 'alt'
-                    if ~strcmp(ui.fileinfo.path, '') && get(ui.h.ov_switch, 'value') 
+                    if ~strcmp(ui.fileinfo.path, '')
                         cp = get(ui.h.axes, 'CurrentPoint');
                         cp = round(cp(1, 1:2));
                         if sum(ui.data(cp(1), cp(2), ui.current_z, ui.current_sa, :))
-                            if ui.fit_selection(cp(1), cp(2), ui.current_z, ui.current_sa) == 0
-                                ui.fit_selection(cp(1), cp(2), ui.current_z, ui.current_sa) = 1;
-                            else
-                                ui.fit_selection(cp(1), cp(2), ui.current_z, ui.current_sa) = 0;
+                            switch ui.overlay
+                                case 'fit'
+                                    ui.fit_selection(cp(1), cp(2), ui.current_z, ui.current_sa) = ...
+                                       ~ui.fit_selection(cp(1), cp(2), ui.current_z, ui.current_sa);
+                                case '1'
+                                    ui.selection1(cp(1), cp(2), ui.current_z, ui.current_sa) = ...
+                                       ~ui.selection1(cp(1), cp(2), ui.current_z, ui.current_sa);
                             end
                         end
                     end
@@ -876,8 +923,20 @@ classdef UI < handle % subclass of handle is fucking important...
         end
         
         function toggle_overlay(ui, varargin)
-            ui.change_overlay_cond();
-            ui.overlay = ~ui.overlay;
+            switch varargin{1} 
+                case ui.h.ov_switch
+                    ov = 'fit';
+                    set(ui.h.sel_switch, 'Value', 0);
+                case ui.h.sel_switch
+                    ov = '1';
+                    set(ui.h.ov_switch, 'Value', 0);
+            end
+            if ui.overlay == ov
+                ui.overlay = false;
+            else
+                ui.overlay = ov;
+            end
+            
             ui.plot_array();
         end
         
@@ -954,6 +1013,10 @@ classdef UI < handle % subclass of handle is fucking important...
             
             set(ui.h.pb, 'string', 'Fit', 'callback', @ui.fit_all);
         end
+        
+        function plot_selection(ui, varargin)
+            UIGroupPlot(ui);
+        end
     end
     
     methods (Static=true)
@@ -987,6 +1050,7 @@ classdef UI < handle % subclass of handle is fucking important...
 end
 
 function plot_overlay(data)
+    opengl software;
     [m, n] = size(data);
     image = ones(m, n, 3);
     image(:, :, 1) = (image(:, :, 1) - data);
@@ -999,6 +1063,7 @@ function plot_overlay(data)
 end
 
 function hmap(data, grid, cmap)
+    opengl software;
     if nargin < 3
         cmap = 'summer';
         if nargin < 2
@@ -1019,4 +1084,6 @@ function hmap(data, grid, cmap)
         end
         hold off
     end
+        opengl software;
+
 end
