@@ -2,6 +2,10 @@ classdef UI < handle % subclass of handle is fucking important...
     %UI 
     
     properties
+        %%%%%%% for debugging
+        gplt
+        %%%%%%%        
+        
         % fileinfo (dims, path, ...)
         fileinfo = struct('path', '', 'size', [0 0 0 0],...
                           'name', '', 'np', 0); 
@@ -660,7 +664,7 @@ classdef UI < handle % subclass of handle is fucking important...
                 plot_data = ui.est_params(:, :, z, sample, param);
             end
             % plotting:
-            % Memo to self: Don't try using HeatMaps... seriously. 
+            % Memo to self: Don't try using HeatMaps... seriously.
             if gcf == ui.h.f  % don't plot when figure is in background
                 set(ui.h.f, 'CurrentAxes', ui.h.axes); 
                 cla
@@ -1015,7 +1019,7 @@ classdef UI < handle % subclass of handle is fucking important...
         end
         
         function plot_selection(ui, varargin)
-            UIGroupPlot(ui);
+            ui.gplt = UIGroupPlot(ui);
         end
     end
     
@@ -1063,7 +1067,6 @@ function plot_overlay(data)
 end
 
 function hmap(data, grid, cmap)
-    opengl software;
     if nargin < 3
         cmap = 'summer';
         if nargin < 2
@@ -1084,6 +1087,4 @@ function hmap(data, grid, cmap)
         end
         hold off
     end
-        opengl software;
-
 end

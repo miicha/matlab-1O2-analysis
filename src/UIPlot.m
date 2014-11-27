@@ -46,12 +46,8 @@ classdef UIPlot < handle
             plt.channel_width = ui.channel_width;
             
             plt.est_params = squeeze(ui.est_params(plt.cp(1), plt.cp(2), plt.cp(3), plt.cp(4), :));
-%             plt.fit_params = squeeze(ui.fit_params(plt.cp(1), plt.cp(2), plt.cp(3), plt.cp(4), :));
-%             plt.fit_params_err = squeeze(ui.fit_params_err(plt.cp(1), plt.cp(2), plt.cp(3), plt.cp(4), :));
-
 
             plt.model_str = ui.model;
-
 
             %% initialize UI objects
             
