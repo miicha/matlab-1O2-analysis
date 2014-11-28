@@ -415,6 +415,12 @@ classdef UI < handle % subclass of handle is fucking important...
             info = h5info(ui.fileinfo.path, '/0/0/0/sisa');
             ui.fileinfo.size(4) = length(info.Datasets);
             
+            % read Channel Width
+            try
+                chanWidth=h5readatt(ui.fileinfo.path, '/META/SISA', 'Channel Width (ns)');
+                ui.channel_width=single(chanWidth)/1000;
+            end
+            
             % get attributes from file
             fin = h5readatt(ui.fileinfo.path, '/PATH/DATA', 'LAST POINT');
             if  strcmp(fin{:}, 'CHECKPOINT')
