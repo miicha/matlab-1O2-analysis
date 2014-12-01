@@ -185,7 +185,7 @@ classdef UIPlot < handle
             
             axes(plt.h.axes);
             hold on
-            plot(plt.x_data,  fitdata, 'r', 'LineWidth', 2);
+            plot(plt.x_data,  fitdata, 'r', 'LineWidth', 2, 'HitTest', 'off');
             hold off
             
             axes(plt.h.res);

@@ -4,6 +4,7 @@ classdef UI < handle % subclass of handle is fucking important...
     properties
         %%%%%%% for debugging
         gplt
+        plt
         %%%%%%%        
         
         % fileinfo (dims, path, ...)
@@ -76,8 +77,8 @@ classdef UI < handle % subclass of handle is fucking important...
             ui.h.bottombar = uipanel();
                 ui.h.info = uicontrol(ui.h.bottombar);
                        
-            ui.h.sel_tabs = uitabgroup();
-                ui.h.fit_tab = uitab(ui.h.sel_tabs);
+            ui.h.tabs = uitabgroup();
+                ui.h.fit_tab = uitab(ui.h.tabs);
                     ui.h.fitpanel = uipanel(ui.h.fit_tab);
                         ui.h.fittxt = uicontrol(ui.h.fitpanel);
                         ui.h.drpd = uicontrol(ui.h.fitpanel);
@@ -91,7 +92,7 @@ classdef UI < handle % subclass of handle is fucking important...
                         ui.h.ov_rel = uicontrol(ui.h.ov_controls);
                         ui.h.ov_val = uicontrol(ui.h.ov_controls);
                     
-                ui.h.sel_tab = uitab(ui.h.sel_tabs);
+                ui.h.sel_tab = uitab(ui.h.tabs);
                         ui.h.sel_controls = uipanel(ui.h.sel_tab);
                         ui.h.sel_switch = uicontrol(ui.h.sel_controls);
                         ui.h.sel_btn_plot = uicontrol(ui.h.sel_controls);
@@ -241,7 +242,7 @@ classdef UI < handle % subclass of handle is fucking important...
                               'visible', 'off');          
                       
             %% tabs for switching selection modes
-            set(ui.h.sel_tabs, 'units', 'pixels',...
+            set(ui.h.tabs, 'units', 'pixels',...
                                'position', [10 28 250 550],...
                                'visible', 'off');
                            
@@ -250,10 +251,10 @@ classdef UI < handle % subclass of handle is fucking important...
             
             set(ui.h.fit,  'units', 'pixels',...
                            'style', 'push',...
-                           'position', [2 2 68 28],...
-                           'string', 'open',...
+                           'position', [2 2 80 28],...
+                           'string', 'global Fitten',...
                            'BackgroundColor', [.8 .8 .8],...
-                           'callback', @ui.open_file);
+                           'callback', @ui.fit_all);
                        
             %% overlay control
             set(ui.h.ov_controls, 'units', 'pixels',...
@@ -333,11 +334,11 @@ classdef UI < handle % subclass of handle is fucking important...
             set(ui.h.sel_tab, 'Title', 'Auswertung');
             
             set(ui.h.sel_controls, 'units', 'pixels',...
-                                   'position', [2 160 243 200])
+                                   'position', [2 360 243 100])
         
             set(ui.h.sel_switch, 'units', 'pixels',...
                              'style', 'checkbox',...
-                             'position', [15 100 80 30],...
+                             'position', [15 50 100 30],...
                              'string', 'Auswahl 1',...
                              'callback', @ui.toggle_overlay);
                          
@@ -492,8 +493,7 @@ classdef UI < handle % subclass of handle is fucking important...
             set(ui.h.param, 'visible', 'on',...
                             'string', t{4});
             set(ui.h.ov_drpd, 'string', t{4});
-            set(ui.h.fit, 'string', 'Fit', 'callback', @ui.fit_all);
-            set(ui.h.sel_tabs, 'visible', 'on')
+            set(ui.h.tabs, 'visible', 'on')
             ui.update_infos();
             ui.update_sliders();
             ui.set_model();
@@ -542,8 +542,7 @@ classdef UI < handle % subclass of handle is fucking important...
             set(ui.h.param, 'visible', 'on',...
                             'string', t{4});
             set(ui.h.ov_drpd, 'string', t{4});
-            set(ui.h.fit, 'string', 'Fit', 'callback', @ui.fit_all);
-            set(ui.h.sel_tabs, 'visible', 'on');
+            set(ui.h.tabs, 'visible', 'on');
             
             ui.update_infos();
             ui.update_sliders();
@@ -712,6 +711,14 @@ classdef UI < handle % subclass of handle is fucking important...
             ui.fitted = false;
             ui.fit_chisq = nan(ui.fileinfo.size(1), ui.fileinfo.size(2),...
                                  ui.fileinfo.size(3), ui.fileinfo.size(4));
+                             
+            % set bounds from estimated parameters
+            tmp = ui.models(ui.model);
+            tmp{3} = squeeze(max(max(max(max(max(ui.est_params,[],2),[],2),[],2),[],2),[],1))'*1.5;
+            tmp{2} = squeeze(min(min(min(min(min(ui.est_params,[],2),[],2),[],2),[],2),[],1))'*0.5;
+            ui.models(ui.model) = tmp;
+            ui.generate_bounds();
+            
             ui.update_infos();
             set(ui.h.ov_val, 'string', mean(mean(mean(mean(squeeze(ui.est_params(:, :, :, :, 1)))))));
         end
@@ -803,7 +810,7 @@ classdef UI < handle % subclass of handle is fucking important...
                         cp = get(ui.h.axes, 'CurrentPoint');
                         cp = round(cp(1, 1:2));
                         if sum(ui.data(cp(1), cp(2), ui.current_z, ui.current_sa, :))
-                            plt = UIPlot(cp, ui);
+                            ui.plt = UIPlot(cp, ui);
                         end
                     end
                 case 'alt'
@@ -923,6 +930,15 @@ classdef UI < handle % subclass of handle is fucking important...
             bP = get(ui.h.info, 'Position');
             bP(3) = fP(3);
             set(ui.h.info, 'Position', bP);
+            
+            tP = get(ui.h.tabs, 'Position');
+            tP(4) = pP(4);
+            set(ui.h.tabs, 'Position', tP);
+            
+            tmp = get(ui.h.ov_controls, 'Position');
+            tmp(2) = tP(4) - tmp(4) - 40;
+            set(ui.h.ov_controls, 'Position', tmp);
+            set(ui.h.sel_controls, 'Position', tmp);
         end
         
         function toggle_overlay(ui, varargin)
