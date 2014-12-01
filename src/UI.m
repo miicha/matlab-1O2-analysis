@@ -697,6 +697,8 @@ classdef UI < handle % subclass of handle is fucking important...
             n = ui.models(ui.model);
             ui.est_params = zeros(ui.fileinfo.size(1), ui.fileinfo.size(2),...
                               ui.fileinfo.size(3), ui.fileinfo.size(4), length(n{2}));
+            ub = zeros(length(n{2}));
+            lb = ones(length(n{2}))*100;
             p = values(ui.points);
             for i = 1:ui.fileinfo.np
                 for j = 1:ui.fileinfo.size(4)
@@ -706,6 +708,14 @@ classdef UI < handle % subclass of handle is fucking important...
                     if mod(i, round(ui.fileinfo.np/20)) == 0
                         ui.update_infos(['   |   Parameter abschätzen ' num2str(i) '/' num2str(ui.fileinfo.np) '.']);
                     end
+                    for k = 1:length(ps) % find biggest and smallest params
+                        if ps(k) > ub(k)
+                            ub(k) = ps(k);
+                        end
+                        if ps(k) < lb(k) && ps(k) ~= 0
+                            lb(k) = ps(k);
+                        end
+                    end
                 end
             end
             ui.fitted = false;
@@ -714,8 +724,8 @@ classdef UI < handle % subclass of handle is fucking important...
                              
             % set bounds from estimated parameters
             tmp = ui.models(ui.model);
-            tmp{3} = squeeze(max(max(max(max(max(ui.est_params,[],2),[],2),[],2),[],2),[],1))'*1.5;
-            tmp{2} = squeeze(min(min(min(min(min(ui.est_params,[],2),[],2),[],2),[],2),[],1))'*0.5;
+            tmp{3} = ub*1.5;
+            tmp{2} = lb*0.5;
             ui.models(ui.model) = tmp;
             ui.generate_bounds();
             

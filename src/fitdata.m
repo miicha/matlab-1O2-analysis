@@ -26,7 +26,6 @@ function [params, p_err, chisq] = fitdata(model, x, y, err, start_in, fix)
     else
         func = model{1};
     end
-    
     ft = fittype(func, 'independent', 't');
     fo = fitoptions('Method', 'NonlinearLeastSquares', 'lower', lbound,...
                     'upper', ubound, 'weights', 1./err,... % <- 1./err is important!
