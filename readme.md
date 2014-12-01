@@ -1,5 +1,19 @@
 # SiSa-Scan Auswerte-Software
 
+### Wichtig!
+Matlab wird mit Version R2014b auf ein neues Plot-Backend umgestellt. Dieses ist
+wohl allgemein viel toller und behebt bei dieser Software viele Anzeigefehler.
+Diese Matlab-Version gibts aber noch nicht von der Uni - allerdings lässt sich das
+neue Backend auch in älteren Versionen verwenden, indem Matlab mit `-hgVersion 2` 
+ausgeführt wird.
+
+Nach commit f32776dd wird nur noch mit dem neuen Backend entwickelt, also wird
+die Software ohne diese Einstellung und/oder in alten Matlab-Versionen vermtl.
+schrecklich aussehen. Die Funktionsfähigkeit sollte aber erhalten bleiben.
+
+Die Binaries laufen momentan nur mit dem alten Backend, werden also nicht ganz
+fehlerfrei sein.
+
 ## Installation
 Ist die MATLAB Compiler Runtime v8.3 (R2014a) nicht installiert,
 dann bitte den Installer von [hier](https://git.daten.tk/sebastian.pfitzner/sisa-scan-auswertung/raw/master/Deployment/SiSaScanAuswertung/for_redistribution/MyAppInstaller_web.exe)
