@@ -167,7 +167,7 @@ classdef UIPlot < handle
                       'ButtonDownFcn', @plt.plot_click, 'LineWidth', 1.5, 'LineStyle', '--');
             plt.h.offsetline = line([plt.t_offset plt.t_offset]*plt.channel_width,...
                 [0 realmax], 'Color', [0 1 1], 'ButtonDownFcn', @plt.plot_click, 'LineWidth', 1.5,...
-                'LineStyle', ':');
+                'LineStyle', '-.');
             hold off
             
             xlim([min(plt.x_data)-1 max(plt.x_data)+1]);
