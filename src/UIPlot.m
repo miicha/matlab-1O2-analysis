@@ -153,7 +153,7 @@ classdef UIPlot < handle
                 realtime = false;
             end
             datal = plt.data;
-            realmax = max(datal);
+            realmax = max(datal)*1.5;
             m = max(datal((plt.t_offset+plt.t_zero):end));
             m = m*1.1;
             
@@ -166,8 +166,8 @@ classdef UIPlot < handle
             plt.h.zeroline = line([0 0], [0 realmax], 'Color', [0 1 0],... 
                       'ButtonDownFcn', @plt.plot_click, 'LineWidth', 1.5, 'LineStyle', '--');
             plt.h.offsetline = line([plt.t_offset plt.t_offset]*plt.channel_width,...
-                [0 realmax], 'Color', [0 1 1], 'ButtonDownFcn', @plt.plot_click, 'LineWidth', 2,...
-                'LineStyle', '--');
+                [0 realmax], 'Color', [0 1 1], 'ButtonDownFcn', @plt.plot_click, 'LineWidth', 1.5,...
+                'LineStyle', ':');
             hold off
             
             xlim([min(plt.x_data)-1 max(plt.x_data)+1]);
@@ -316,8 +316,14 @@ classdef UIPlot < handle
         function plot_drag_zero(plt, varargin)
             cpoint = get(plt.h.axes, 'CurrentPoint');
             cpoint = cpoint(1, 1);
-            plt.t_zero = plt.t_zero + round(cpoint/plt.channel_width);
-            plt.x_data = ((1:length(plt.data))-plt.t_zero)'*plt.channel_width;
+            t = plt.t_zero + round(cpoint/plt.channel_width);
+            x = ((1:length(plt.data))-t)'*plt.channel_width;
+            if t <= 0
+                t = 1;
+                x = ((1:length(plt.data))-t)'*plt.channel_width;
+            end
+            plt.t_zero = t;
+            plt.x_data = x;
             plt.plotdata(true)
         end
         
@@ -361,7 +367,6 @@ classdef UIPlot < handle
             fpP(3) = fP(3) - fpP(1) - 50;
             set(plt.h.fitpanel, 'position', fpP);
         end
-
     end
     
 end
