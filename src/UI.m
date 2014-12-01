@@ -697,8 +697,8 @@ classdef UI < handle % subclass of handle is fucking important...
             n = ui.models(ui.model);
             ui.est_params = zeros(ui.fileinfo.size(1), ui.fileinfo.size(2),...
                               ui.fileinfo.size(3), ui.fileinfo.size(4), length(n{2}));
-            ub = zeros(length(n{2}));
-            lb = ones(length(n{2}))*100;
+            ub = zeros(length(n{2}), 1);
+            lb = ones(length(n{2}), 1)*100;
             p = values(ui.points);
             for i = 1:ui.fileinfo.np
                 for j = 1:ui.fileinfo.size(4)
