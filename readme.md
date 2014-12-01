@@ -1,6 +1,6 @@
 # SiSa-Scan Auswerte-Software
 
-## Wichtig!
+### Wichtig!
 Matlab wird mit Version R2014b auf ein neues Plot-Backend umgestellt. Dieses ist
 wohl allgemein viel toller und behebt bei dieser Software viele Anzeigefehler.
 Diese Matlab-Version gibts aber noch nicht von der Uni - allerdings lässt sich das
