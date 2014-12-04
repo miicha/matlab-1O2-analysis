@@ -1,6 +1,6 @@
 classdef UI < handle % subclass of handle is fucking important...
     %UI 
-    
+
     properties
         %%%%%%% for debugging only
         gplt
@@ -18,6 +18,7 @@ classdef UI < handle % subclass of handle is fucking important...
         est_params;     % estimated parameters
         fit_selection;
         selection1;
+        selection_props;
         cancel_f = false;
         model = '1. A*(exp(-t/t1)-exp(-t/t2))+offset';      % fit model, should be global  
         
@@ -51,7 +52,6 @@ classdef UI < handle % subclass of handle is fucking important...
         h = struct();        % handles
     end
 
-    
     methods
         % create new instance with basic controls
         function ui = UI(path)
@@ -94,10 +94,11 @@ classdef UI < handle % subclass of handle is fucking important...
                     
                 ui.h.sel_tab = uitab(ui.h.tabs);
                         ui.h.sel_controls = uipanel(ui.h.sel_tab);
-                        ui.h.sel_switch = uicontrol(ui.h.sel_controls);
-                        ui.h.sel_btn_plot = uicontrol(ui.h.sel_controls);
-                        ui.h.sel_btn_exp = uicontrol(ui.h.sel_controls);
-            
+                            ui.h.sel_switch = uicontrol(ui.h.sel_controls);
+                            ui.h.sel_btn_plot = uicontrol(ui.h.sel_controls);
+                            ui.h.sel_btn_exp = uicontrol(ui.h.sel_controls);
+                        
+                        ui.h.sel_values = uipanel(ui.h.sel_tab);
 
             %% Figure, menu, bottombar
             set(ui.h.f, 'units', 'pixels',...
@@ -340,17 +341,27 @@ classdef UI < handle % subclass of handle is fucking important...
                              'string', 'Auswahl 1',...
                              'callback', @ui.toggle_overlay);
                          
-             set(ui.h.sel_btn_plot, 'units', 'pixels',...
+            set(ui.h.sel_btn_plot, 'units', 'pixels',...
                              'style', 'push',...
                              'position', [15 15 50 20],...
                              'string', 'Plotten',...
                              'callback', @ui.plot_selection);
              
-             set(ui.h.sel_btn_exp, 'units', 'pixels',...
+            set(ui.h.sel_btn_exp, 'units', 'pixels',...
                              'style', 'push',...
                              'position', [65 15 70 20],...
                              'string', 'Exportieren');
                          
+            % data about the selected data
+            set(ui.h.sel_values, 'units', 'pixels',...
+                                 'position', [2 100 243 250])  
+            
+            ui.h.mean = cell(1, 1);
+            ui.h.var = cell(1, 1);
+            ui.h.par = cell(1, 1);
+            
+                                
+                                
             %% init
             
             ui.resize();
@@ -361,7 +372,7 @@ classdef UI < handle % subclass of handle is fucking important...
                 ui.openHDF5(path);
             end
         end
-        
+
         function open_file(ui, varargin)
             if ischar(varargin{1})
                 r = regexp(varargin{1}, '[/|\\]\w*\.h5');
@@ -390,7 +401,7 @@ classdef UI < handle % subclass of handle is fucking important...
             end
                 
         end
-        
+
         function openHDF5(ui)
             % get dimensions of scan, determine if scan finished
             dims = h5readatt(ui.fileinfo.path, '/PATH/DATA', 'GRID DIMENSIONS');
@@ -497,7 +508,7 @@ classdef UI < handle % subclass of handle is fucking important...
             ui.set_model();
             ui.plot_array();
         end
-        
+
         function readHDF5(ui, varargin)
             time_zero = 0;
             k = keys(ui.points);
@@ -628,7 +639,7 @@ classdef UI < handle % subclass of handle is fucking important...
                 set(ui.h.saslider, 'visible', 'off');
             end
         end
-        
+
         function update_infos(ui, text)
             pause(.0001);                    
             if nargin < 2
@@ -690,7 +701,7 @@ classdef UI < handle % subclass of handle is fucking important...
                 end
             end
         end
-        
+
         function estimate_parameters(ui)
             n = ui.models(ui.model);
             ui.est_params = zeros(ui.fileinfo.size(1), ui.fileinfo.size(2),...
@@ -730,7 +741,7 @@ classdef UI < handle % subclass of handle is fucking important...
             ui.update_infos();
             set(ui.h.ov_val, 'string', mean(mean(mean(mean(squeeze(ui.est_params(:, :, :, :, 1)))))));
         end
-        
+
         function fit_all(ui, varargin)
             if get(ui.h.ov_switch, 'value')
                 ma = length(find(ui.fit_selection));
@@ -785,7 +796,7 @@ classdef UI < handle % subclass of handle is fucking important...
             ui.fitted = true;
             ui.update_infos();
         end
-        
+
         function set_model(ui, varargin)
             t = keys(ui.models);
             if isKey(ui.models, varargin)
@@ -809,7 +820,7 @@ classdef UI < handle % subclass of handle is fucking important...
             set(ui.h.ov_drpd, 'string', t{4});
         end
     end
-    
+
     methods (Access = private)
         function aplot_click(ui, varargin)
             switch get(ui.h.f, 'SelectionType')
@@ -833,13 +844,16 @@ classdef UI < handle % subclass of handle is fucking important...
                                 case '1'
                                     ui.selection1(cp(1), cp(2), ui.current_z, ui.current_sa) = ...
                                        ~ui.selection1(cp(1), cp(2), ui.current_z, ui.current_sa);
+                                    ui.selection_props.mean = mean(mean(ui.fit_params(:,:,ui.current_z, ui.current_sa,:), 1), 2);
+                                    ui.selection_props.var = var(var(ui.fit_params(:,:,ui.current_z, ui.current_sa,:), [], 1), [], 2);
+                                    ui.generate_sel_vals();
                             end
                         end
                     end
                     ui.plot_array();
             end
         end
-        
+
         function change_par_source(ui, varargin)
             ov = get(varargin{2}.OldValue, 'String');
             nv = get(varargin{2}.NewValue, 'String');
@@ -852,7 +866,7 @@ classdef UI < handle % subclass of handle is fucking important...
                 ui.plot_array();
             end
         end
-        
+
         function reset_instance(ui)
             if ui.file_opened
                 clear('ui.data', 'ui.points');
@@ -871,7 +885,7 @@ classdef UI < handle % subclass of handle is fucking important...
             end
             ui.file_opened = 1;
         end
-                
+
         function set_bounds(ui, varargin)
             m = ui.models(ui.model);
             for i = 1:length(m{4});
@@ -880,7 +894,7 @@ classdef UI < handle % subclass of handle is fucking important...
             end
             ui.models(ui.model) = m;
         end
-        
+
         function resize(ui, varargin)
             % resize elements in figure to match window size
             fP = get(ui.h.f, 'Position');
@@ -948,7 +962,7 @@ classdef UI < handle % subclass of handle is fucking important...
             set(ui.h.ov_controls, 'Position', tmp);
             set(ui.h.sel_controls, 'Position', tmp);
         end
-        
+
         function toggle_overlay(ui, varargin)
             switch varargin{1} 
                 case ui.h.ov_switch
@@ -966,7 +980,7 @@ classdef UI < handle % subclass of handle is fucking important...
             
             ui.plot_array();
         end
-        
+
         function change_overlay_cond(ui, varargin)
             switch get(ui.h.ov_rel, 'value')
                 case 1
@@ -1000,7 +1014,7 @@ classdef UI < handle % subclass of handle is fucking important...
             end
             ui.plot_array();
         end
-        
+
         function generate_bounds(ui)
             m = ui.models(ui.model);
             n = length(m{4});
@@ -1026,7 +1040,7 @@ classdef UI < handle % subclass of handle is fucking important...
                                                     'position', [115 155-i*23-10 45 20],...
                                                     'callback', @ui.set_bounds,...
                                                     'BackgroundColor', [1 1 1]);
-                ui.h.n{i} = uicontrol(ui.h.bounds, 'units', 'pixels',...
+                ui.h.n{i} = uicontrol(ui.h.bounds,  'units', 'pixels',...
                                                     'style', 'text',...
                                                     'string', m{4}{i},...
                                                     'horizontalAlignment', 'left',...
@@ -1034,17 +1048,48 @@ classdef UI < handle % subclass of handle is fucking important...
             end
         end
         
+        function generate_sel_vals(ui)
+            m = ui.models(ui.model);
+            n = length(m{4});
+
+            for i = 1:length(ui.h.mean)
+                delete(ui.h.mean{i});
+                delete(ui.h.var{i});
+                delete(ui.h.par{i});
+            end 
+            ui.h.mean = cell(n, 1);
+            ui.h.var = cell(n, 1);
+            ui.h.par = cell(n, 1);
+            for i = 1:n
+                ui.h.lb{i} = uicontrol(ui.h.sel_values, 'units', 'pixels',...
+                                                    'style', 'text',...
+                                                    'string', sprintf('%1.2f', ui.selection_props.mean(i)),...
+                                                    'position', [55 155-i*23-10 45 20],...
+                                                    'BackgroundColor', [1 1 1]);
+                ui.h.ub{i} = uicontrol(ui.h.sel_values, 'units', 'pixels',...
+                                                    'style', 'text',...
+                                                    'string', sprintf('%1.2f', ui.selection_props.var(i)),...
+                                                    'position', [115 155-i*23-10 45 20],...
+                                                    'BackgroundColor', [1 1 1]);
+                ui.h.n{i} = uicontrol(ui.h.sel_values,  'units', 'pixels',...
+                                                    'style', 'text',...
+                                                    'string', m{4}{i},...
+                                                    'horizontalAlignment', 'left',...
+                                                    'position', [15 155-i*23-14 40 20]);
+            end
+        end
+
         function cancel_fit(ui, varargin)
             ui.cancel_f = true;
             
             set(ui.h.fit, 'string', 'Fit', 'callback', @ui.fit_all);
         end
-        
+
         function plot_selection(ui, varargin)
             ui.gplt = UIGroupPlot(ui);
         end
     end
-    
+
     methods (Static=true)
         function [param] = estimate_parameters_p(d, model, t_zero, t_offset, cw)
             switch model
@@ -1072,7 +1117,6 @@ classdef UI < handle % subclass of handle is fucking important...
             end
         end
     end
-    
 end
 
 function plot_overlay(data)
