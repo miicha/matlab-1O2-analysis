@@ -862,14 +862,19 @@ classdef UI < handle % subclass of handle is fucking important...
                         if sum(ui.data(cp(1), cp(2), ui.current_z, ui.current_sa, :))
                             switch ui.overlay
                                 case 'fit'
-                                    ui.fit_selection(cp(1), cp(2), ui.current_z, ui.current_sa) = ...
+                                   ui.fit_selection(cp(1), cp(2), ui.current_z, ui.current_sa) = ...
                                        ~ui.fit_selection(cp(1), cp(2), ui.current_z, ui.current_sa);
                                 case '1'
-                                    ui.selection1(cp(1), cp(2), ui.current_z, ui.current_sa) = ...
+                                   ui.selection1(cp(1), cp(2), ui.current_z, ui.current_sa) = ...
                                        ~ui.selection1(cp(1), cp(2), ui.current_z, ui.current_sa);
-                                    ui.selection_props.mean = mean(mean(ui.fit_params(:,:,ui.current_z, ui.current_sa,:), 1), 2);
-                                    ui.selection_props.var = var(var(ui.fit_params(:,:,ui.current_z, ui.current_sa,:), [], 1), [], 2);
-                                    ui.generate_sel_vals();
+                                   s = size(ui.fit_params);
+                                   sel = find(ui.selection1);
+                                   for i = 1:s(end)
+                                       fp = squeeze(ui.fit_params(:, :, :, :, i));
+                                       ui.selection_props.mean(i) = mean(fp(sel));
+                                       ui.selection_props.var(i) = var(fp(sel));
+                                   end
+                                   ui.generate_sel_vals();
                             end
                         end
                     end
@@ -1070,7 +1075,7 @@ classdef UI < handle % subclass of handle is fucking important...
                                                     'position', [15 155-i*23-14 40 20]);
             end
         end
-        
+
         function generate_sel_vals(ui)
             m = ui.models(ui.model);
             n = length(m{4});
@@ -1110,8 +1115,9 @@ classdef UI < handle % subclass of handle is fucking important...
 
         function plot_selection(ui, varargin)
             ui.gplt = UIGroupPlot(ui);
+            ui.generate_sel_vals();
         end
-        
+
         function save_fig(ui, varargin)
             x = ui.fileinfo.size(1);
             y = ui.fileinfo.size(2);
@@ -1138,7 +1144,7 @@ classdef UI < handle % subclass of handle is fucking important...
             print(ui.h.plot_pre, '-dpdf', '-r600', [ui.fileinfo.name '_arrayplot.pdf']);
             close(ui.h.plot_pre)
         end
-        
+
         function generate_export_fig(ui, varargin)
             if ~isempty(varargin) && isvalid(varargin{1})
                 vis = 'on';
