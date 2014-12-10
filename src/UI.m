@@ -93,13 +93,17 @@ classdef UI < handle % subclass of handle is fucking important...
                         ui.h.ov_val = uicontrol(ui.h.ov_controls);
                     
                 ui.h.sel_tab = uitab(ui.h.tabs);
-                        ui.h.sel_controls = uipanel(ui.h.sel_tab);
-                            ui.h.sel_switch = uicontrol(ui.h.sel_controls);
-                            ui.h.sel_btn_plot = uicontrol(ui.h.sel_controls);
-                            ui.h.sel_btn_exp = uicontrol(ui.h.sel_controls);
-                        
-                        ui.h.sel_values = uipanel(ui.h.sel_tab);
+                    ui.h.sel_controls = uipanel(ui.h.sel_tab);
+                        ui.h.sel_switch = uicontrol(ui.h.sel_controls);
+                        ui.h.sel_btn_plot = uicontrol(ui.h.sel_controls);
+                        ui.h.sel_btn_exp = uicontrol(ui.h.sel_controls);
 
+                    ui.h.sel_values = uipanel(ui.h.sel_tab);
+                        
+                ui.h.pres_tab = uitab(ui.h.tabs);
+                    ui.h.savefig = uicontrol(ui.h.pres_tab);
+                    ui.h.pres_controls = uipanel(ui.h.pres_tab);                        
+                
             %% Figure, menu, bottombar
             set(ui.h.f, 'units', 'pixels',...
                         'position', [200 200 1000 600],...
@@ -352,7 +356,7 @@ classdef UI < handle % subclass of handle is fucking important...
                              'position', [65 15 70 20],...
                              'string', 'Exportieren');
                          
-            % data about the selected data
+            % info about the selected data
             set(ui.h.sel_values, 'units', 'pixels',...
                                  'position', [2 100 243 250])  
             
@@ -360,7 +364,18 @@ classdef UI < handle % subclass of handle is fucking important...
             ui.h.var = cell(1, 1);
             ui.h.par = cell(1, 1);
             
-                                
+            %% presentation
+            set(ui.h.pres_tab, 'Title', 'Darstellung');
+            
+            set(ui.h.pres_controls, 'units', 'pixels',...
+                                    'position', [2 360 243 100])
+                               
+            set(ui.h.savefig, 'units', 'pixels',...
+                              'style', 'push',...
+                              'position', [2 2 80 28],...
+                              'string', 'Plot speichern',...
+                              'BackgroundColor', [.8 .8 .8],...
+                              'callback', @ui.save_fig);
                                 
             %% init
             
@@ -1087,6 +1102,23 @@ classdef UI < handle % subclass of handle is fucking important...
 
         function plot_selection(ui, varargin)
             ui.gplt = UIGroupPlot(ui);
+        end
+        
+        function save_fig(ui, varargin)
+            dims = get(ui.h.axes, 'position');
+            f=figure();
+            set(f, 'units', 'pixels',...
+                        'position', [200 200 dims(3)+80 dims(4)+100],...
+                        'numbertitle', 'off',...
+                        'menubar', 'none',...
+                        'name', 'SISA Scan Plot',...
+                        'resize', 'off',...
+                        'Color', [.95, .95, .95]);
+                    
+            ax = copyobj(ui.h.axes, f);
+            colormap('summer');
+            colorbar();
+            save2pdf([ui.fileinfo.name '_arrayplot.pdf'], f);
         end
     end
 
