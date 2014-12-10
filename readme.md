@@ -15,7 +15,7 @@ Die Binaries laufen momentan nur mit dem alten Backend, werden also nicht ganz
 fehlerfrei sein.
 
 ## Installation
-Ist die MATLAB Compiler Runtime v8.3 (R2014a) nicht installiert,
+Ist die MATLAB Compiler Runtime v8.4 (R2014b) nicht installiert,
 dann bitte den Installer von [hier](https://git.daten.tk/sebastian.pfitzner/sisa-scan-auswertung/raw/master/Deployment/SiSaScanAuswertung/for_redistribution/MyAppInstaller_web.exe)
 herunterladen und ausführen.
 

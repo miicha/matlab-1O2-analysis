@@ -102,6 +102,7 @@ classdef UI < handle % subclass of handle is fucking important...
                         
                 ui.h.pres_tab = uitab(ui.h.tabs);
                     ui.h.savefig = uicontrol(ui.h.pres_tab);
+                    ui.h.prevfig = uicontrol(ui.h.pres_tab);
                     ui.h.pres_controls = uipanel(ui.h.pres_tab);                        
                 
             %% Figure, menu, bottombar
@@ -376,6 +377,13 @@ classdef UI < handle % subclass of handle is fucking important...
                               'string', 'Plot speichern',...
                               'BackgroundColor', [.8 .8 .8],...
                               'callback', @ui.save_fig);
+                          
+            set(ui.h.prevfig, 'units', 'pixels',...
+                              'style', 'push',...
+                              'position', [92 2 80 28],...
+                              'string', 'Vorschau',...
+                              'BackgroundColor', [.8 .8 .8],...
+                              'callback', @ui.generate_export_fig);
                                 
             %% init
             
@@ -773,8 +781,8 @@ classdef UI < handle % subclass of handle is fucking important...
             % set cancel button:
             set(ui.h.fit, 'string', 'Abbrechen', 'callback', @ui.cancel_fit);
 
-            ui.fit_params = zeros(size(ui.est_params));
-            ui.fit_params_err = zeros(size(ui.est_params));
+            ui.fit_params = nan(size(ui.est_params));
+            ui.fit_params_err = nan(size(ui.est_params));
             n = 0;
             for i = 1:ui.fileinfo.size(1)
                 for j = 1:ui.fileinfo.size(2)
@@ -807,7 +815,7 @@ classdef UI < handle % subclass of handle is fucking important...
                 end
             end
             
-            set(ui.h.fit, 'string', 'Fit', 'callback', @ui.fit_all);
+            set(ui.h.fit, 'string', 'global Fitten', 'callback', @ui.fit_all);
             ui.fitted = true;
             ui.update_infos();
         end
@@ -1105,21 +1113,76 @@ classdef UI < handle % subclass of handle is fucking important...
         end
         
         function save_fig(ui, varargin)
-            dims = get(ui.h.axes, 'position');
-            f=figure();
-            set(f, 'units', 'pixels',...
-                        'position', [200 200 dims(3)+80 dims(4)+100],...
-                        'numbertitle', 'off',...
-                        'menubar', 'none',...
-                        'name', 'SISA Scan Plot',...
-                        'resize', 'off',...
-                        'Color', [.95, .95, .95]);
-                    
-            ax = copyobj(ui.h.axes, f);
+            x = ui.fileinfo.size(1);
+            y = ui.fileinfo.size(2);
+
+            if x > y
+                d = x;
+            else
+                d = y;
+            end
+
+            scale = 1000/d;
+
+            x_pix = x*scale;
+            y_pix = y*scale;
+            
+            tmp = get(ui.h.axes, 'position');
+            
+            ui.generate_export_fig();
+
+            % save the plot and close the figure
+            set(ui.h.plot_pre, 'PaperUnits', 'points');
+            set(ui.h.plot_pre, 'PaperSize', [x_pix+80 y_pix+80]/1.5);
+            set(ui.h.plot_pre, 'PaperPosition', [tmp(1)*0.5 tmp(2)*0.5 x_pix*1.1 y_pix*1.1]/1.5);
+            print(ui.h.plot_pre, '-dpdf', '-r600', [ui.fileinfo.name '_arrayplot.pdf']);
+            close(ui.h.plot_pre)
+        end
+        
+        function generate_export_fig(ui, varargin)
+            if ~isempty(varargin) && isvalid(varargin{1})
+                vis = 'on';
+            else
+                vis = 'off';
+            end
+            
+            x = ui.fileinfo.size(1);
+            y = ui.fileinfo.size(2);
+
+            if x > y
+                d = x;
+            else
+                d = y;
+            end
+
+            scale = 1000/d;
+
+            x_pix = x*scale;
+            y_pix = y*scale;
+            
+            tmp = get(ui.h.axes, 'position');
+            
+            ui.h.plot_pre = figure('visible', vis);
+            f_pos = get(ui.h.f, 'Position');
+            set(ui.h.plot_pre, 'units', 'pixels',...
+                   'position', [f_pos(1)+30 f_pos(2)+80 x_pix+80 y_pix+100],...
+                   'numbertitle', 'off',...
+                   'menubar', 'none',...
+                   'name', 'SISA Scan Vorschau',...
+                   'resize', 'off',...
+                   'Color', [.95, .95, .95]);
+
+            ax = copyobj(ui.h.axes, ui.h.plot_pre);
+            set(ax, 'position', [tmp(1) tmp(2) x_pix y_pix],...
+                    'XColor', 'black',...
+                    'YColor', 'black');
+            xlabel('X')
+            ylabel('Y')
+            set(ax, 'xtick', 0:x, 'ytick', 0:y);
             colormap('summer');
             colorbar();
-            save2pdf([ui.fileinfo.name '_arrayplot.pdf'], f);
         end
+        
     end
 
     methods (Static=true)
