@@ -3,9 +3,10 @@
 ### Wichtig!
 Matlab wird mit Version R2014b auf ein neues Plot-Backend umgestellt. Dieses ist
 wohl allgemein viel toller und behebt bei dieser Software viele Anzeigefehler.
-Diese Matlab-Version gibts aber noch nicht von der Uni - allerdings lässt sich das
-neue Backend auch in älteren Versionen verwenden, indem Matlab mit `-hgVersion 2` 
-ausgeführt wird.
+Bei Matlab R2014a lässt sich das neue Backend auch verwenden, indem Matlab mit 
+`-hgVersion 2` ausgeführt wird.
+
+Sonst einfach die R2014b installieren und alles ist gut.
 
 Nach commit f32776dd wird nur noch mit dem neuen Backend entwickelt, also wird
 die Software ohne diese Einstellung und/oder in alten Matlab-Versionen vermtl.
