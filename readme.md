@@ -30,4 +30,4 @@ Nach commit f32776dd wird nur noch mit dem neuen Backend entwickelt, also wird
 die Software ohne diese Einstellung und/oder in alten Matlab-Versionen vermtl.
 schrecklich aussehen. Die Funktionsfähigkeit sollte aber erhalten bleiben.
 
-Die Binaries sind ab Basti f79c56c3 mit R2014b kompiliert.
+Die Binaries sind ab f79c56c3 mit R2014b kompiliert.
