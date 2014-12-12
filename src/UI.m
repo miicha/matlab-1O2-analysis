@@ -11,6 +11,7 @@ classdef UI < handle % subclass of handle is fucking important...
         fileinfo = struct('path', '', 'size', [0 0 0 0],...
                           'name', '', 'np', 0); 
         data;       % source data from HDF5
+        scale = [0.1 0.1];          % distance between to pixels in mm
         x_data;          % time data
         fit_params;     % fit params, size(params) = [x y z length(fitparams)]
         fit_params_err;
@@ -37,6 +38,7 @@ classdef UI < handle % subclass of handle is fucking important...
         points;
         data_read = false;
         fitted = false;
+        cmap = 'summer';
         
         models = containers.Map(...
                  {'1. A*(exp(-t/t1)-exp(-t/t2))+offset'...
@@ -103,7 +105,13 @@ classdef UI < handle % subclass of handle is fucking important...
                 ui.h.pres_tab = uitab(ui.h.tabs);
                     ui.h.savefig = uicontrol(ui.h.pres_tab);
                     ui.h.prevfig = uicontrol(ui.h.pres_tab);
-                    ui.h.pres_controls = uipanel(ui.h.pres_tab);                        
+                    ui.h.pres_controls = uipanel(ui.h.pres_tab);
+                        ui.h.colormap_drpd_text = uicontrol(ui.h.pres_controls);
+                        ui.h.colormap_drpd = uicontrol(ui.h.pres_controls);
+                        ui.h.scale_x_text = uicontrol(ui.h.pres_controls);
+                        ui.h.scale_x = uicontrol(ui.h.pres_controls);
+                        ui.h.scale_y_text = uicontrol(ui.h.pres_controls);
+                        ui.h.scale_y = uicontrol(ui.h.pres_controls);
                 
             %% Figure, menu, bottombar
             set(ui.h.f, 'units', 'pixels',...
@@ -273,11 +281,11 @@ classdef UI < handle % subclass of handle is fucking important...
                                 'callback', @ui.toggle_overlay);
                          
             set(ui.h.ov_drpd, 'units', 'pixels',...
-                             'style', 'popupmenu',...
-                             'position', [35 25 60 30],...
-                             'string', {''},...
-                             'callback', @ui.change_overlay_cond,...
-                             'BackgroundColor', [1 1 1]);
+                              'style', 'popupmenu',...
+                              'position', [35 25 60 30],...
+                              'string', {''},...
+                              'callback', @ui.change_overlay_cond,...
+                              'BackgroundColor', [1 1 1]);
                          
             set(ui.h.ov_rel, 'units', 'pixels',...
                              'style', 'popupmenu',...
@@ -369,7 +377,7 @@ classdef UI < handle % subclass of handle is fucking important...
             set(ui.h.pres_tab, 'Title', 'Darstellung');
             
             set(ui.h.pres_controls, 'units', 'pixels',...
-                                    'position', [2 360 243 100])
+                                    'position', [2 50 243 400])
                                
             set(ui.h.savefig, 'units', 'pixels',...
                               'style', 'push',...
@@ -384,6 +392,31 @@ classdef UI < handle % subclass of handle is fucking important...
                               'string', 'Vorschau',...
                               'BackgroundColor', [.8 .8 .8],...
                               'callback', @ui.generate_export_fig);
+                          
+            set(ui.h.colormap_drpd_text, 'units', 'pixels',...
+                                         'style', 'text',...
+                                         'string', 'Colormap:',...
+                                         'horizontalAlignment', 'left',...
+                                         'position', [10, 282, 50, 25]);
+                          
+            set(ui.h.colormap_drpd, 'units', 'pixels',...
+                                    'style', 'popupmenu',...
+                                    'position', [80, 300, 80, 10],...
+                                    'string', {'parula', 'jet', 'hsv',...
+                                               'hot', 'cool', 'spring',...
+                                               'summer', 'autumn', 'winter',...
+                                               'gray', 'bone', 'copper',...
+                                               'pink'},...
+                                    'value', 7,...
+                                    'callback', @ui.set_cmap);
+            
+%             set(ui.h.scale_x_text, );
+%             
+%             set(ui.h.scale_x, );
+%             
+%             set(ui.h.scale_y_text, );
+%             
+%             set(ui.h.scale_y, );
                                 
             %% init
             
@@ -683,7 +716,7 @@ classdef UI < handle % subclass of handle is fucking important...
             param = ui.current_param;
             if ui.disp_fit_params
                 if param > length(ui.est_params(1, 1, 1, 1, :))
-                    plot_data = ui.fit_chisq;
+                    plot_data = ui.fit_chisq(:, :, z, sample);
                 else
                     plot_data = ui.fit_params(:, :, z, sample, param);
                 end
@@ -699,7 +732,7 @@ classdef UI < handle % subclass of handle is fucking important...
                 set(ui.h.f, 'CurrentAxes', ui.h.axes); 
                 cla
                 hold on
-                hmap(squeeze(plot_data(:, :))');
+                hmap(squeeze(plot_data(:, :))', false, ui.cmap);
                 if ui.overlay
                     switch ui.overlay
                         case 'fit'
@@ -715,7 +748,7 @@ classdef UI < handle % subclass of handle is fucking important...
                     l_data = min(min(plot_data)):(max(max(plot_data))-min(min(plot_data)))/20:max(max(plot_data));
                     cla
                     hold on
-                    hmap(l_data);
+                    hmap(l_data, false, ui.cmap);
                     hold off
                     xlim([.5 length(l_data)+.5])
                     set(ui.h.legend, 'visible', 'on');
@@ -782,6 +815,7 @@ classdef UI < handle % subclass of handle is fucking important...
             set(ui.h.fit, 'string', 'Abbrechen', 'callback', @ui.cancel_fit);
 
             ui.fit_params = nan(size(ui.est_params));
+            ui.fit_chisq = nan(size(ui.est_params(:,:,:,:)));
             ui.fit_params_err = nan(size(ui.est_params));
             n = 0;
             for i = 1:ui.fileinfo.size(1)
@@ -921,6 +955,12 @@ classdef UI < handle % subclass of handle is fucking important...
                 m{3}(i) = str2double(get(ui.h.ub{i}, 'string'));
             end
             ui.models(ui.model) = m;
+        end
+        
+        function set_cmap(ui, varargin)
+            cmaps = get(ui.h.colormap_drpd, 'string'); 
+            ui.cmap = cmaps{get(ui.h.colormap_drpd, 'value')};
+            ui.plot_array();
         end
 
         function resize(ui, varargin)
@@ -1161,10 +1201,10 @@ classdef UI < handle % subclass of handle is fucking important...
                 d = y;
             end
 
-            scale = 1000/d;
+            scale_pix = 800/d;  % max width or height of the axes
 
-            x_pix = x*scale;
-            y_pix = y*scale;
+            x_pix = x*scale_pix;
+            y_pix = y*scale_pix;
             
             tmp = get(ui.h.axes, 'position');
             
@@ -1182,13 +1222,14 @@ classdef UI < handle % subclass of handle is fucking important...
             set(ax, 'position', [tmp(1) tmp(2) x_pix y_pix],...
                     'XColor', 'black',...
                     'YColor', 'black');
-            xlabel('X')
-            ylabel('Y')
-            set(ax, 'xtick', 0:x, 'ytick', 0:y);
-            colormap('summer');
+            xlabel('X [mm]')
+            ylabel('Y [mm]')
+            set(ax, 'xtick', 0:x, 'ytick', 0:y,...
+                    'xticklabel', num2cell((0:x)*ui.scale(1)),...
+                    'yticklabel', num2cell((0:y)*ui.scale(2)));
+            colormap(ui.cmap);
             colorbar();
         end
-        
     end
 
     methods (Static=true)
