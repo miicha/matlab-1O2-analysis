@@ -1168,10 +1168,10 @@ classdef UI < handle % subclass of handle is fucking important...
                 d = y;
             end
 
-            scale = 1000/d;
+            pix_scale = 1000/d;
 
-            x_pix = x*scale;
-            y_pix = y*scale;
+            x_pix = x*pix_scale;
+            y_pix = y*pix_scale;
             
             tmp = get(ui.h.axes, 'position');
             
@@ -1206,12 +1206,20 @@ classdef UI < handle % subclass of handle is fucking important...
             x_pix = x*scale_pix;
             y_pix = y*scale_pix;
             
-            tmp = get(ui.h.axes, 'position');
+
             
-            ui.h.plot_pre = figure('visible', vis);
-            f_pos = get(ui.h.f, 'Position');
+            tmp = get(ui.h.axes, 'position');
+            if isfield(ui.h, 'plot_pre') && ishandle(ui.h.plot_pre)
+                figure(ui.h.plot_pre);
+                clf();
+                windowpos = get(ui.h.plot_pre, 'position');
+            else
+                ui.h.plot_pre = figure('visible', vis);
+                screensize = get(0, 'ScreenSize');
+                windowpos = [screensize(3)-(x_pix+100) screensize(4)-(y_pix+150)  x_pix+80 y_pix+100];
+            end
             set(ui.h.plot_pre, 'units', 'pixels',...
-                   'position', [f_pos(1)+30 f_pos(2)+80 x_pix+80 y_pix+100],...
+                   'position', windowpos,...
                    'numbertitle', 'off',...
                    'menubar', 'none',...
                    'name', 'SISA Scan Vorschau',...
