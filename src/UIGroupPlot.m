@@ -8,6 +8,8 @@ classdef UIGroupPlot
         x_size
         y_size
         data
+        params
+        model_fun
         h = struct()           % handles
     end
     
@@ -21,6 +23,11 @@ classdef UIGroupPlot
             gplt.y_size = max(gplt.y_pos) - min(gplt.y_pos) + 1;
             
             gplt.data = squeeze(ui.data(:, :, ui.current_z, ui.current_sa, :));
+            gplt.params = squeeze(ui.fit_params(:, :, ui.current_z, ui.current_sa, :));
+            tmp = gplt.ui.models(gplt.ui.model);
+            gplt.model_fun =  tmp{1};
+            
+            
             
             gplt.h.f = figure();          
             
@@ -35,12 +42,19 @@ classdef UIGroupPlot
         function plot_selection(gplt)
             [indx, indy] = find(gplt.ui.selection1);
             pltdata = gplt.data(indx, indy, :);
+ 
             maxy = max(max(max(pltdata(:, :, (gplt.ui.t_zero+gplt.ui.t_offset):end))))*1.2;
             for i = 1:length(indx)
+                p = num2cell(squeeze(gplt.params(indx(i), indy(i), :)));
+                fitdata = gplt.model_fun(p{:}, gplt.ui.x_data(gplt.ui.t_zero:end));
+                
                 subplot(gplt.y_size, gplt.x_size,sub2ind([gplt.x_size, gplt.y_size],...
                         gplt.x_pos(i), 1+gplt.y_size-gplt.y_pos(i)));
                 plot(gplt.ui.x_data(gplt.ui.t_zero:end), squeeze(gplt.data(indx(i),...
                            indy(i), gplt.ui.t_zero:end)),'.');
+                hold on
+                plot(gplt.ui.x_data(gplt.ui.t_zero:end), fitdata, 'r-');
+                hold off
                 xlim([0 max(gplt.ui.x_data)])
                 ylim([0 maxy])
             end

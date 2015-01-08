@@ -117,7 +117,7 @@ classdef UIPlot < handle
                            'style', 'text',...
                            'FontSize', 9,...
                            'string', {'Chi^2/DoF:', num2str(plt.chisq)},...
-                           'position', [225 10 60 45]);
+                           'position', [223 10 62 45]);
                        
             set(plt.h.param, 'units', 'pixels',...
                              'position', [300 10 600 55]);
@@ -348,6 +348,64 @@ classdef UIPlot < handle
             plt.ui.t_zero = plt.t_zero;
             plt.ui.x_data = plt.x_data;
             plt.ui.set_model(plt.model_str);
+        end
+        
+        function save_fig(ui, varargin)
+            pix_scale = 1000/d;
+
+            x_pix = x*pix_scale;
+            y_pix = y*pix_scale;
+            
+            tmp = get(ui.h.axes, 'position');
+            
+            ui.generate_export_fig();
+
+            % save the plot and close the figure
+            set(ui.h.plot_pre, 'PaperUnits', 'points');
+            set(ui.h.plot_pre, 'PaperSize', [x_pix+80 y_pix+80]/1.5);
+            set(ui.h.plot_pre, 'PaperPosition', [tmp(1)*0.5 tmp(2)*0.5 x_pix*1.1 y_pix*1.1]/1.5);
+            print(ui.h.plot_pre, '-dpdf', '-r600', [ui.fileinfo.name '_arrayplot.pdf']);
+            close(ui.h.plot_pre)
+        end
+
+        function generate_export_fig(ui, varargin)
+            if ~isempty(varargin) && isvalid(varargin{1})
+                vis = 'on';
+            else
+                vis = 'off';
+            end
+                        
+            tmp = get(ui.h.axes, 'position');
+            if isfield(ui.h, 'plot_pre') && ishandle(ui.h.plot_pre)
+                figure(ui.h.plot_pre);
+                clf();
+                windowpos = get(ui.h.plot_pre, 'position');
+            else
+                ui.h.plot_pre = figure('visible', vis);
+                screensize = get(0, 'ScreenSize');
+                windowpos = [screensize(3)-(x_pix+100) screensize(4)-(y_pix+150)  x_pix+80 y_pix+100];
+            end
+            set(plt.h.plot_pre, 'units', 'pixels',...
+                   'position', windowpos,...
+                   'numbertitle', 'off',...
+                   'menubar', 'none',...
+                   'name', 'SISA Scan Vorschau',...
+                   'resize', 'off',...
+                   'Color', [.95, .95, .95]);
+
+            ax = copyobj(plt.h.axes, plt.h.plot_pre);
+            ax_res = copyobj(plt.h.res, plt.h.plot_pre);
+
+            set(ax, 'position', [tmp(1) tmp(2) x_pix y_pix],...
+                    'XColor', 'black',...
+                    'YColor', 'black');
+            xlabel('X [mm]')
+            ylabel('Y [mm]')
+            set(ax, 'xtick', 0:x, 'ytick', 0:y,...
+                    'xticklabel', num2cell((0:x)*ui.scale(1)),...
+                    'yticklabel', num2cell((0:y)*ui.scale(2)));
+            colormap(ui.cmap);
+            colorbar();
         end
     end
     
