@@ -764,6 +764,8 @@ classdef UI < handle % subclass of handle is fucking important...
         end
 
         function plot_array(ui, varargin)
+            ui.generate_mean();
+            
             z = ui.current_z;
             sample = ui.current_sa;
             param = ui.current_param;
@@ -958,16 +960,8 @@ classdef UI < handle % subclass of handle is fucking important...
                                    ui.fit_selection(cp(1), cp(2), ui.current_z, ui.current_sa) = ...
                                        ~ui.fit_selection(cp(1), cp(2), ui.current_z, ui.current_sa);
                                 case '1'
-                                   ui.selection1(cp(1), cp(2), ui.current_z, ui.current_sa) = ...
+                                    ui.selection1(cp(1), cp(2), ui.current_z, ui.current_sa) = ...
                                        ~ui.selection1(cp(1), cp(2), ui.current_z, ui.current_sa);
-                                   s = size(ui.fit_params);
-                                   sel = find(ui.selection1);
-                                   for i = 1:s(end)
-                                       fp = squeeze(ui.fit_params(:, :, :, :, i));
-                                       ui.selection_props.mean(i) = mean(fp(sel));
-                                       ui.selection_props.var(i) = std(fp(sel));
-                                   end
-                                   ui.generate_sel_vals();
                             end
                         end
                     end
@@ -984,6 +978,7 @@ classdef UI < handle % subclass of handle is fucking important...
                 else
                     ui.disp_fit_params = false;
                 end
+                ui.generate_mean();
                 ui.plot_array();
             end
         end
@@ -1213,7 +1208,7 @@ classdef UI < handle % subclass of handle is fucking important...
         end
 
         function plot_selection(ui, varargin)
-            if exist('ui.selection1')
+            if ~isnan(ui.selection1)
                 ui.gplt = UIGroupPlot(ui);
                 ui.generate_sel_vals();
             end
@@ -1300,6 +1295,21 @@ classdef UI < handle % subclass of handle is fucking important...
                 windowpos(3) = windowpos(3) + tmp2(3) + 20;
                 set(ui.h.plot_pre, 'position', windowpos);
             end
+        end
+        
+        function generate_mean(ui)
+            s = size(ui.fit_params);
+            sel = find(ui.selection1);
+            for i = 1:s(end)
+                if ui.fitted && ui.disp_fit_params
+                    fp = squeeze(ui.fit_params(:, :, :, :, i));
+                else
+                    fp = squeeze(ui.est_params(:, :, :, :, i));
+                end
+                ui.selection_props.mean(i) = mean(fp(sel));
+                ui.selection_props.var(i) = std(fp(sel));
+            end
+            ui.generate_sel_vals();
         end
         
         function set_scale_cb(ui, varargin)
