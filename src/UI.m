@@ -38,6 +38,9 @@ classdef UI < handle % subclass of handle is fucking important...
         l_min; % maximum of the current parameter over all data points
         l_max; % minimum of the current parameter over all data points
         
+        savepath;
+        savename;
+        
         points;
         data_read = false;
         fitted = false;
@@ -419,22 +422,24 @@ classdef UI < handle % subclass of handle is fucking important...
             
             set(ui.h.scale_x_text, 'units', 'pixels',...
                                    'style', 'text',...
-                                   'string', 'X-Skalierung:',...
+                                   'string', 'mm/px X:',...
                                    'horizontalAlignment', 'left',...
                                    'position', [10, 252, 80, 25]);
                                      
             set(ui.h.scale_x, 'units', 'pixels',...
                               'style', 'edit',...
+                              'callback', @ui.set_scale_cb,...
                               'position', [100, 260, 80, 20]);
             
             set(ui.h.scale_y_text, 'units', 'pixels',...
                                    'style', 'text',...
-                                   'string', 'Y-Skalierung:',...
+                                   'string', 'mm/px Y:',...
                                    'horizontalAlignment', 'left',...
                                    'position', [10, 222, 80, 25]);
 
             set(ui.h.scale_y, 'units', 'pixels',...
-                              'style', 'edit',....
+                              'style', 'edit',...
+                              'callback', @ui.set_scale_cb,...
                               'position', [100, 230, 80, 20]);
                           
             set(ui.h.path_text, 'units', 'pixels',...
@@ -446,6 +451,7 @@ classdef UI < handle % subclass of handle is fucking important...
             set(ui.h.path, 'units', 'pixels',...
                            'style', 'edit',...
                            'string', pwd,...
+                           'callback', @ui.set_savepath_cb,...
                            'position', [100, 200, 130, 20]);
                        
             set(ui.h.filename_text, 'units', 'pixels',...
@@ -457,6 +463,7 @@ classdef UI < handle % subclass of handle is fucking important...
             set(ui.h.filename, 'units', 'pixels',...
                                'style', 'edit',...
                                'string', '',...
+                               'callback', @ui.set_savename_cb,...
                                'position', [100, 170, 130, 20]);
                                 
             %% init
@@ -495,8 +502,13 @@ classdef UI < handle % subclass of handle is fucking important...
                 ui.fileinfo.name = name;
                 ui.fileinfo.path = path;
                 ui.openDIFF();
+                path = path{1};
             end
+            
             set(ui.h.filename, 'string', [ui.fileinfo.name '_plot.pdf']);
+            ui.set_scale(ui.scale);
+            ui.set_savepath(path);
+            ui.set_savename([name '_plot.pdf']);
         end
 
         function openHDF5(ui)
@@ -1216,11 +1228,6 @@ classdef UI < handle % subclass of handle is fucking important...
             else
                 d = y;
             end
-
-            pix_scale = 1000/d;
-
-            x_pix = x*pix_scale;
-            y_pix = y*pix_scale;
                       
             ui.generate_export_fig();
             tmp = get(ui.h.plot_pre, 'position');
@@ -1229,7 +1236,7 @@ classdef UI < handle % subclass of handle is fucking important...
             set(ui.h.plot_pre, 'PaperUnits', 'points');
             set(ui.h.plot_pre, 'PaperSize', [tmp(3) tmp(4)]*.8);
             set(ui.h.plot_pre, 'PaperPosition', [0 0 tmp(3) tmp(4)]*.8);
-            print(ui.h.plot_pre, '-dpdf', '-r600', [ui.fileinfo.name '_arrayplot.pdf']);
+            print(ui.h.plot_pre, '-dpdf', '-r600', [ui.savepath '/' ui.savename]);
             close(ui.h.plot_pre);
         end
 
@@ -1250,9 +1257,10 @@ classdef UI < handle % subclass of handle is fucking important...
             end
 
             scale_pix = 800/d;  % max width or height of the axes
-
-            x_pix = x*scale_pix;
-            y_pix = y*scale_pix;
+            scl = ui.scale./max(ui.scale);
+            
+            x_pix = x*scale_pix*scl(1);
+            y_pix = y*scale_pix*scl(2);
             
             tmp = get(ui.h.axes, 'position');
             if isfield(ui.h, 'plot_pre') && ishandle(ui.h.plot_pre)
@@ -1292,6 +1300,55 @@ classdef UI < handle % subclass of handle is fucking important...
                 windowpos(3) = windowpos(3) + tmp2(3) + 20;
                 set(ui.h.plot_pre, 'position', windowpos);
             end
+        end
+        
+        function set_scale_cb(ui, varargin)
+            if varargin{1} == ui.h.scale_x
+                ui.set_scale([str2double(get(ui.h.scale_x, 'string')), ui.scale(2)]);
+            elseif varargin{1} == ui.h.scale_y
+                ui.set_scale([ui.scale(1), str2double(get(ui.h.scale_y, 'string'))]);
+            end
+        end
+        
+        function set_scale(ui, scl)
+            ui.scale = scl;
+            set(ui.h.scale_x, 'string', ui.scale(1));
+            set(ui.h.scale_y, 'string', ui.scale(2));
+        end
+        
+        function set_savepath_cb(ui, varargin)
+            ui.set_savepath(get(varargin{1}, 'string'));
+        end
+        
+        function set_savepath(ui, path)
+            if isdir(path)
+                set(ui.h.path, 'string', path);
+                ui.savepath = path;
+            else
+                set(ui.h.path, 'string', ui.savepath);
+                warning(['Path "' path '" not valid!']);
+            end
+        end
+        
+        function set_savename_cb(ui, varargin)
+            ui.set_savename(get(varargin{1}, 'string'));
+        end
+        
+        function set_savename(ui, name)
+            if regexp(name, '\.pdf$')
+                name = name(1:end-4);
+            end
+            while exist([ui.savepath '/' name '.pdf'], 'file')
+                [b, e] = regexp(name, '_[0-9]+$');
+                if b
+                    name = [name(1:b) num2str(str2double(name(b+1:e))+1)];
+                else
+                    name = [name '_1'];
+                end
+            end
+            name = [name '.pdf'];
+            set(ui.h.filename, 'string', name);
+            ui.savename = name;
         end
     end
 
