@@ -11,7 +11,7 @@ classdef UI < handle % subclass of handle is fucking important...
         fileinfo = struct('path', '', 'size', [0 0 0 0],...
                           'name', '', 'np', 0); 
         data;       % source data from HDF5
-        scale = [0.1 0.1];          % distance between to pixels in mm
+        scale = [5 5];          % distance between to pixels in mm
         x_data;          % time data
         fit_params;     % fit params, size(params) = [x y z length(fitparams)]
         fit_params_err;
@@ -35,6 +35,9 @@ classdef UI < handle % subclass of handle is fucking important...
         current_param = 1;
         disp_fit_params = 0;
         overlay = 0;
+        l_min; % maximum of the current parameter over all data points
+        l_max; % minimum of the current parameter over all data points
+        
         points;
         data_read = false;
         fitted = false;
@@ -716,16 +719,21 @@ classdef UI < handle % subclass of handle is fucking important...
             param = ui.current_param;
             if ui.disp_fit_params
                 if param > length(ui.est_params(1, 1, 1, 1, :))
-                    plot_data = ui.fit_chisq(:, :, z, sample);
+                    plot_data = ui.fit_chisq(:, :, :, :);
                 else
-                    plot_data = ui.fit_params(:, :, z, sample, param);
+                    plot_data = ui.fit_params(:, :, :, :, param);
                 end
             else
                 if param > length(ui.est_params(1, 1, 1, 1, :))
                     param = 1;
                 end
-                plot_data = ui.est_params(:, :, z, sample, param);
+                plot_data = ui.est_params(:, :, :, :, param);
             end
+            
+            ui.l_max = max(max(max(max(squeeze(plot_data)))));
+            ui.l_min = min(min(min(min(squeeze(plot_data)))));
+            plot_data = squeeze(plot_data(:, :, z, sample));
+            
             % plotting:
             % Memo to self: Don't try using HeatMaps... seriously.
             if gcf == ui.h.f  % don't plot when figure is in background
@@ -733,6 +741,7 @@ classdef UI < handle % subclass of handle is fucking important...
                 cla
                 hold on
                 hmap(squeeze(plot_data(:, :))', false, ui.cmap);
+                caxis([ui.l_min ui.l_max])
                 if ui.overlay
                     switch ui.overlay
                         case 'fit'
@@ -743,9 +752,9 @@ classdef UI < handle % subclass of handle is fucking important...
                 end
                 hold off
 
-                if min(min(plot_data(~isnan(plot_data)))) < max(max(plot_data(~isnan(plot_data))))
+                if ui.l_min < ui.l_max
                     set(ui.h.f, 'CurrentAxes', ui.h.legend);
-                    l_data = min(min(plot_data)):(max(max(plot_data))-min(min(plot_data)))/20:max(max(plot_data));
+                    l_data =ui.l_min:(ui.l_max-ui.l_min)/20:ui.l_max;
                     cla
                     hold on
                     hmap(l_data, false, ui.cmap);
@@ -1172,17 +1181,16 @@ classdef UI < handle % subclass of handle is fucking important...
 
             x_pix = x*pix_scale;
             y_pix = y*pix_scale;
-            
-            tmp = get(ui.h.axes, 'position');
-            
+                      
             ui.generate_export_fig();
+            tmp = get(ui.h.plot_pre, 'position');
 
             % save the plot and close the figure
             set(ui.h.plot_pre, 'PaperUnits', 'points');
-            set(ui.h.plot_pre, 'PaperSize', [x_pix+80 y_pix+80]/1.5);
-            set(ui.h.plot_pre, 'PaperPosition', [tmp(1)*0.5 tmp(2)*0.5 x_pix*1.1 y_pix*1.1]/1.5);
+            set(ui.h.plot_pre, 'PaperSize', [tmp(3) tmp(4)]*.8);
+            set(ui.h.plot_pre, 'PaperPosition', [0 0 tmp(3) tmp(4)]*.8);
             print(ui.h.plot_pre, '-dpdf', '-r600', [ui.fileinfo.name '_arrayplot.pdf']);
-            close(ui.h.plot_pre)
+            close(ui.h.plot_pre);
         end
 
         function generate_export_fig(ui, varargin)
@@ -1212,17 +1220,17 @@ classdef UI < handle % subclass of handle is fucking important...
             if isfield(ui.h, 'plot_pre') && ishandle(ui.h.plot_pre)
                 figure(ui.h.plot_pre);
                 clf();
-                windowpos = get(ui.h.plot_pre, 'position');
+                windowpos = get( ui.h.plot_pre, 'position');
             else
                 ui.h.plot_pre = figure('visible', vis);
                 screensize = get(0, 'ScreenSize');
-                windowpos = [screensize(3)-(x_pix+100) screensize(4)-(y_pix+150)  x_pix+80 y_pix+100];
+                windowpos = [screensize(3)-(x_pix+150) screensize(4)-(y_pix+150)  x_pix+80 y_pix+100];
             end
             set(ui.h.plot_pre, 'units', 'pixels',...
                    'position', windowpos,...
                    'numbertitle', 'off',...
-                   'menubar', 'none',...
                    'name', 'SISA Scan Vorschau',...
+                   'menubar', 'none',...
                    'resize', 'off',...
                    'Color', [.95, .95, .95]);
 
@@ -1232,11 +1240,20 @@ classdef UI < handle % subclass of handle is fucking important...
                     'YColor', 'black');
             xlabel('X [mm]')
             ylabel('Y [mm]')
-            set(ax, 'xtick', 0:x, 'ytick', 0:y,...
-                    'xticklabel', num2cell((0:x)*ui.scale(1)),...
-                    'yticklabel', num2cell((0:y)*ui.scale(2)));
+            set(ax, 'xtick', 1:x, 'ytick', 1:y,...
+                    'xticklabel', num2cell((0:x-1)*ui.scale(1)),...
+                    'yticklabel', num2cell((0:y-1)*ui.scale(2)));
+            caxis([ui.l_min ui.l_max]);
             colormap(ui.cmap);
-            colorbar();
+            c = colorbar();
+            set(c, 'units', 'pixels');
+            tmp2 = get(c, 'position');
+            tmp2(1) = tmp(1)+x_pix+15;
+            set(c, 'position', tmp2);
+            if tmp2(1) + tmp2(3) > windowpos(3)
+                windowpos(3) = windowpos(3) + tmp2(3) + 20;
+                set(ui.h.plot_pre, 'position', windowpos);
+            end
         end
     end
 
