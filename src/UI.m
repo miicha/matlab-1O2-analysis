@@ -100,7 +100,7 @@ classdef UI < handle
                         ui.h.bounds = uipanel(ui.h.fitpanel);
                             ui.h.bounds_txt1 = uicontrol(ui.h.bounds);
                             ui.h.bounds_txt2 = uicontrol(ui.h.bounds);
-                            ui.h.gstart = uicontrol(ui.h.bounds);
+                            ui.h.gstart_text = uicontrol(ui.h.bounds);
                             ui.h.fix_text = uicontrol(ui.h.bounds);
                             ui.h.glob_text = uicontrol(ui.h.bounds);
                     ui.h.fit = uicontrol(ui.h.fit_tab);
@@ -360,7 +360,7 @@ classdef UI < handle
                                   'string', 'obere',...
                                   'horizontalAlignment', 'left');
                               
-            set(ui.h.gstart, 'units', 'pixels',...
+            set(ui.h.gstart_text, 'units', 'pixels',...
                              'position', [150 145 50 15],...
                              'style', 'text',...
                              'string', 'Start',...
@@ -1417,8 +1417,8 @@ classdef UI < handle
             for i = 1:n
                 if get(ui.h.fix{i}, 'value') == 1
                     ind = ind + 1;
-                    if get(ui.h.gstart, 'value') ~= 1
-                        set(ui.h.gstart, 'value', 1);
+                    if get(ui.h.gst{i}, 'value') ~= 1
+                        set(ui.h.gst{i}, 'value', 1);
                     end
                     if ind == n
                         msgbox('Kann ohne freie Parameter nicht fitten.', 'Fehler', 'modal');
@@ -1428,6 +1428,7 @@ classdef UI < handle
                     ui.fix{ind} = m{4}{i};
                 end
             end
+            ui.set_gstart_cb();
         end
 
         function set_param_glob_cb(ui, varargin)
