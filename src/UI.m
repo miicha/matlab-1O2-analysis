@@ -500,7 +500,7 @@ classdef UI < handle
         function open_file(ui, varargin)
             pathsupplied = 0;
             if ischar(varargin{1}) && exist(varargin{1}, 'file')
-                r = regexp(varargin{1}, '[/|\\][\w\s]+\.[h5|diff]');
+                r = regexp(varargin{1}, '[/|\\][^\\]+\.[h5|diff]');
                 if ~isempty(r)
                     filepath = varargin{1}(1:r(end));
                     name = varargin{1}((r(end)+1):end);
