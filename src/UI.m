@@ -1,4 +1,4 @@
-classdef UI < handle % subclass of handle is fucking important...
+classdef UI < handle
     %UI 
 
     properties
@@ -62,9 +62,12 @@ classdef UI < handle % subclass of handle is fucking important...
 
     methods
         % create new instance with basic controls
-        function ui = UI(path)
+        function ui = UI(path, pos)
             %% initialize all UI objects:
             ui.h.f = figure();
+            minSize = [700 550]; 
+            
+            
             ui.h.menu = uimenu();
 
             ui.h.plotpanel = uipanel();
@@ -133,7 +136,7 @@ classdef UI < handle % subclass of handle is fucking important...
                         'resize', 'on',...
                         'Color', [.95, .95, .95],...
                         'ResizeFcn', @ui.resize);
-                    
+     
             set(ui.h.menu, 'Label', 'Datei');
             uimenu(ui.h.menu, 'label', 'Datei öffnen...',...
                               'callback', @ui.open_file);
@@ -474,48 +477,66 @@ classdef UI < handle % subclass of handle is fucking important...
                                      'string', 'überschreiben?',...
                                      'position', [70, 10, 100, 20]);
                                 
+                                 
+            %% limit size with java
+            drawnow;
+            jFrame = get(handle(ui.h.f), 'JavaFrame');
+            jWindow = jFrame.fHG2Client.getWindow;
+            tmp = java.awt.Dimension(minSize(1), minSize(2));
+            jWindow.setMinimumSize(tmp);
+            
             %% init
             
             ui.resize();
             ui.set_model();
             
-            if nargin == 1
+            if nargin == 2
+                set(ui.h.f, 'position', pos);
                 pause(.1);
-                ui.openHDF5(path);
+                ui.open_file(path);
             end
         end
 
         function open_file(ui, varargin)
-            if ischar(varargin{1})
-                r = regexp(varargin{1}, '[/|\\]\w*\.h5');
+            pathsupplied = 0;
+            if ischar(varargin{1}) && exist(varargin{1}, 'file')
+                r = regexp(varargin{1}, '[/|\\][\w\s]+\.[h5|diff]');
                 if ~isempty(r)
-                    path = varargin{1}(1:r(end));
+                    filepath = varargin{1}(1:r(end));
                     name = varargin{1}((r(end)+1):end);
+                    pathsupplied = 1;
                 end
             else
                 % get path of file from user
-                [name, path] = uigetfile({'*.h5;*.diff'}, 'HDF5-Datei auswählen', 'MultiSelect', 'on');
-                if (~ischar(name) && ~iscell(name)) || ~ischar(path) % no file selected
+                [name, filepath] = uigetfile({'*.h5;*.diff'}, 'Dateien auswählen', 'MultiSelect', 'on');
+                if (~ischar(name) && ~iscell(name)) || ~ischar(filepath) % no file selected
                     return
                 end
             end
+
+            if pathsupplied == 0
+                UI([filepath name], get(ui.h.f, 'position'));
+                close(ui.h.f);
+                delete(ui);
+                return
+            end
             
-            ui.reset_instance();
+%             ui.reset_instance();
 
             if ~iscell(name) && regexp(name, '*?.h5')
                 ui.fileinfo.name = name;
-                ui.fileinfo.path = [path name];
+                ui.fileinfo.path = [filepath name];
                 ui.openHDF5();
             else
                 ui.fileinfo.name = name;
-                ui.fileinfo.path = path;
+                ui.fileinfo.path = filepath;
                 ui.openDIFF();
-                path = path{1};
+                filepath = filepath{1};
             end
             
             set(ui.h.filename, 'string', [ui.fileinfo.name '_plot.pdf']);
             ui.set_scale(ui.scale);
-            ui.set_savepath(path);
+            ui.set_savepath(filepath);
             ui.set_savename([name '_plot.pdf']);
         end
 
@@ -927,7 +948,7 @@ classdef UI < handle % subclass of handle is fucking important...
             t = keys(ui.models);
             if isKey(ui.models, varargin)
                 str = varargin{:};
-                set(ui.h.drpd, 'value', find(strcmp(t, str)));
+                set(ui.h.drpd, 'value', find(strcmp(t, str))); % find the caller
             else
                 str = t{get(ui.h.drpd, 'value')};
             end
@@ -1010,34 +1031,10 @@ classdef UI < handle % subclass of handle is fucking important...
             ui.file_opened = 1;
         end
 
-        function set_bounds(ui, varargin)
-            m = ui.models(ui.model);
-            for i = 1:length(m{4});
-                m{2}(i) = str2double(get(ui.h.lb{i}, 'string'));
-                m{3}(i) = str2double(get(ui.h.ub{i}, 'string'));
-            end
-            ui.models(ui.model) = m;
-        end
-        
-        function set_cmap(ui, varargin)
-            cmaps = get(ui.h.colormap_drpd, 'string'); 
-            ui.cmap = cmaps{get(ui.h.colormap_drpd, 'value')};
-            ui.plot_array();
-        end
-
         function resize(ui, varargin)
             % resize elements in figure to match window size
             fP = get(ui.h.f, 'Position');
             
-            minSize = [700 500];
-            if fP(3) < minSize(1)
-                fP = [fP(1:2) minSize(1) fP(4)];
-                set(ui.h.f, 'position', fP);
-            end
-            if fP(4) < minSize(2)
-                fP = [fP(1:3) minSize(2)];
-                set(ui.h.f, 'position', fP);
-            end            
             pP = get(ui.h.plotpanel, 'Position');
             pP(3:4) = [(fP(3)-pP(1))-10 (fP(4)-pP(2))-10];
             set(ui.h.plotpanel, 'Position', pP);
@@ -1327,6 +1324,21 @@ classdef UI < handle % subclass of handle is fucking important...
                 ui.selection_props.var(i) = std(fp(sel));
             end
             ui.generate_sel_vals();
+        end
+        
+        function set_bounds(ui, varargin)
+            m = ui.models(ui.model);
+            for i = 1:length(m{4});
+                m{2}(i) = str2double(get(ui.h.lb{i}, 'string'));
+                m{3}(i) = str2double(get(ui.h.ub{i}, 'string'));
+            end
+            ui.models(ui.model) = m;
+        end
+        
+        function set_cmap(ui, varargin)
+            cmaps = get(ui.h.colormap_drpd, 'string'); 
+            ui.cmap = cmaps{get(ui.h.colormap_drpd, 'value')};
+            ui.plot_array();
         end
         
         function set_scale_cb(ui, varargin)
