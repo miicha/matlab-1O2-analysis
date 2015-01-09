@@ -348,6 +348,12 @@ classdef UIPlot < handle
             plt.ui.t_zero = plt.t_zero;
             plt.ui.x_data = plt.x_data;
             plt.ui.set_model(plt.model_str);
+            if plt.fitted
+                par = plt.fit_params;
+            else
+                par = plt.est_params;
+            end
+            plt.ui.set_gstart(par);
         end
         
         function save_fig(ui, varargin)

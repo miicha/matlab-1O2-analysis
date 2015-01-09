@@ -1012,6 +1012,13 @@ classdef UI < handle
             end
             set(ui.h.ov_drpd, 'string', t{4});
         end
+        
+        function set_gstart(ui, gst)
+            ui.gstart = gst;
+            for i = 1:length(ui.gstart);
+                set(ui.h.st{i}, 'string', gst(i));
+            end
+        end
     end
 
     methods (Access = private)
