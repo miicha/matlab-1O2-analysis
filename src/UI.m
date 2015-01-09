@@ -49,7 +49,7 @@ classdef UI < handle
         
         fix = {};
         gstart = [0 0 0 0];
-        use_gstart = false;
+        use_gstart = [0 0 0 0];
         models = containers.Map(...
                  {'1. A*(exp(-t/t1)-exp(-t/t2))+offset'...
                   '2. A*(exp(-t/t1)-exp(-t/t2))+B*exp(-t/t2)+offset'...
@@ -101,6 +101,8 @@ classdef UI < handle
                             ui.h.bounds_txt1 = uicontrol(ui.h.bounds);
                             ui.h.bounds_txt2 = uicontrol(ui.h.bounds);
                             ui.h.gstart = uicontrol(ui.h.bounds);
+                            ui.h.fix_text = uicontrol(ui.h.bounds);
+                            ui.h.glob_text = uicontrol(ui.h.bounds);
                     ui.h.fit = uicontrol(ui.h.fit_tab);
                     ui.h.ov_controls = uipanel(ui.h.fit_tab);
                         ui.h.ov_switch = uicontrol(ui.h.ov_controls);
@@ -353,24 +355,38 @@ classdef UI < handle
                                   'horizontalAlignment', 'left');
                               
             set(ui.h.bounds_txt2, 'units', 'pixels',...
-                                  'position', [100 145 50 15],...
+                                  'position', [95 145 50 15],...
                                   'style', 'text',...
                                   'string', 'obere',...
                                   'horizontalAlignment', 'left');
                               
             set(ui.h.gstart, 'units', 'pixels',...
-                                'position', [160 145 50 15],...
-                                'style', 'checkbox',...
-                                'string', 'gStart',...
-                                'tooltipString', 'globale Startwerte',...
-                                'callback', @ui.set_use_gstart,...
-                                'horizontalAlignment', 'left');
+                             'position', [150 145 50 15],...
+                             'style', 'text',...
+                             'string', 'Start',...
+                             'tooltipString', 'globale Startwerte',...
+                             'horizontalAlignment', 'left');
+                            
+            set(ui.h.fix_text, 'units', 'pixels',...
+                               'position', [201 145 20 15],...
+                               'style', 'text',...
+                               'string', 'f',...
+                               'tooltipString', 'Startwerte fixieren',...
+                               'horizontalAlignment', 'left');
+                            
+            set(ui.h.glob_text, 'units', 'pixels',...
+                               'position', [218 145 20 15],...
+                               'style', 'text',...
+                               'string', 'g',...
+                               'tooltipString', 'Startwerte globalisieren',...
+                               'horizontalAlignment', 'left');
                             
             ui.h.lb = cell(1, 1);
             ui.h.ub = cell(1, 1);
             ui.h.st = cell(1, 1);
             ui.h.fix = cell(1, 1);
             ui.h.n = cell(1, 1);
+            ui.h.gst = cell(1, 1);
 
             %% interpretation
             set(ui.h.sel_tab, 'Title', 'Auswertung');
@@ -940,10 +956,15 @@ classdef UI < handle
                                 x = ui.x_data((ui.t_zero + ui.t_offset):end);
                                 w = sqrt(y);
                                 w(w == 0) = 1;
-                                if ui.use_gstart
-                                    [p, p_err, chi] = fitdata(ui.models(ui.model), x, y, w, ui.gstart, ui.fix); 
+                                if sum(ui.use_gstart) > 0
+                                    start = ui.est_params(i, j, k, l, :);
+                                    start(find(ui.use_gstart)) = ui.gstart(find(ui.use_gstart));
+                                    [p, p_err, chi] = fitdata(ui.models(ui.model),...
+                                        x, y, w, start, ui.fix);
                                 else
-                                    [p, p_err, chi] = fitdata(ui.models(ui.model), x, y, w, ui.est_params(i, j, k, l, :), ui.fix); 
+                                    
+                                    [p, p_err, chi] = fitdata(ui.models(ui.model),...
+                                        x, y, w, ui.est_params(i, j, k, l, :), ui.fix); 
                                 end
                                 ui.fit_params(i, j, k, l, :) = p;
                                 ui.fit_params_err(i, j, k, l, :) = p_err;
@@ -1190,12 +1211,15 @@ classdef UI < handle
                 delete(ui.h.n{i});
                 delete(ui.h.st{i});
                 delete(ui.h.fix{i});
+                delete(ui.h.gst{i});
             end 
             ui.h.lb = cell(n, 1);
             ui.h.ub = cell(n, 1);
             ui.h.n = cell(n, 1);
             ui.h.st = cell(n, 1);
             ui.h.fix = cell(n, 1);
+            ui.h.gst = cell(n, 1);
+
             for i = 1:n
                 ui.h.n{i} = uicontrol(ui.h.bounds,  'units', 'pixels',...
                                                     'style', 'text',...
@@ -1213,21 +1237,26 @@ classdef UI < handle
                 ui.h.ub{i} = uicontrol(ui.h.bounds, 'units', 'pixels',...
                                                     'style', 'edit',...
                                                     'string', sprintf('%1.2f', m{3}(i)),...
-                                                    'position', [100 155-i*23-10 45 20],...
+                                                    'position', [95 155-i*23-10 45 20],...
                                                     'callback', @ui.set_bounds,...
                                                     'BackgroundColor', [1 1 1]);
 
                 ui.h.st{i} = uicontrol(ui.h.bounds, 'units', 'pixels',...
                                                     'style', 'edit',...
                                                     'string', sprintf('%1.2f', ui.gstart(i)),...
-                                                    'position', [160 155-i*23-10 45 20],...
+                                                    'position', [150 155-i*23-10 45 20],...
                                                     'callback', @ui.set_gstart_cb,...
                                                     'BackgroundColor', [1 1 1]);
                                                 
                 ui.h.fix{i} = uicontrol(ui.h.bounds, 'units', 'pixels',...
                                                      'style', 'checkbox',...
-                                                     'position', [208 155-i*23-10 45 20],...
+                                                     'position', [198 155-i*23-10 40 20],...
                                                      'callback', @ui.set_param_fix_cb);
+                                                 
+                ui.h.gst{i} = uicontrol(ui.h.bounds, 'units', 'pixels',...
+                                                     'style', 'checkbox',...
+                                                     'position', [215 155-i*23-10 40 20],...
+                                                     'callback', @ui.set_param_glob_cb);
             end
         end
 
@@ -1276,15 +1305,6 @@ classdef UI < handle
         end
 
         function save_fig(ui, varargin)
-            x = ui.fileinfo.size(1);
-            y = ui.fileinfo.size(2);
-
-            if x > y
-                d = x;
-            else
-                d = y;
-            end
-                      
             ui.generate_export_fig();
             tmp = get(ui.h.plot_pre, 'position');
 
@@ -1372,11 +1392,7 @@ classdef UI < handle
             end
             ui.generate_sel_vals();
         end
-        
-        function set_use_gstart(ui, varargin)
-            ui.use_gstart = get(ui.h.gstart, 'value');
-        end
-        
+                
         function set_gstart_cb(ui, varargin)
             m = ui.models(ui.model);
             tmp = zeros(size(m{2}));
@@ -1397,6 +1413,7 @@ classdef UI < handle
             m = ui.models(ui.model);
             n = length(m{4});
             ind = 0;
+            ui.fix = {};
             for i = 1:n
                 if get(ui.h.fix{i}, 'value') == 1
                     ind = ind + 1;
@@ -1413,6 +1430,17 @@ classdef UI < handle
             end
         end
 
+        function set_param_glob_cb(ui, varargin)
+            m = ui.models(ui.model);
+            n = length(m{4});
+            ui.use_gstart = zeros(n,1);
+            for i = 1:n
+                if get(ui.h.gst{i}, 'value') == 1
+                    ui.use_gstart(i) = 1;
+                end
+            end
+        end
+        
         function set_bounds(ui, varargin)
             m = ui.models(ui.model);
             for i = 1:length(m{4});
