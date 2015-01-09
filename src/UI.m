@@ -17,14 +17,15 @@ classdef UI < handle
         fit_params_err;
         fit_chisq;
         est_params;     % estimated parameters
+        
         fit_selection;
         selection1;
         selection_props;
+        
         cancel_f = false;
         model = '1. A*(exp(-t/t1)-exp(-t/t2))+offset';      % fit model, should be global  
         
-        channel_width = 20/1000;   % should be determined from file
-                                   % needs UI element
+        channel_width = 20/1000;   % needs UI element
         t_offset = 25;   % excitation is over after t_offset channels after 
                          % maximum counts were reached - needs UI element
         t_zero = 0;      % channel in which the maximum of the excitation was reached
@@ -46,6 +47,9 @@ classdef UI < handle
         fitted = false;
         cmap = 'summer';
         
+        
+        gstart = [0 0 0 0];
+        use_gstart = false;
         models = containers.Map(...
                  {'1. A*(exp(-t/t1)-exp(-t/t2))+offset'...
                   '2. A*(exp(-t/t1)-exp(-t/t2))+B*exp(-t/t2)+offset'...
@@ -96,6 +100,7 @@ classdef UI < handle
                         ui.h.bounds = uipanel(ui.h.fitpanel);
                             ui.h.bounds_txt1 = uicontrol(ui.h.bounds);
                             ui.h.bounds_txt2 = uicontrol(ui.h.bounds);
+                            ui.h.gstart = uicontrol(ui.h.bounds);
                     ui.h.fit = uicontrol(ui.h.fit_tab);
                     ui.h.ov_controls = uipanel(ui.h.fit_tab);
                         ui.h.ov_switch = uicontrol(ui.h.ov_controls);
@@ -337,23 +342,34 @@ classdef UI < handle
                            'BackgroundColor', [1 1 1]);
                        
             set(ui.h.bounds, 'units', 'pixels',...
-                             'position', [15 10 185 180],...
-                             'title', 'Grenzen',...
+                             'position', [2 10 237 180],...
+                             'title', 'Fitparameter',...
                              'FontSize', 9);
                           
             set(ui.h.bounds_txt1, 'units', 'pixels',...
-                                  'position', [55 145 50 15],...
+                                  'position', [40 145 50 15],...
                                   'style', 'text',...
                                   'string', 'untere',...
                                   'horizontalAlignment', 'left');
                               
             set(ui.h.bounds_txt2, 'units', 'pixels',...
-                                  'position', [115 145 50 15],...
+                                  'position', [100 145 50 15],...
                                   'style', 'text',...
                                   'string', 'obere',...
                                   'horizontalAlignment', 'left');
+                              
+            set(ui.h.gstart, 'units', 'pixels',...
+                                'position', [160 145 50 15],...
+                                'style', 'checkbox',...
+                                'string', 'gStart',...
+                                'tooltipString', 'globale Startwerte',...
+                                'callback', @ui.set_use_gstart,...
+                                'horizontalAlignment', 'left');
+                            
             ui.h.lb = cell(1, 1);
             ui.h.ub = cell(1, 1);
+            ui.h.st = cell(1, 1);
+            ui.h.fix = cell(1, 1);
             ui.h.n = cell(1, 1);
 
             %% interpretation
@@ -515,6 +531,7 @@ classdef UI < handle
             end
 
             if pathsupplied == 0
+                set(ui.h.f, 'visible', 'off');
                 UI([filepath name], get(ui.h.f, 'position'));
                 close(ui.h.f);
                 delete(ui);
@@ -811,8 +828,8 @@ classdef UI < handle
                 plot_data = ui.est_params(:, :, :, :, param);
             end
             
-            ui.l_max = max(max(max(max(squeeze(plot_data)))));
-            ui.l_min = min(min(min(min(squeeze(plot_data)))));
+            ui.l_max = max(max(max(max(squeeze(plot_data)))))+10*eps;
+            ui.l_min = min(min(min(min(squeeze(plot_data)))))-10*eps;
             plot_data = squeeze(plot_data(:, :, z, sample));
             
             % plotting:
@@ -822,7 +839,6 @@ classdef UI < handle
                 cla
                 hold on
                 hmap(squeeze(plot_data(:, :))', false, ui.cmap);
-                caxis([ui.l_min ui.l_max])
                 if ui.overlay
                     switch ui.overlay
                         case 'fit'
@@ -834,6 +850,8 @@ classdef UI < handle
                 hold off
 
                 if ui.l_min < ui.l_max
+                    caxis([ui.l_min ui.l_max])
+                    
                     set(ui.h.f, 'CurrentAxes', ui.h.legend);
                     l_data =ui.l_min:(ui.l_max-ui.l_min)/20:ui.l_max;
                     cla
@@ -882,6 +900,8 @@ classdef UI < handle
             tmp{3} = ub*1.5;
             tmp{2} = lb*0.5;
             ui.models(ui.model) = tmp;
+            ui.gstart = (ub+lb)./2;
+            
             ui.generate_bounds();
             
             ui.update_infos();
@@ -918,7 +938,11 @@ classdef UI < handle
                                 x = ui.x_data((ui.t_zero + ui.t_offset):end);
                                 w = sqrt(y);
                                 w(w == 0) = 1;
-                                [p, p_err, chi] = fitdata(ui.models(ui.model), x, y, w, ui.est_params(i, j, k, l, :)); 
+                                if ui.use_gstart
+                                    [p, p_err, chi] = fitdata(ui.models(ui.model), x, y, w, ui.gstart); 
+                                else
+                                    [p, p_err, chi] = fitdata(ui.models(ui.model), x, y, w, ui.est_params(i, j, k, l, :)); 
+                                end
                                 ui.fit_params(i, j, k, l, :) = p;
                                 ui.fit_params_err(i, j, k, l, :) = p_err;
                                 ui.fit_chisq(i, j, k, l) = chi;
@@ -956,7 +980,6 @@ classdef UI < handle
             ui.fit_params = nan(ui.fileinfo.size(1), ui.fileinfo.size(2),...
                                 ui.fileinfo.size(3), ui.fileinfo.size(4), length(t{4}));
             ui.model = str;
-            ui.generate_bounds();
             if ui.data_read
                 ui.estimate_parameters();
                 set(ui.h.plttxt, 'visible', 'on');
@@ -1155,32 +1178,47 @@ classdef UI < handle
             m = ui.models(ui.model);
             n = length(m{4});
 
+            if  length(ui.gstart) < n
+                ui.gstart = (m{2}(:)+m{3}(:))./2;
+            end
+            
             for i = 1:length(ui.h.lb)
                 delete(ui.h.lb{i});
                 delete(ui.h.ub{i});
                 delete(ui.h.n{i});
+                delete(ui.h.st{i});
             end 
             ui.h.lb = cell(n, 1);
             ui.h.ub = cell(n, 1);
             ui.h.n = cell(n, 1);
+            ui.h.st = cell(n, 1);
             for i = 1:n
                 ui.h.lb{i} = uicontrol(ui.h.bounds, 'units', 'pixels',...
                                                     'style', 'edit',...
                                                     'string', sprintf('%1.2f', m{2}(i)),...
-                                                    'position', [55 155-i*23-10 45 20],...
+                                                    'position', [40 155-i*23-10 45 20],...
                                                     'callback', @ui.set_bounds,...
                                                     'BackgroundColor', [1 1 1]);
+                                                
                 ui.h.ub{i} = uicontrol(ui.h.bounds, 'units', 'pixels',...
                                                     'style', 'edit',...
                                                     'string', sprintf('%1.2f', m{3}(i)),...
-                                                    'position', [115 155-i*23-10 45 20],...
+                                                    'position', [100 155-i*23-10 45 20],...
                                                     'callback', @ui.set_bounds,...
                                                     'BackgroundColor', [1 1 1]);
+
+                ui.h.st{i} = uicontrol(ui.h.bounds, 'units', 'pixels',...
+                                                    'style', 'edit',...
+                                                    'string', sprintf('%1.2f', ui.gstart(i)),...
+                                                    'position', [160 155-i*23-10 45 20],...
+                                                    'callback', @ui.set_gstart_cb,...
+                                                    'BackgroundColor', [1 1 1]);
+                                                
                 ui.h.n{i} = uicontrol(ui.h.bounds,  'units', 'pixels',...
                                                     'style', 'text',...
                                                     'string', m{4}{i},...
                                                     'horizontalAlignment', 'left',...
-                                                    'position', [15 155-i*23-14 40 20]);
+                                                    'position', [5 155-i*23-14 35 20]);
             end
         end
 
@@ -1197,17 +1235,17 @@ classdef UI < handle
             ui.h.var = cell(n, 1);
             ui.h.par = cell(n, 1);
             for i = 1:n
-                ui.h.lb{i} = uicontrol(ui.h.sel_values, 'units', 'pixels',...
+                ui.h.mean{i} = uicontrol(ui.h.sel_values, 'units', 'pixels',...
                                                     'style', 'text',...
                                                     'string', sprintf('%1.2f', ui.selection_props.mean(i)),...
                                                     'position', [55 155-i*23-10 45 20],...
                                                     'BackgroundColor', [1 1 1]);
-                ui.h.ub{i} = uicontrol(ui.h.sel_values, 'units', 'pixels',...
+                ui.h.var{i} = uicontrol(ui.h.sel_values, 'units', 'pixels',...
                                                     'style', 'text',...
                                                     'string', sprintf('%1.2f', ui.selection_props.var(i)),...
                                                     'position', [115 155-i*23-10 45 20],...
                                                     'BackgroundColor', [1 1 1]);
-                ui.h.n{i} = uicontrol(ui.h.sel_values,  'units', 'pixels',...
+                ui.h.par{i} = uicontrol(ui.h.sel_values,  'units', 'pixels',...
                                                     'style', 'text',...
                                                     'string', m{4}{i},...
                                                     'horizontalAlignment', 'left',...
@@ -1326,6 +1364,26 @@ classdef UI < handle
             ui.generate_sel_vals();
         end
         
+        function set_use_gstart(ui, varargin)
+            ui.use_gstart = get(ui.h.gstart, 'value');
+        end
+        
+        function set_gstart_cb(ui, varargin)
+            m = ui.models(ui.model);
+            tmp = zeros(size(m{2}));
+            for i = 1:length(m{4});
+                tmp(i) = str2double(get(ui.h.st{i}, 'string'));
+                if tmp(i) < m{2}(i)
+                    tmp(i) = m{2}(i);
+                end
+                if tmp(i) > m{3}(i)
+                    tmp(i) = m{3}(i);
+                end
+                set(ui.h.st{i}, 'string', tmp(i))
+            end
+            ui.gstart = tmp;
+        end
+                
         function set_bounds(ui, varargin)
             m = ui.models(ui.model);
             for i = 1:length(m{4});
