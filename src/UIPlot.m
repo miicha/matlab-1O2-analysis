@@ -224,7 +224,7 @@ classdef UIPlot < handle
             y = plt.data((plt.t_zero+plt.t_offset):end);
             w = sqrt(y);
             w(w == 0) = 1;
-%             plt.set_model();
+
             ind  = 0;
             fix = {};
             start = zeros(plt.n_param, 1);

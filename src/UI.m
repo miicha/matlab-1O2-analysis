@@ -47,7 +47,7 @@ classdef UI < handle
         fitted = false;
         cmap = 'summer';
         
-        
+        fix = {};
         gstart = [0 0 0 0];
         use_gstart = false;
         models = containers.Map(...
@@ -506,8 +506,10 @@ classdef UI < handle
             ui.resize();
             ui.set_model();
             
-            if nargin == 2
-                set(ui.h.f, 'position', pos);
+            if nargin > 0
+                if nargin == 2
+                    set(ui.h.f, 'position', pos);
+                end
                 pause(.1);
                 ui.open_file(path);
             end
@@ -939,9 +941,9 @@ classdef UI < handle
                                 w = sqrt(y);
                                 w(w == 0) = 1;
                                 if ui.use_gstart
-                                    [p, p_err, chi] = fitdata(ui.models(ui.model), x, y, w, ui.gstart); 
+                                    [p, p_err, chi] = fitdata(ui.models(ui.model), x, y, w, ui.gstart, ui.fix); 
                                 else
-                                    [p, p_err, chi] = fitdata(ui.models(ui.model), x, y, w, ui.est_params(i, j, k, l, :)); 
+                                    [p, p_err, chi] = fitdata(ui.models(ui.model), x, y, w, ui.est_params(i, j, k, l, :), ui.fix); 
                                 end
                                 ui.fit_params(i, j, k, l, :) = p;
                                 ui.fit_params_err(i, j, k, l, :) = p_err;
@@ -1187,12 +1189,20 @@ classdef UI < handle
                 delete(ui.h.ub{i});
                 delete(ui.h.n{i});
                 delete(ui.h.st{i});
+                delete(ui.h.fix{i});
             end 
             ui.h.lb = cell(n, 1);
             ui.h.ub = cell(n, 1);
             ui.h.n = cell(n, 1);
             ui.h.st = cell(n, 1);
+            ui.h.fix = cell(n, 1);
             for i = 1:n
+                ui.h.n{i} = uicontrol(ui.h.bounds,  'units', 'pixels',...
+                                                    'style', 'text',...
+                                                    'string', m{4}{i},...
+                                                    'horizontalAlignment', 'left',...
+                                                    'position', [5 155-i*23-14 35 20]);
+                                                
                 ui.h.lb{i} = uicontrol(ui.h.bounds, 'units', 'pixels',...
                                                     'style', 'edit',...
                                                     'string', sprintf('%1.2f', m{2}(i)),...
@@ -1214,11 +1224,10 @@ classdef UI < handle
                                                     'callback', @ui.set_gstart_cb,...
                                                     'BackgroundColor', [1 1 1]);
                                                 
-                ui.h.n{i} = uicontrol(ui.h.bounds,  'units', 'pixels',...
-                                                    'style', 'text',...
-                                                    'string', m{4}{i},...
-                                                    'horizontalAlignment', 'left',...
-                                                    'position', [5 155-i*23-14 35 20]);
+                ui.h.fix{i} = uicontrol(ui.h.bounds, 'units', 'pixels',...
+                                                     'style', 'checkbox',...
+                                                     'position', [208 155-i*23-10 45 20],...
+                                                     'callback', @ui.set_param_fix_cb);
             end
         end
 
@@ -1384,6 +1393,26 @@ classdef UI < handle
             ui.gstart = tmp;
         end
                 
+        function set_param_fix_cb(ui, varargin)
+            m = ui.models(ui.model);
+            n = length(m{4});
+            ind = 0;
+            for i = 1:n
+                if get(ui.h.fix{i}, 'value') == 1
+                    ind = ind + 1;
+                    if get(ui.h.gstart, 'value') ~= 1
+                        set(ui.h.gstart, 'value', 1);
+                    end
+                    if ind == n
+                        msgbox('Kann ohne freie Parameter nicht fitten.', 'Fehler', 'modal');
+                        set(ui.h.fix{i}, 'value', 0);
+                        return;
+                    end
+                    ui.fix{ind} = m{4}{i};
+                end
+            end
+        end
+
         function set_bounds(ui, varargin)
             m = ui.models(ui.model);
             for i = 1:length(m{4});
