@@ -1517,27 +1517,29 @@ classdef UI < handle
     end
 
     methods (Static=true)
-        function [param] = estimate_parameters_p(d, model, t_zero, t_offset, cw)
+        function [param] = estimate_parameters_p(data, model, t_zero, t_offset, cw)
+            data = smooth(data);
             switch model
                 case '1. A*(exp(-t/t1)-exp(-t/t2))+offset'
-                    [A, t1] = max(d((t_zero + t_offset):end)); % Amplitude, first time
+                    [A, t1] = max(data((t_zero + t_offset):end)); % Amplitude, first time
                     param(1) = A;
-                    param(3) = t1*cw;
-                    param(4) = mean(d(end-100:end));
-                    d = d-param(4);
+                    param(3) = t1*cw/2;
+                    param(4) = mean(data(end-100:end));
+                    data = data-param(4);
                     A = A-param(4);
-                    t2 = find(abs(d <= round(A/2.7)));
+                    t2 = find(abs(data <= round(A/2.7)));
                     t2 = t2(t2 > t1);
                     param(2) = (t2(1) - t1)*cw;
-                case {'2. A*(exp(-t/t1)-exp(-t/t2))+B*exp(-t/t2)+offset','3. A*(exp(-t/t1)-exp(-t/t2))+B*exp(-t/t1)+offset'}
-                    [A, t1] = max(d((t_zero + t_offset):end)); % Amplitude, first time
+                case {'2. A*(exp(-t/t1)-exp(-t/t2))+B*exp(-t/t2)+offset',...
+                      '3. A*(exp(-t/t1)-exp(-t/t2))+B*exp(-t/t1)+offset'}
+                    [A, t1] = max(data((t_zero + t_offset):end)); % Amplitude, first time
                     param(1) = A;
-                    param(3) = t1*cw;
+                    param(3) = t1*cw/2;
                     param(4) = A/4;
-                    param(5) = mean(d(end-100:end));
-                    d = d-param(5);
+                    param(5) = mean(data(end-100:end));
+                    data = data-param(5);
                     A = A-param(5);
-                    t2 = find(abs(d <= round(A/2.7)));
+                    t2 = find(abs(data <= round(A/2.7)));
                     t2 = t2(t2 > t1);
                     param(2) = (t2(1) - t1)*cw;
             end
