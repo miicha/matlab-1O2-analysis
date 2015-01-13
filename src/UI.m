@@ -299,7 +299,7 @@ classdef UI < handle
                                 'style', 'checkbox',...
                                 'position', [15 50 60 30],...
                                 'string', 'Overlay',...
-                                'callback', @ui.toggle_overlay);
+                                'callback', @ui.toggle_overlay_cb);
                          
             set(ui.h.ov_drpd, 'units', 'pixels',...
                               'style', 'popupmenu',...
@@ -398,7 +398,7 @@ classdef UI < handle
                              'style', 'checkbox',...
                              'position', [15 50 100 30],...
                              'string', 'Auswahl 1',...
-                             'callback', @ui.toggle_overlay);
+                             'callback', @ui.toggle_overlay_cb);
                          
             set(ui.h.sel_btn_plot, 'units', 'pixels',...
                              'style', 'push',...
@@ -567,6 +567,23 @@ classdef UI < handle
                 filepath = filepath{1};
             end
             
+            % UI stuff
+            t = keys(ui.models);
+            t = ui.models(t{get(ui.h.drpd, 'value')});
+             
+            set(ui.h.plttxt, 'visible', 'on');
+            set(ui.h.fit_est, 'visible', 'on');
+            set(ui.h.param, 'visible', 'on',...
+                            'string', t{4});
+            set(ui.h.ov_drpd, 'string', t{4});
+            set(ui.h.tabs, 'visible', 'on');
+            
+            ui.update_infos();
+            ui.update_sliders();
+            ui.set_model('1. A*(exp(-t/t1)-exp(-t/t2))+offset');
+            ui.change_overlay_cond_cb();
+            ui.plot_array();
+            
             set(ui.h.filename, 'string', [ui.fileinfo.name '_plot.pdf']);
             ui.set_scale(ui.scale);
             ui.set_savepath(filepath);
@@ -663,21 +680,6 @@ classdef UI < handle
             end
             
             ui.fit_selection = ones(tmp(1), tmp(2), tmp(3), tmp(4));
-            
-            % UI stuff
-            t = keys(ui.models);
-            t = ui.models(t{get(ui.h.drpd, 'value')});
-             
-            set(ui.h.plttxt, 'visible', 'on');
-            set(ui.h.fit_est, 'visible', 'on');
-            set(ui.h.param, 'visible', 'on',...
-                            'string', t{4});
-            set(ui.h.ov_drpd, 'string', t{4});
-            set(ui.h.tabs, 'visible', 'on')
-            ui.update_infos();
-            ui.set_model('1. A*(exp(-t/t1)-exp(-t/t2))+offset');
-            ui.update_sliders();
-            ui.plot_array();
         end
 
         function readHDF5(ui, varargin)
@@ -712,23 +714,6 @@ classdef UI < handle
             
             ui.fit_selection = ones(tmp(1), tmp(2), tmp(3), tmp(4));
             ui.selection1 = zeros(tmp(1), tmp(2), tmp(3), tmp(4));
-            
-            % UI stuff
-            t = keys(ui.models);
-            t = ui.models(t{get(ui.h.drpd, 'value')});
-             
-            set(ui.h.plttxt, 'visible', 'on');
-            set(ui.h.fit_est, 'visible', 'on');
-            set(ui.h.param, 'visible', 'on',...
-                            'string', t{4});
-            set(ui.h.ov_drpd, 'string', t{4});
-            set(ui.h.tabs, 'visible', 'on');
-            
-            ui.update_infos();
-            ui.update_sliders();
-            ui.set_model('1. A*(exp(-t/t1)-exp(-t/t2))+offset');
-%             ui.change_overlay_cond_cb();
-            ui.plot_array();
         end
 
         function update_plot(ui, varargin)
@@ -1213,25 +1198,6 @@ classdef UI < handle
             end
         end
 
-        function plot_selection(ui, varargin)
-            if ~isnan(ui.selection1)
-                ui.gplt = UIGroupPlot(ui);
-                ui.generate_sel_vals();
-            end
-        end
-
-        function save_fig(ui, varargin)
-            ui.generate_export_fig(ui.h.axes, 'off');
-            tmp = get(ui.h.plot_pre, 'position');
-
-            % save the plot and close the figure
-            set(ui.h.plot_pre, 'PaperUnits', 'points');
-            set(ui.h.plot_pre, 'PaperSize', [tmp(3) tmp(4)]*.8);
-            set(ui.h.plot_pre, 'PaperPosition', [0 0 tmp(3) tmp(4)]*.8);
-            print(ui.h.plot_pre, '-dpdf', '-r600', [ui.savepath '/' ui.savename]);
-            close(ui.h.plot_pre);
-        end
-
         function generate_export_fig(ui, ax_in, vis)
             x = ui.fileinfo.size(1);
             y = ui.fileinfo.size(2);
@@ -1365,6 +1331,25 @@ classdef UI < handle
                     end
             end
             ui.plot_array();
+        end
+        
+        function plot_selection(ui, varargin)
+            if ~isnan(ui.selection1)
+                ui.gplt = UIGroupPlot(ui);
+                ui.generate_sel_vals();
+            end
+        end
+
+        function save_fig(ui, varargin)
+            ui.generate_export_fig(ui.h.axes, 'off');
+            tmp = get(ui.h.plot_pre, 'position');
+
+            % save the plot and close the figure
+            set(ui.h.plot_pre, 'PaperUnits', 'points');
+            set(ui.h.plot_pre, 'PaperSize', [tmp(3) tmp(4)]*.8);
+            set(ui.h.plot_pre, 'PaperPosition', [0 0 tmp(3) tmp(4)]*.8);
+            print(ui.h.plot_pre, '-dpdf', '-r600', [ui.savepath '/' ui.savename]);
+            close(ui.h.plot_pre);
         end
         
         function toggle_overlay_cb(ui, varargin)
