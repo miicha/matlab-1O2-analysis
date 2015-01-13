@@ -172,7 +172,7 @@ classdef UI < handle
                            'Color', get(ui.h.plotpanel, 'BackgroundColor'),...
                            'XColor', get(ui.h.plotpanel, 'BackgroundColor'),...
                            'YColor', get(ui.h.plotpanel, 'BackgroundColor'),...
-                           'ButtonDownFcn', @ui.aplot_click);
+                           'ButtonDownFcn', @ui.aplot_click_cb);
                        
                                  
             set(ui.h.legend, 'units', 'pixels',...
@@ -272,7 +272,7 @@ classdef UI < handle
             set(ui.h.fit_est, 'units', 'pixels',...
                               'BackgroundColor', get(ui.h.plotpanel, 'BackgroundColor'),...
                               'BorderType', 'none',...
-                              'SelectionChangeFcn', @ui.change_par_source,...
+                              'SelectionChangeFcn', @ui.change_par_source_cb,...
                               'position', [220 445 200 21],...
                               'visible', 'off');          
                       
@@ -305,21 +305,21 @@ classdef UI < handle
                               'style', 'popupmenu',...
                               'position', [35 25 60 30],...
                               'string', {''},...
-                              'callback', @ui.change_overlay_cond,...
+                              'callback', @ui.change_overlay_cond_cb,...
                               'BackgroundColor', [1 1 1]);
                          
             set(ui.h.ov_rel, 'units', 'pixels',...
                              'style', 'popupmenu',...
                              'position', [96 25 30 30],...
                              'string', {'<', '>'},...
-                             'callback', @ui.change_overlay_cond,...
+                             'callback', @ui.change_overlay_cond_cb,...
                              'BackgroundColor', [1 1 1]);
             
             set(ui.h.ov_val, 'units', 'pixels',...
                              'style', 'edit',...
                              'position', [127 33 60 22],...
                              'string', '',...
-                             'callback', @ui.change_overlay_cond,...
+                             'callback', @ui.change_overlay_cond_cb,...
                              'BackgroundColor', [1 1 1]); 
                          
             %% Fit-Panel:
@@ -340,7 +340,7 @@ classdef UI < handle
                            'string', keys(ui.models),...
                            'value', 1,...
                            'position', [15 205 220 15],...
-                           'callback', @ui.set_model,...
+                           'callback', @ui.set_model_cb,...
                            'BackgroundColor', [1 1 1]);
                        
             set(ui.h.bounds, 'units', 'pixels',...
@@ -437,7 +437,7 @@ classdef UI < handle
                               'position', [92 2 80 28],...
                               'string', 'Vorschau',...
                               'BackgroundColor', [.8 .8 .8],...
-                              'callback', @ui.generate_export_fig);
+                              'callback', @ui.generate_export_fig_cb);
                           
             set(ui.h.colormap_drpd_text, 'units', 'pixels',...
                                          'style', 'text',...
@@ -454,7 +454,7 @@ classdef UI < handle
                                                'gray', 'bone', 'copper',...
                                                'pink'},...
                                     'value', 7,...
-                                    'callback', @ui.set_cmap);
+                                    'callback', @ui.set_cmap_cb);
             
             set(ui.h.scale_x_text, 'units', 'pixels',...
                                    'style', 'text',...
@@ -520,7 +520,7 @@ classdef UI < handle
             %% init
             
             ui.resize();
-            ui.set_model();
+            ui.set_model('1. A*(exp(-t/t1)-exp(-t/t2))+offset');
             
             if nargin > 0
                 if nargin == 2
@@ -556,8 +556,6 @@ classdef UI < handle
                 return
             end
             
-%             ui.reset_instance();
-
             if ~iscell(name) && regexp(name, '*?.h5')
                 ui.fileinfo.name = name;
                 ui.fileinfo.path = [filepath name];
@@ -677,8 +675,8 @@ classdef UI < handle
             set(ui.h.ov_drpd, 'string', t{4});
             set(ui.h.tabs, 'visible', 'on')
             ui.update_infos();
+            ui.set_model('1. A*(exp(-t/t1)-exp(-t/t2))+offset');
             ui.update_sliders();
-            ui.set_model();
             ui.plot_array();
         end
 
@@ -728,8 +726,8 @@ classdef UI < handle
             
             ui.update_infos();
             ui.update_sliders();
-            ui.set_model();
-            ui.change_overlay_cond();
+            ui.set_model('1. A*(exp(-t/t1)-exp(-t/t2))+offset');
+%             ui.change_overlay_cond_cb();
             ui.plot_array();
         end
 
@@ -940,7 +938,7 @@ classdef UI < handle
             ov = get(ui.h.ov_switch, 'value');      
             
             % set cancel button:
-            set(ui.h.fit, 'string', 'Abbrechen', 'callback', @ui.cancel_fit);
+            set(ui.h.fit, 'string', 'Abbrechen', 'callback', @ui.cancel_fit_cb);
 
             ui.fit_params = nan(size(ui.est_params));
             ui.fit_chisq = nan(size(ui.est_params(:,:,:,:)));
@@ -991,14 +989,29 @@ classdef UI < handle
             ui.update_infos();
         end
 
-        function set_model(ui, varargin)
-            t = keys(ui.models);
-            if isKey(ui.models, varargin)
-                str = varargin{:};
-                set(ui.h.drpd, 'value', find(strcmp(t, str))); % find the caller
-            else
-                str = t{get(ui.h.drpd, 'value')};
+        function set_savename(ui, name)
+            if regexp(name, '\.pdf$')
+                name = name(1:end-4);
             end
+            if ~get(ui.h.file_overwrite, 'value')
+                while exist([ui.savepath '/' name '.pdf'], 'file')
+                    [b, e] = regexp(name, '_[0-9]+$');
+                    if b
+                        name = [name(1:b) num2str(str2double(name(b+1:e))+1)];
+                    else
+                        name = [name '_1'];
+                    end
+                end
+            end
+            name = [name '.pdf'];
+            set(ui.h.filename, 'string', name, 'tooltipString', name);
+            ui.savename = name;
+        end
+        
+        function set_model(ui, str)
+            t = keys(ui.models);
+            set(ui.h.drpd, 'value', find(strcmp(t, str))); % set the model in the drpd
+            
             t = ui.models(str);
             ui.fit_params = nan(ui.fileinfo.size(1), ui.fileinfo.size(2),...
                                 ui.fileinfo.size(3), ui.fileinfo.size(4), length(t{4}));
@@ -1019,71 +1032,25 @@ classdef UI < handle
                 set(ui.h.st{i}, 'string', gst(i));
             end
         end
+        
+        function set_savepath(ui, path)
+            if isdir(path)
+                set(ui.h.path, 'string', path, 'tooltipString', path);
+                ui.savepath = path;
+            else
+                set(ui.h.path, 'string', ui.savepath, 'tooltipString', ui.savepath);
+                warning(['Path "' path '" not valid!']);
+            end
+        end
+        
+        function set_scale(ui, scl)
+            ui.scale = scl;
+            set(ui.h.scale_x, 'string', ui.scale(1));
+            set(ui.h.scale_y, 'string', ui.scale(2));
+        end
     end
 
     methods (Access = private)
-        function aplot_click(ui, varargin)
-            switch get(ui.h.f, 'SelectionType')
-                case 'normal'
-                    if ~strcmp(ui.fileinfo.path, '')
-                        cp = get(ui.h.axes, 'CurrentPoint');
-                        cp = round(cp(1, 1:2));
-                        if sum(ui.data(cp(1), cp(2), ui.current_z, ui.current_sa, :))
-                            ui.plt = UIPlot(cp, ui);
-                        end
-                    end
-                case 'alt'
-                    if ~strcmp(ui.fileinfo.path, '')
-                        cp = get(ui.h.axes, 'CurrentPoint');
-                        cp = round(cp(1, 1:2));
-                        if sum(ui.data(cp(1), cp(2), ui.current_z, ui.current_sa, :))
-                            switch ui.overlay
-                                case 'fit'
-                                   ui.fit_selection(cp(1), cp(2), ui.current_z, ui.current_sa) = ...
-                                       ~ui.fit_selection(cp(1), cp(2), ui.current_z, ui.current_sa);
-                                case '1'
-                                    ui.selection1(cp(1), cp(2), ui.current_z, ui.current_sa) = ...
-                                       ~ui.selection1(cp(1), cp(2), ui.current_z, ui.current_sa);
-                            end
-                        end
-                    end
-                    ui.plot_array();
-            end
-        end
-
-        function change_par_source(ui, varargin)
-            ov = get(varargin{2}.OldValue, 'String');
-            nv = get(varargin{2}.NewValue, 'String');
-            if ~strcmp(ov, nv)
-                if strcmp(nv, get(ui.h.fit_par, 'string'))
-                    ui.disp_fit_params = true;
-                else
-                    ui.disp_fit_params = false;
-                end
-                ui.generate_mean();
-                ui.plot_array();
-            end
-        end
-
-        function reset_instance(ui)
-            if ui.file_opened
-                clear('ui.data', 'ui.points');
-                ui.fileinfo = struct('path', '', 'size', [0 0 0],...
-                                     'name', '', 'np', 0); 
-                ui.file_opened = 0;
-                ui.current_z = 1;
-                ui.current_sa = 1;
-                ui.current_param = 1;
-                ui.data_read = false;
-                ui.fitted = false;  
-                ui.model = 1;      % fit model, should be global  
-                ui.channel_width = 1;   % should be determines from file
-                set(ui.h.legend, 'visible', 'off');
-                delete(allchild(ui.h.legend));
-            end
-            ui.file_opened = 1;
-        end
-
         function resize(ui, varargin)
             % resize elements in figure to match window size
             fP = get(ui.h.f, 'Position');
@@ -1152,58 +1119,6 @@ classdef UI < handle
             set(ui.h.sel_controls, 'Position', tmp);
         end
 
-        function toggle_overlay(ui, varargin)
-            switch varargin{1} 
-                case ui.h.ov_switch
-                    ov = 'fit';
-                    set(ui.h.sel_switch, 'Value', 0);
-                case ui.h.sel_switch
-                    ov = '1';
-                    set(ui.h.ov_switch, 'Value', 0);
-            end
-            if ui.overlay == ov
-                ui.overlay = false;
-            else
-                ui.overlay = ov;
-            end
-            
-            ui.plot_array();
-        end
-
-        function change_overlay_cond(ui, varargin)
-            switch get(ui.h.ov_rel, 'value')
-                case 1
-                    for i = 1:ui.fileinfo.size(1)
-                        for j = 1:ui.fileinfo.size(2)
-                            for k = 1:ui.fileinfo.size(3)
-                                for l = 1:ui.fileinfo.size(4)
-                                    if ui.est_params(i, j, k, l, get(ui.h.ov_drpd, 'value')) < str2double(get(ui.h.ov_val, 'string'))
-                                        ui.fit_selection(i, j, k, l) = 0;
-                                    else
-                                        ui.fit_selection(i, j, k, l) = 1;
-                                    end
-                                end
-                            end
-                        end
-                    end
-                case 2
-                    for i = 1:ui.fileinfo.size(1)
-                        for j = 1:ui.fileinfo.size(2)
-                            for k = 1:ui.fileinfo.size(3)
-                                for l = 1:ui.fileinfo.size(4)
-                                    if ui.est_params(i, j, k, l, get(ui.h.ov_drpd, 'value')) > str2double(get(ui.h.ov_val, 'string'))
-                                        ui.fit_selection(i, j, k, l) = 0;
-                                    else
-                                        ui.fit_selection(i, j, k, l) = 1;
-                                    end
-                                end
-                            end
-                        end
-                    end
-            end
-            ui.plot_array();
-        end
-
         function generate_bounds(ui)
             m = ui.models(ui.model);
             n = length(m{4});
@@ -1238,14 +1153,14 @@ classdef UI < handle
                                                     'style', 'edit',...
                                                     'string', sprintf('%1.2f', m{2}(i)),...
                                                     'position', [40 155-i*23-10 45 20],...
-                                                    'callback', @ui.set_bounds,...
+                                                    'callback', @ui.set_bounds_cb,...
                                                     'BackgroundColor', [1 1 1]);
                                                 
                 ui.h.ub{i} = uicontrol(ui.h.bounds, 'units', 'pixels',...
                                                     'style', 'edit',...
                                                     'string', sprintf('%1.2f', m{3}(i)),...
                                                     'position', [95 155-i*23-10 45 20],...
-                                                    'callback', @ui.set_bounds,...
+                                                    'callback', @ui.set_bounds_cb,...
                                                     'BackgroundColor', [1 1 1]);
 
                 ui.h.st{i} = uicontrol(ui.h.bounds, 'units', 'pixels',...
@@ -1298,12 +1213,6 @@ classdef UI < handle
             end
         end
 
-        function cancel_fit(ui, varargin)
-            ui.cancel_f = true;
-            
-            set(ui.h.fit, 'string', 'Fit', 'callback', @ui.fit_all);
-        end
-
         function plot_selection(ui, varargin)
             if ~isnan(ui.selection1)
                 ui.gplt = UIGroupPlot(ui);
@@ -1312,7 +1221,7 @@ classdef UI < handle
         end
 
         function save_fig(ui, varargin)
-            ui.generate_export_fig();
+            ui.generate_export_fig(ui.h.axes, 'off');
             tmp = get(ui.h.plot_pre, 'position');
 
             % save the plot and close the figure
@@ -1323,13 +1232,7 @@ classdef UI < handle
             close(ui.h.plot_pre);
         end
 
-        function generate_export_fig(ui, varargin)
-            if ~isempty(varargin) && isvalid(varargin{1})
-                vis = 'on';
-            else
-                vis = 'off';
-            end
-            
+        function generate_export_fig(ui, ax_in, vis)
             x = ui.fileinfo.size(1);
             y = ui.fileinfo.size(2);
 
@@ -1345,7 +1248,7 @@ classdef UI < handle
             x_pix = x*scale_pix*scl(1);
             y_pix = y*scale_pix*scl(2);
             
-            tmp = get(ui.h.axes, 'position');
+            tmp = get(ax_in, 'position');
             if isfield(ui.h, 'plot_pre') && ishandle(ui.h.plot_pre)
                 figure(ui.h.plot_pre);
                 clf();
@@ -1363,7 +1266,7 @@ classdef UI < handle
                    'resize', 'off',...
                    'Color', [.95, .95, .95]);
 
-            ax = copyobj(ui.h.axes, ui.h.plot_pre);
+            ax = copyobj(ax_in, ui.h.plot_pre);
             set(ax, 'position', [tmp(1) tmp(2) x_pix y_pix],...
                     'XColor', 'black',...
                     'YColor', 'black');
@@ -1400,6 +1303,111 @@ classdef UI < handle
             ui.generate_sel_vals();
         end
                 
+        %% Callbacks:
+        function aplot_click_cb(ui, varargin)
+            switch get(ui.h.f, 'SelectionType')
+                case 'normal'
+                    if ~strcmp(ui.fileinfo.path, '')
+                        cp = get(ui.h.axes, 'CurrentPoint');
+                        cp = round(cp(1, 1:2));
+                        if sum(ui.data(cp(1), cp(2), ui.current_z, ui.current_sa, :))
+                            ui.plt = UIPlot(cp, ui);
+                        end
+                    end
+                case 'alt'
+                    if ~strcmp(ui.fileinfo.path, '')
+                        cp = get(ui.h.axes, 'CurrentPoint');
+                        cp = round(cp(1, 1:2));
+                        if sum(ui.data(cp(1), cp(2), ui.current_z, ui.current_sa, :))
+                            switch ui.overlay
+                                case 'fit'
+                                   ui.fit_selection(cp(1), cp(2), ui.current_z, ui.current_sa) = ...
+                                       ~ui.fit_selection(cp(1), cp(2), ui.current_z, ui.current_sa);
+                                case '1'
+                                    ui.selection1(cp(1), cp(2), ui.current_z, ui.current_sa) = ...
+                                       ~ui.selection1(cp(1), cp(2), ui.current_z, ui.current_sa);
+                            end
+                        end
+                    end
+                    ui.plot_array();
+            end
+        end % mousclick on plot
+        
+        function change_overlay_cond_cb(ui, varargin)
+            switch get(ui.h.ov_rel, 'value')
+                case 1
+                    for i = 1:ui.fileinfo.size(1)
+                        for j = 1:ui.fileinfo.size(2)
+                            for k = 1:ui.fileinfo.size(3)
+                                for l = 1:ui.fileinfo.size(4)
+                                    if ui.est_params(i, j, k, l, get(ui.h.ov_drpd, 'value')) < str2double(get(ui.h.ov_val, 'string'))
+                                        ui.fit_selection(i, j, k, l) = 0;
+                                    else
+                                        ui.fit_selection(i, j, k, l) = 1;
+                                    end
+                                end
+                            end
+                        end
+                    end
+                case 2
+                    for i = 1:ui.fileinfo.size(1)
+                        for j = 1:ui.fileinfo.size(2)
+                            for k = 1:ui.fileinfo.size(3)
+                                for l = 1:ui.fileinfo.size(4)
+                                    if ui.est_params(i, j, k, l, get(ui.h.ov_drpd, 'value')) > str2double(get(ui.h.ov_val, 'string'))
+                                        ui.fit_selection(i, j, k, l) = 0;
+                                    else
+                                        ui.fit_selection(i, j, k, l) = 1;
+                                    end
+                                end
+                            end
+                        end
+                    end
+            end
+            ui.plot_array();
+        end
+        
+        function toggle_overlay_cb(ui, varargin)
+            switch varargin{1} 
+                case ui.h.ov_switch
+                    ov = 'fit';
+                    set(ui.h.sel_switch, 'Value', 0);
+                case ui.h.sel_switch
+                    ov = '1';
+                    set(ui.h.ov_switch, 'Value', 0);
+            end
+            if ui.overlay == ov
+                ui.overlay = false;
+            else
+                ui.overlay = ov;
+            end
+            
+            ui.plot_array();
+        end
+        
+        function cancel_fit_cb(ui, varargin)
+            ui.cancel_f = true;
+            set(ui.h.fit, 'string', 'Fit', 'callback', @ui.fit_all);
+        end
+        
+        function change_par_source_cb(ui, varargin)
+            ov = get(varargin{2}.OldValue, 'String');
+            nv = get(varargin{2}.NewValue, 'String');
+            if ~strcmp(ov, nv)
+                if strcmp(nv, get(ui.h.fit_par, 'string'))
+                    ui.disp_fit_params = true;
+                else
+                    ui.disp_fit_params = false;
+                end
+                ui.generate_mean();
+                ui.plot_array();
+            end
+        end
+        
+        function generate_export_fig_cb(ui, varargin)
+            ui.generate_export_fig(ui.h.axes, 'on');
+        end
+
         function set_gstart_cb(ui, varargin)
             m = ui.models(ui.model);
             tmp = zeros(size(m{2}));
@@ -1414,7 +1422,7 @@ classdef UI < handle
                 set(ui.h.st{i}, 'string', tmp(i))
             end
             ui.gstart = tmp;
-        end
+        end % change global start point
                 
         function set_param_fix_cb(ui, varargin)
             m = ui.models(ui.model);
@@ -1436,7 +1444,7 @@ classdef UI < handle
                 end
             end
             ui.set_gstart_cb();
-        end
+        end % fix parameter checkbox
 
         function set_param_glob_cb(ui, varargin)
             m = ui.models(ui.model);
@@ -1447,22 +1455,7 @@ classdef UI < handle
                     ui.use_gstart(i) = 1;
                 end
             end
-        end
-        
-        function set_bounds(ui, varargin)
-            m = ui.models(ui.model);
-            for i = 1:length(m{4});
-                m{2}(i) = str2double(get(ui.h.lb{i}, 'string'));
-                m{3}(i) = str2double(get(ui.h.ub{i}, 'string'));
-            end
-            ui.models(ui.model) = m;
-        end
-        
-        function set_cmap(ui, varargin)
-            cmaps = get(ui.h.colormap_drpd, 'string'); 
-            ui.cmap = cmaps{get(ui.h.colormap_drpd, 'value')};
-            ui.plot_array();
-        end
+        end % global SP checkbox
         
         function set_scale_cb(ui, varargin)
             if varargin{1} == ui.h.scale_x
@@ -1470,50 +1463,36 @@ classdef UI < handle
             elseif varargin{1} == ui.h.scale_y
                 ui.set_scale([ui.scale(1), str2double(get(ui.h.scale_y, 'string'))]);
             end
-        end
+        end % scale of a pixel
+       
+        function set_model_cb(ui, varargin)
+            t = keys(ui.models);
+            str = t{get(ui.h.drpd, 'value')};
+            ui.set_model(str);
+        end % fitmodel from dropdown
         
-        function set_scale(ui, scl)
-            ui.scale = scl;
-            set(ui.h.scale_x, 'string', ui.scale(1));
-            set(ui.h.scale_y, 'string', ui.scale(2));
-        end
+        function set_cmap_cb(ui, varargin)
+            cmaps = get(ui.h.colormap_drpd, 'string'); 
+            ui.cmap = cmaps{get(ui.h.colormap_drpd, 'value')};
+            ui.plot_array();
+        end % colormap
+        
+        function set_bounds_cb(ui, varargin)
+            m = ui.models(ui.model);
+            for i = 1:length(m{4});
+                m{2}(i) = str2double(get(ui.h.lb{i}, 'string'));
+                m{3}(i) = str2double(get(ui.h.ub{i}, 'string'));
+            end
+            ui.models(ui.model) = m;
+        end % update bounds
         
         function set_savepath_cb(ui, varargin)
             ui.set_savepath(get(varargin{1}, 'string'));
-        end
-        
-        function set_savepath(ui, path)
-            if isdir(path)
-                set(ui.h.path, 'string', path, 'tooltipString', path);
-                ui.savepath = path;
-            else
-                set(ui.h.path, 'string', ui.savepath, 'tooltipString', ui.savepath);
-                warning(['Path "' path '" not valid!']);
-            end
-        end
+        end % path
         
         function set_savename_cb(ui, varargin)
             ui.set_savename(get(varargin{1}, 'string'));
-        end
-        
-        function set_savename(ui, name)
-            if regexp(name, '\.pdf$')
-                name = name(1:end-4);
-            end
-            if ~get(ui.h.file_overwrite, 'value')
-                while exist([ui.savepath '/' name '.pdf'], 'file')
-                    [b, e] = regexp(name, '_[0-9]+$');
-                    if b
-                        name = [name(1:b) num2str(str2double(name(b+1:e))+1)];
-                    else
-                        name = [name '_1'];
-                    end
-                end
-            end
-            name = [name '.pdf'];
-            set(ui.h.filename, 'string', name, 'tooltipString', name);
-            ui.savename = name;
-        end
+        end % filename
     end
 
     methods (Static=true)

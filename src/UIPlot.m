@@ -63,7 +63,9 @@ classdef UIPlot < handle
                 plt.h.gof = uicontrol(plt.h.fitpanel);
                 plt.h.param = uipanel(plt.h.fitpanel);
 
-            
+            plt.h.prev_fig = uicontrol();
+            set(plt.h.prev_fig, 'callback', @plt.generate_export_fig,...
+                'string', 'vorschau')
             %% figure
             if iscell(ui.fileinfo.name)
                 name = ui.fileinfo.name{plt.cp(1)};
@@ -356,7 +358,7 @@ classdef UIPlot < handle
             plt.ui.set_gstart(par);
         end
         
-        function save_fig(ui, varargin)
+        function save_fig(plt, varargin)
             pix_scale = 1000/d;
 
             x_pix = x*pix_scale;
@@ -374,44 +376,35 @@ classdef UIPlot < handle
             close(ui.h.plot_pre)
         end
 
-        function generate_export_fig(ui, varargin)
+        function generate_export_fig(plt, varargin)
             if ~isempty(varargin) && isvalid(varargin{1})
                 vis = 'on';
             else
                 vis = 'off';
             end
                         
-            tmp = get(ui.h.axes, 'position');
-            if isfield(ui.h, 'plot_pre') && ishandle(ui.h.plot_pre)
-                figure(ui.h.plot_pre);
+            if isfield(plt.h, 'plot_pre') && ishandle(plt.h.plot_pre)
+                figure(plt.h.plot_pre);
                 clf();
-                windowpos = get(ui.h.plot_pre, 'position');
             else
-                ui.h.plot_pre = figure('visible', vis);
-                screensize = get(0, 'ScreenSize');
-                windowpos = [screensize(3)-(x_pix+100) screensize(4)-(y_pix+150)  x_pix+80 y_pix+100];
+                plt.h.plot_pre = figure('visible', vis);
             end
             set(plt.h.plot_pre, 'units', 'pixels',...
-                   'position', windowpos,...
                    'numbertitle', 'off',...
                    'menubar', 'none',...
+                   'position', [100 100 1100 750],...
                    'name', 'SISA Scan Vorschau',...
                    'resize', 'off',...
                    'Color', [.95, .95, .95]);
 
             ax = copyobj(plt.h.axes, plt.h.plot_pre);
+            xlabel(ax, 'Zeit [µs]')
+            ylabel(ax, 'Counts')
             ax_res = copyobj(plt.h.res, plt.h.plot_pre);
-
-            set(ax, 'position', [tmp(1) tmp(2) x_pix y_pix],...
-                    'XColor', 'black',...
-                    'YColor', 'black');
-            xlabel('X [mm]')
-            ylabel('Y [mm]')
-            set(ax, 'xtick', 0:x, 'ytick', 0:y,...
-                    'xticklabel', num2cell((0:x)*ui.scale(1)),...
-                    'yticklabel', num2cell((0:y)*ui.scale(2)));
-            colormap(ui.cmap);
-            colorbar();
+            xlabel(ax_res, 'Zeit [µs]')
+            ylabel(ax_res, 'norm. Residuen [Counts]')
+            set(ax_res, 'position', [50, 50, 1000, 200])
+            set(ax, 'position', [50 300 1000 400])
         end
     end
     
