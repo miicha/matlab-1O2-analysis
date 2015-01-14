@@ -72,7 +72,7 @@ classdef UI < handle
             minSize = [700 550]; 
             
             
-            ui.h.menu = uimenu();
+            ui.h.menu = uimenu(ui.h.f);
 
             ui.h.plotpanel = uipanel();
                 ui.h.axes = axes('parent', ui.h.plotpanel);
@@ -278,8 +278,8 @@ classdef UI < handle
                       
             %% tabs for switching selection modes
             set(ui.h.tabs, 'units', 'pixels',...
-                               'position', [10 28 250 550],...
-                               'visible', 'off');
+                           'position', [10 28 250 550],...
+                           'visible', 'off');
                            
             %% Fitten
             set(ui.h.fit_tab, 'Title', 'Fitten');

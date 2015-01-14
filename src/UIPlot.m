@@ -48,24 +48,29 @@ classdef UIPlot < handle
             plt.est_params = squeeze(ui.est_params(plt.cp(1), plt.cp(2), plt.cp(3), plt.cp(4), :));
 
             plt.model_str = ui.model;
-
+            
             %% initialize UI objects
             
             plt.h.f = figure();
+            minSize = [850 650];
+            
+%             plt.h.menu = uimenu(plt.h.f);
             
             plt.h.axes = axes();
             plt.h.res = axes();
             
-            plt.h.fitpanel = uipanel();
-                plt.h.drpd = uicontrol(plt.h.fitpanel);
-                plt.h.pb = uicontrol(plt.h.fitpanel);
-                plt.h.pb_glob = uicontrol(plt.h.fitpanel);
-                plt.h.gof = uicontrol(plt.h.fitpanel);
-                plt.h.param = uipanel(plt.h.fitpanel);
+            plt.h.tabs = uitabgroup();
+            plt.h.fit_tab = uitab(plt.h.tabs);
+                plt.h.drpd = uicontrol(plt.h.fit_tab);
+                plt.h.pb = uicontrol(plt.h.fit_tab);
+                plt.h.pb_glob = uicontrol(plt.h.fit_tab);
+                plt.h.gof = uicontrol(plt.h.fit_tab);
+                plt.h.param = uipanel(plt.h.fit_tab);
+                
+            plt.h.exp_tab = uitab(plt.h.tabs);
+                plt.h.prev_fig = uicontrol(plt.h.exp_tab);
+                plt.h.save_fig = uicontrol(plt.h.exp_tab);
 
-            plt.h.prev_fig = uicontrol();
-            set(plt.h.prev_fig, 'callback', @plt.generate_export_fig,...
-                'string', 'vorschau')
             %% figure
             if iscell(ui.fileinfo.name)
                 name = ui.fileinfo.name{plt.cp(1)};
@@ -77,21 +82,50 @@ classdef UIPlot < handle
                          'position', [500 200 1000 710],...
                          'numbertitle', 'off',...
                          'resize', 'on',...
+                         'menubar', 'none',...
+                         'toolbar', 'figure',...
                          'name',  ['SISA Scan - ' name],...
                          'ResizeFcn', @plt.resize,...
                          'WindowButtonUpFcn', @plt.stop_dragging);
+                     
+            toolbar_pushtools = findall(findall(plt.h.f, 'Type', 'uitoolbar'),...
+                                                    'Type', 'uipushtool');
+            toolbar_toggletools = findall(findall(plt.h.f, 'Type', 'uitoolbar'),...
+                                                    'Type', 'uitoggletool');
+            set(toolbar_pushtools(end), 'visible', 'off');
+            set(toolbar_pushtools(end-1), 'visible', 'off');
+            set(toolbar_pushtools(end-3), 'visible', 'off');
+            set(toolbar_pushtools(1), 'visible', 'off');
+            set(toolbar_pushtools(2), 'visible', 'off');
+            
+            set(toolbar_toggletools(end), 'visible', 'off','Separator', 'off');
+            set(toolbar_toggletools(end-4), 'visible', 'off');
+            set(toolbar_toggletools(end-6), 'visible', 'off', 'Separator', 'off');
+            set(toolbar_toggletools(end-7), 'visible', 'off', 'Separator', 'off');
+            set(toolbar_toggletools(end-8), 'visible', 'off', 'Separator', 'off');
+
+%              set(plt.h.menu, 'Label', 'Export');
+%              uimenu(plt.h.menu, 'Label', 'Plot-Vorschau',...
+%                                 'Callback', @plt.generate_export_fig_cb);
+%              uimenu(plt.h.menu, 'Label', 'Als .pdf speichern',...
+%                                 'Callback', @plt.save_fig_cb);
 
             %% plot
 
             set(plt.h.axes, 'units', 'pixels',...
-                            'position', [50 260 900 400]);
+                            'position', [50 305 900 400],...
+                            'box', 'on');
                         
             set(plt.h.res, 'units', 'pixels',...
-                            'position', [50 110 900 130]);
+                           'position', [50 145 900 130],...
+                           'box', 'on');
             
+            set(plt.h.tabs, 'units', 'pixels',...
+                            'position', [50 10 900 105]);
+                        
             %% fitoptions
-            set(plt.h.fitpanel, 'units', 'pixels',...
-                                'position', [50 10 900 75]);
+            set(plt.h.fit_tab, 'units', 'pixels',...
+                               'Title', 'Fitten');
             
             set(plt.h.drpd, 'units', 'pixels',...
                             'style', 'popupmenu',...
@@ -128,6 +162,32 @@ classdef UIPlot < handle
             plt.h.pd = cell(1, 1);
             plt.h.pc = cell(1, 1);
                       
+            
+            %% export
+            set(plt.h.exp_tab, 'units', 'pixels',...
+                               'Title', 'Export');
+                           
+            set(plt.h.prev_fig, 'units', 'pixels',...
+                          'position', [10 40 98 28],...
+                          'string', 'Vorschau',...
+                          'FontSize', 9,...
+                          'BackgroundColor', [.8 .8 .8],...
+                          'callback', @plt.generate_export_fig_cb);
+                      
+            set(plt.h.save_fig, 'units', 'pixels',...
+                          'position', [10 5 98 28],...
+                          'string', 'Speichern',...
+                          'FontSize', 9,...
+                          'BackgroundColor', [.8 .8 .8],...
+                          'callback', @plt.save_fig_cb);
+
+            %% limit size with java
+            drawnow;
+            jFrame = get(handle(plt.h.f), 'JavaFrame');
+            jWindow = jFrame.fHG2Client.getWindow;
+            tmp = java.awt.Dimension(minSize(1), minSize(2));
+            jWindow.setMinimumSize(tmp);
+            
             %% draw plot
             plt.generate_param();      
             plt.plotdata();
@@ -166,10 +226,11 @@ classdef UIPlot < handle
             plot(plt.x_data((plt.t_offset+plt.t_zero):end), datal((plt.t_offset+plt.t_zero):end), '.b');
             
             plt.h.zeroline = line([0 0], [0 realmax], 'Color', [0 1 0],... 
-                      'ButtonDownFcn', @plt.plot_click, 'LineWidth', 1.5, 'LineStyle', '--');
+                      'ButtonDownFcn', @plt.plot_click, 'LineWidth', 1.5, 'LineStyle', '--',...
+                      'Tag', 'line');
             plt.h.offsetline = line([plt.t_offset plt.t_offset]*plt.channel_width,...
                 [0 realmax], 'Color', [0 1 1], 'ButtonDownFcn', @plt.plot_click, 'LineWidth', 1.5,...
-                'LineStyle', '-.');
+                'LineStyle', '-.', 'Tag', 'line');
             hold off
             
             xlim([min(plt.x_data)-1 max(plt.x_data)+1]);
@@ -358,25 +419,30 @@ classdef UIPlot < handle
             plt.ui.set_gstart(par);
         end
         
-        function save_fig(plt, varargin)
-            pix_scale = 1000/d;
-
-            x_pix = x*pix_scale;
-            y_pix = y*pix_scale;
+        function save_fig_cb(plt, varargin)
+            name = plt.ui.savename;
+            if regexp(name, '\.pdf$')
+                name = name(1:end-4);
+            end
             
-            tmp = get(ui.h.axes, 'position');
+            name = [name '_' regexprep(num2str(plt.cp), '\s+', '_') '.pdf'];
+            path = [plt.ui.savepath name];
             
-            ui.generate_export_fig();
-
+            plt.generate_export_fig_cb();
+            
+            tmp = get(plt.h.plot_pre, 'position');
+            x_pix = tmp(3);
+            y_pix = tmp(4);
+            
             % save the plot and close the figure
-            set(ui.h.plot_pre, 'PaperUnits', 'points');
-            set(ui.h.plot_pre, 'PaperSize', [x_pix+80 y_pix+80]/1.5);
-            set(ui.h.plot_pre, 'PaperPosition', [tmp(1)*0.5 tmp(2)*0.5 x_pix*1.1 y_pix*1.1]/1.5);
-            print(ui.h.plot_pre, '-dpdf', '-r600', [ui.fileinfo.name '_arrayplot.pdf']);
-            close(ui.h.plot_pre)
+            set(plt.h.plot_pre, 'PaperUnits', 'points');
+            set(plt.h.plot_pre, 'PaperSize', [x_pix+80 y_pix+80]/1.5);
+            set(plt.h.plot_pre, 'PaperPosition', [10 0 x_pix+80 y_pix+80]/1.5);
+            print(plt.h.plot_pre, '-dpdf', '-r600', path);
+            close(plt.h.plot_pre)
         end
 
-        function generate_export_fig(plt, varargin)
+        function generate_export_fig_cb(plt, varargin)
             if ~isempty(varargin) && isvalid(varargin{1})
                 vis = 'on';
             else
@@ -399,12 +465,24 @@ classdef UIPlot < handle
 
             ax = copyobj(plt.h.axes, plt.h.plot_pre);
             xlabel(ax, 'Zeit [µs]')
-            ylabel(ax, 'Counts')
-            ax_res = copyobj(plt.h.res, plt.h.plot_pre);
-            xlabel(ax_res, 'Zeit [µs]')
-            ylabel(ax_res, 'norm. Residuen [Counts]')
-            set(ax_res, 'position', [50, 50, 1000, 200])
-            set(ax, 'position', [50 300 1000 400])
+            ylabel(ax, 'Counts');
+
+            if plt.fitted
+                ax_res = copyobj(plt.h.res, plt.h.plot_pre);
+                xlabel(ax_res, 'Zeit [µs]')
+                ylabel(ax_res, 'norm. Residuen [Counts]')
+                set(ax_res, 'position', [50, 50, 1000, 150]);
+                set(ax, 'position', [50 250 1000 450]);
+            else
+                set(ax, 'position', [50 50 1000 650]);
+            end
+            
+            plotobjs = ax.Children;
+            for i = 1:length(plotobjs)
+                if strcmp(plotobjs(i).Tag, 'line')
+                    set(plotobjs(i), 'visible', 'off')
+                end
+            end
         end
     end
     
@@ -413,16 +491,17 @@ classdef UIPlot < handle
             fP = get(plt.h.f, 'position');
             
             aP = get(plt.h.axes, 'position');
-            aP(3:4) = fP(3:4) - aP(1:2) - 50;
+            aP(3) = fP(3) - aP(1) - 50;
+            aP(4) = fP(4) - aP(2) - 10;
             set(plt.h.axes, 'position', aP);
             
             aP = get(plt.h.res, 'position');
             aP(3) = fP(3) - aP(1) - 50;
             set(plt.h.res, 'position', aP);
             
-            fpP = get(plt.h.fitpanel, 'position');
+            fpP = get(plt.h.tabs, 'position');
             fpP(3) = fP(3) - fpP(1) - 50;
-            set(plt.h.fitpanel, 'position', fpP);
+            set(plt.h.tabs, 'position', fpP);
         end
     end
     
