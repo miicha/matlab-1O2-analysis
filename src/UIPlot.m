@@ -19,6 +19,7 @@ classdef UIPlot < handle
         t_offset;
         t_zero;
         channel_width;
+        fit_info = true; % should probably be false?
         
         models;
         h = struct();           % handles
@@ -72,10 +73,10 @@ classdef UIPlot < handle
                 plt.h.save_fig = uicontrol(plt.h.exp_tab);
 
             %% figure
-            if iscell(ui.fileinfo.name)
+            if length(ui.fileinfo.name) > 1
                 name = ui.fileinfo.name{plt.cp(1)};
             else
-                name = [ui.fileinfo.name ' - ' num2str(plt.cp)];
+                name = [ui.fileinfo.name{1} ' - ' num2str(plt.cp)];
             end
             
             set(plt.h.f, 'units', 'pixels',...
@@ -445,7 +446,7 @@ classdef UIPlot < handle
         end
         
         function save_fig(plt, path)
-            plt.generate_export_fig_cb();
+            plt.generate_export_fig('off');
             
             tmp = get(plt.h.plot_pre, 'position');
             x_pix = tmp(3);
@@ -458,14 +459,8 @@ classdef UIPlot < handle
             print(plt.h.plot_pre, '-dpdf', '-r600', path);
             close(plt.h.plot_pre)
         end
-        
-        function generate_export_fig_cb(plt, varargin)
-            if ~isempty(varargin) && isvalid(varargin{1})
-                vis = 'on';
-            else
-                vis = 'off';
-            end
-                        
+
+        function generate_export_fig(plt, vis)    
             if isfield(plt.h, 'plot_pre') && ishandle(plt.h.plot_pre)
                 figure(plt.h.plot_pre);
                 clf();
@@ -500,6 +495,19 @@ classdef UIPlot < handle
                     set(plotobjs(i), 'visible', 'off')
                 end
             end
+            
+            if plt.fitted && plt.fit_info
+                plt.generate_fit_info_ov();
+            end
+        end
+        
+        function generate_fit_info_ov(plt)
+            ax = plt.h.plot_pre.Children(1);
+            m = text()
+        end
+        
+        function generate_export_fig_cb(plt, varargin)
+            plt.generate_export_fig('on');
         end
     end
     

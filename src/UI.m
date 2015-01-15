@@ -66,7 +66,7 @@ classdef UI < handle
 
     methods
         % create new instance with basic controls
-        function ui = UI(path, pos)
+        function ui = UI(path, name, pos)
             %% initialize all UI objects:
             ui.h.f = figure();
             minSize = [700 550]; 
@@ -146,7 +146,7 @@ classdef UI < handle
      
             set(ui.h.menu, 'Label', 'Datei');
             uimenu(ui.h.menu, 'label', 'Datei öffnen...',...
-                              'callback', @ui.open_file);
+                              'callback', @ui.open_file_cb);
             
             set(ui.h.bottombar, 'units', 'pixels',...
                                 'position', [-1 0 1000 18],...
@@ -522,49 +522,29 @@ classdef UI < handle
             ui.resize();
             ui.set_model('1. A*(exp(-t/t1)-exp(-t/t2))+offset');
             
-            if nargin > 0
-                if nargin == 2
+            if nargin > 1
+                if nargin == 3
                     set(ui.h.f, 'position', pos);
                 end
                 pause(.1);
-                ui.open_file(path);
+                ui.open_file(path, name);
             end
         end
 
-        function open_file(ui, varargin)
-            pathsupplied = 0;
-            if ischar(varargin{1}) && exist(varargin{1}, 'file')
-                r = regexp(varargin{1}, '[/|\\][^\\]+\.[h5|diff]');
-                if ~isempty(r)
-                    filepath = varargin{1}(1:r(end));
-                    name = varargin{1}((r(end)+1):end);
-                    pathsupplied = 1;
-                end
-            else
-                % get path of file from user
-                [name, filepath] = uigetfile({'*.h5;*.diff'}, 'Dateien auswählen', 'MultiSelect', 'on');
-                if (~ischar(name) && ~iscell(name)) || ~ischar(filepath) % no file selected
-                    return
-                end
-            end
-
-            if pathsupplied == 0
-                set(ui.h.f, 'visible', 'off');
-                UI([filepath name], get(ui.h.f, 'position'));
-                close(ui.h.f);
-                delete(ui);
-                return
-            end
-            
-            if ~iscell(name) && regexp(name, '*?.h5')
+        function open_file(ui, path, name)
+            ui.fileinfo.path = path;
+            filepath = path;
+            if iscell(name)
+                % multiple selection
+                % TODO: check if all files end with *.diff
                 ui.fileinfo.name = name;
-                ui.fileinfo.path = [filepath name];
-                ui.openHDF5();
-            else
-                ui.fileinfo.name = name;
-                ui.fileinfo.path = filepath;
                 ui.openDIFF();
-                filepath = filepath{1};
+            else
+                % single selection
+                if regexp(name, '\.h5$')
+                    ui.fileinfo.name = {name};
+                    ui.openHDF5();
+                end
             end
             
             % UI stuff
@@ -584,15 +564,28 @@ classdef UI < handle
             ui.change_overlay_cond_cb();
             ui.plot_array();
             
-            set(ui.h.filename, 'string', [ui.fileinfo.name '_plot.pdf']);
+            set(ui.h.filename, 'string', [ui.fileinfo.name{1} '_plot.pdf']);
             ui.set_scale(ui.scale);
             ui.set_savepath(filepath);
-            ui.set_savename([name '_plot.pdf']);
+            ui.set_savename([ui.fileinfo.name{1} '_plot.pdf']);
         end
 
+        function open_file_cb(ui, varargin)
+            % get path of file from user
+            [name, filepath] = uigetfile({'*.h5;*.diff'}, 'Dateien auswählen', 'MultiSelect', 'on');
+            if (~ischar(name) && ~iscell(name)) || ~ischar(filepath) % no file selected
+                return
+            end
+            set(ui.h.f, 'visible', 'off');
+            UI(filepath, name, get(ui.h.f, 'position'));
+            close(ui.h.f);
+            delete(ui);
+        end
+        
         function openHDF5(ui)
+            filepath = [ui.fileinfo.path ui.fileinfo.name{1}];
             % get dimensions of scan, determine if scan finished
-            dims = h5readatt(ui.fileinfo.path, '/PATH/DATA', 'GRID DIMENSIONS');
+            dims = h5readatt(filepath, '/PATH/DATA', 'GRID DIMENSIONS');
             dims = strsplit(dims{:}, '/');
             
                     % offset of 1 should be fixed in labview scan software
@@ -603,17 +596,17 @@ classdef UI < handle
             ui.fileinfo.size = [str2double(dims{1})+1 str2double(dims{2})+1 str2double(dims{3})+offset];
                     % end of fix
             % get max number of samples per point (should be at /0/0/0/sisa)
-            info = h5info(ui.fileinfo.path, '/0/0/0/sisa');
+            info = h5info(filepath, '/0/0/0/sisa');
             ui.fileinfo.size(4) = length(info.Datasets);
             
             % read Channel Width
             try
-                chanWidth=h5readatt(ui.fileinfo.path, '/META/SISA', 'Channel Width (ns)');
+                chanWidth=h5readatt(filepath, '/META/SISA', 'Channel Width (ns)');
                 ui.channel_width=single(chanWidth)/1000;
             end
             
             % get attributes from file
-            fin = h5readatt(ui.fileinfo.path, '/PATH/DATA', 'LAST POINT');
+            fin = h5readatt(filepath, '/PATH/DATA', 'LAST POINT');
             if  strcmp(fin{:}, 'CHECKPOINT')
                 ui.fileinfo.finished = true;
             else
@@ -621,7 +614,7 @@ classdef UI < handle
             end
             
             % get scanned points
-            tmp = h5read(ui.fileinfo.path, '/PATH/DATA');
+            tmp = h5read(filepath, '/PATH/DATA');
             tmp = tmp.Name;
             % create map between string and position in data
                 % Performance problem here. Not using a map and computing
@@ -644,7 +637,7 @@ classdef UI < handle
             ui.fileinfo.np = ui.points.Count;
             
             % UI stuff
-            set(ui.h.f, 'name', ['SISA Scan - ' ui.fileinfo.name]);
+            set(ui.h.f, 'name', ['SISA Scan - ' ui.fileinfo.name{1}]);
             
             ui.update_sliders();
             ui.readHDF5();
@@ -683,6 +676,7 @@ classdef UI < handle
         end
 
         function readHDF5(ui, varargin)
+            filepath = [ui.fileinfo.path ui.fileinfo.name{1}];
             time_zero = 0;
             k = keys(ui.points);
             for i = 1:ui.fileinfo.np
@@ -690,13 +684,13 @@ classdef UI < handle
                 % every point should have exactly as many samples
                 % as the first point, except for the last one
 %                 if i == ui.fileinfo.np % get number of samples for last point
-                    info = h5info(ui.fileinfo.path, ['/' k{i} '/sisa']);
+                    info = h5info(filepath, ['/' k{i} '/sisa']);
                     samples = length(info.Datasets); 
 %                 else % take number of samples of first point
 %                     samples = ui.fileinfo.size(4);
 %                 end
                 for j = 1:samples % iterate over all samples
-                    d = h5read(ui.fileinfo.path, ['/' k{i} '/sisa/' num2str(j)]);
+                    d = h5read(filepath, ['/' k{i} '/sisa/' num2str(j)]);
                     ui.data(ind(1), ind(2), ind(3), j, :) = d;
                     [~, t] = max(d(1:end));
                     time_zero = (time_zero + t)/2;
@@ -801,7 +795,7 @@ classdef UI < handle
             if nargin < 2
                 text = '';
             end
-            str = [ui.fileinfo.path '  |   Dimensionen: ' num2str(ui.fileinfo.size)];
+            str = [[ui.fileinfo.path ui.fileinfo.name{1}] '  |   Dimensionen: ' num2str(ui.fileinfo.size)];
             if ui.fitted
                 str = [str '   |   Daten global gefittet.'];
             elseif ui.data_read
