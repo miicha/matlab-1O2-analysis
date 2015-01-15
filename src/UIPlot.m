@@ -89,26 +89,28 @@ classdef UIPlot < handle
                          'WindowButtonUpFcn', @plt.stop_dragging);
                      
             toolbar_pushtools = findall(findall(plt.h.f, 'Type', 'uitoolbar'),...
-                                                    'Type', 'uipushtool');
+                                                         'Type', 'uipushtool');
             toolbar_toggletools = findall(findall(plt.h.f, 'Type', 'uitoolbar'),...
                                                     'Type', 'uitoggletool');
-            set(toolbar_pushtools(end), 'visible', 'off');
-            set(toolbar_pushtools(end-1), 'visible', 'off');
-            set(toolbar_pushtools(end-3), 'visible', 'off');
-            set(toolbar_pushtools(1), 'visible', 'off');
-            set(toolbar_pushtools(2), 'visible', 'off');
-            
-            set(toolbar_toggletools(end), 'visible', 'off','Separator', 'off');
-            set(toolbar_toggletools(end-4), 'visible', 'off');
-            set(toolbar_toggletools(end-6), 'visible', 'off', 'Separator', 'off');
-            set(toolbar_toggletools(end-7), 'visible', 'off', 'Separator', 'off');
-            set(toolbar_toggletools(end-8), 'visible', 'off', 'Separator', 'off');
 
-%              set(plt.h.menu, 'Label', 'Export');
-%              uimenu(plt.h.menu, 'Label', 'Plot-Vorschau',...
-%                                 'Callback', @plt.generate_export_fig_cb);
-%              uimenu(plt.h.menu, 'Label', 'Als .pdf speichern',...
-%                                 'Callback', @plt.save_fig_cb);
+            set(findall(toolbar_pushtools, 'Tag', 'Plottools.PlottoolsOn'), 'visible', 'off');
+            set(findall(toolbar_pushtools, 'Tag', 'Plottools.PlottoolsOff'), 'visible', 'off');
+            set(findall(toolbar_pushtools, 'Tag', 'Standard.PrintFigure'), 'visible', 'off');
+            set(findall(toolbar_pushtools, 'Tag', 'Standard.FileOpen'), 'visible', 'off');
+            set(findall(toolbar_pushtools, 'Tag', 'Standard.NewFigure'), 'visible', 'off');
+            
+            set(findall(toolbar_pushtools, 'Tag', 'Standard.SaveFigure'),...
+                                                  'clickedcallback', @plt.save_fig_selloc_cb);
+            
+            set(findall(toolbar_toggletools, 'Tag', 'Annotation.InsertLegend'), 'visible', 'off',...
+                                                                          'Separator', 'off');
+            set(findall(toolbar_toggletools, 'Tag', 'Annotation.InsertColorbar'), 'visible', 'off',...
+                                                                          'Separator', 'off');
+            set(findall(toolbar_toggletools, 'Tag', 'DataManager.Linking'), 'visible', 'off',...
+                                                                          'Separator', 'off');
+            set(findall(toolbar_toggletools, 'Tag', 'Exploration.Rotate'), 'visible', 'off');
+            set(findall(toolbar_toggletools, 'Tag', 'Standard.EditPlot'), 'visible', 'off',...
+                                                                          'Separator', 'off');
 
             %% plot
 
@@ -419,7 +421,20 @@ classdef UIPlot < handle
             plt.ui.set_gstart(par);
         end
         
+        function save_fig_selloc_cb(plt, varargin)
+            [name, path] = uiputfile('*.pdf', 'Plot als PDF speichern', plt.generate_filepath());
+            if name == 0
+                return
+            end
+            plt.save_fig([path name]);
+        end
+        
         function save_fig_cb(plt, varargin)
+            path = plt.generate_filepath();
+            save_fig(path);
+        end
+        
+        function path = generate_filepath(plt)
             name = plt.ui.savename;
             if regexp(name, '\.pdf$')
                 name = name(1:end-4);
@@ -427,7 +442,9 @@ classdef UIPlot < handle
             
             name = [name '_' regexprep(num2str(plt.cp), '\s+', '_') '.pdf'];
             path = [plt.ui.savepath name];
-            
+        end
+        
+        function save_fig(plt, path)
             plt.generate_export_fig_cb();
             
             tmp = get(plt.h.plot_pre, 'position');
@@ -441,7 +458,7 @@ classdef UIPlot < handle
             print(plt.h.plot_pre, '-dpdf', '-r600', path);
             close(plt.h.plot_pre)
         end
-
+        
         function generate_export_fig_cb(plt, varargin)
             if ~isempty(varargin) && isvalid(varargin{1})
                 vis = 'on';
