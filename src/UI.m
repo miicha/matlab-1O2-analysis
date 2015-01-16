@@ -569,18 +569,6 @@ classdef UI < handle
             ui.set_savepath(filepath);
             ui.set_savename([ui.fileinfo.name{1} '_plot.pdf']);
         end
-
-        function open_file_cb(ui, varargin)
-            % get path of file from user
-            [name, filepath] = uigetfile({'*.h5;*.diff'}, 'Dateien auswählen', 'MultiSelect', 'on');
-            if (~ischar(name) && ~iscell(name)) || ~ischar(filepath) % no file selected
-                return
-            end
-            set(ui.h.f, 'visible', 'off');
-            UI(filepath, name, get(ui.h.f, 'position'));
-            close(ui.h.f);
-            delete(ui);
-        end
         
         function openHDF5(ui)
             filepath = [ui.fileinfo.path ui.fileinfo.name{1}];
@@ -1292,6 +1280,18 @@ classdef UI < handle
                     ui.plot_array();
             end
         end % mousclick on plot
+        
+        function open_file_cb(ui, varargin)
+            % get path of file from user
+            [name, filepath] = uigetfile({'*.h5;*.diff'}, 'Dateien auswählen', 'MultiSelect', 'on');
+            if (~ischar(name) && ~iscell(name)) || ~ischar(filepath) % no file selected
+                return
+            end
+            set(ui.h.f, 'visible', 'off');
+            UI(filepath, name, get(ui.h.f, 'position'));
+            close(ui.h.f);
+            delete(ui);
+        end
         
         function change_overlay_cond_cb(ui, varargin)
             switch get(ui.h.ov_rel, 'value')
