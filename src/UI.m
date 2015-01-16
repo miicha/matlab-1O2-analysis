@@ -49,7 +49,7 @@ classdef UI < handle
         
         fix = {};
         gstart = [0 0 0 0];
-        use_gstart = [0 0 0 0];
+        use_gstart = [0 0 0 0]';
         models = containers.Map(...
                  {'1. A*(exp(-t/t1)-exp(-t/t2))+offset'...
                   '2. A*(exp(-t/t1)-exp(-t/t2))+B*exp(-t/t2)+offset'...
@@ -546,6 +546,11 @@ classdef UI < handle
                     ui.openHDF5();
                 end
             end
+            tmp = size(ui.data);
+            ui.fileinfo.size = tmp(1:4);
+            
+            ui.fit_selection = ones(tmp(1), tmp(2), tmp(3), tmp(4));
+            ui.selection1 = zeros(tmp(1), tmp(2), tmp(3), tmp(4));
             
             % UI stuff
             t = keys(ui.models);
@@ -659,8 +664,6 @@ classdef UI < handle
                     ui.update_infos(['   |   Metadaten einlesen ' num2str(i) '.']);
                 end
             end
-            
-            ui.fit_selection = ones(tmp(1), tmp(2), tmp(3), tmp(4));
         end
 
         function readHDF5(ui, varargin)
@@ -691,11 +694,6 @@ classdef UI < handle
             ui.t_zero = round(time_zero);
             ui.x_data = ((1:length(ui.data(1, 1, 1, 1, :)))-ui.t_zero)'*ui.channel_width;
             ui.data_read = true;
-            tmp = size(ui.data);
-            ui.fileinfo.size = tmp(1:4);
-            
-            ui.fit_selection = ones(tmp(1), tmp(2), tmp(3), tmp(4));
-            ui.selection1 = zeros(tmp(1), tmp(2), tmp(3), tmp(4));
         end
 
         function update_plot(ui, varargin)
@@ -853,7 +851,7 @@ classdef UI < handle
             n = ui.models(ui.model);
             ui.est_params = zeros(ui.fileinfo.size(1), ui.fileinfo.size(2),...
                               ui.fileinfo.size(3), ui.fileinfo.size(4), length(n{2}));
-            ub = zeros(length(n{2}), 1);
+            ub = zeros(length(n{3}), 1);
             lb = ones(length(n{2}), 1)*100;
             p = values(ui.points);
             for i = 1:ui.fileinfo.np
@@ -1089,9 +1087,12 @@ classdef UI < handle
         function generate_bounds(ui)
             m = ui.models(ui.model);
             n = length(m{4});
-
+            
             if  length(ui.gstart) < n
                 ui.gstart = (m{2}(:)+m{3}(:))./2;
+            end
+            if length(ui.use_gstart) < n
+                ui.use_gstart = [ui.use_gstart; zeros(n - length(ui.use_gstart), 1)];
             end
             
             for i = 1:length(ui.h.lb)
@@ -1139,11 +1140,13 @@ classdef UI < handle
                                                 
                 ui.h.fix{i} = uicontrol(ui.h.bounds, 'units', 'pixels',...
                                                      'style', 'checkbox',...
+                                                     'value', ismember(m{4}(i), ui.fix),...
                                                      'position', [198 155-i*23-10 40 20],...
                                                      'callback', @ui.set_param_fix_cb);
                                                  
                 ui.h.gst{i} = uicontrol(ui.h.bounds, 'units', 'pixels',...
                                                      'style', 'checkbox',...
+                                                     'value', ui.use_gstart(i),...
                                                      'position', [215 155-i*23-10 40 20],...
                                                      'callback', @ui.set_param_glob_cb);
             end
@@ -1411,8 +1414,9 @@ classdef UI < handle
             for i = 1:n
                 if get(ui.h.fix{i}, 'value') == 1
                     ind = ind + 1;
-                    if get(ui.h.gst{i}, 'value') ~= 1
+                    if ui.use_gstart(i) ~= 1
                         set(ui.h.gst{i}, 'value', 1);
+                        ui.use_gstart(i) = 1;
                     end
                     if ind == n
                         msgbox('Kann ohne freie Parameter nicht fitten.', 'Fehler', 'modal');

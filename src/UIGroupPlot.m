@@ -45,7 +45,11 @@ classdef UIGroupPlot
  
             maxy = max(max(max(pltdata(:, :, (gplt.ui.t_zero+gplt.ui.t_offset):end))))*1.2;
             for i = 1:length(indx)
-                p = num2cell(squeeze(gplt.params(indx(i), indy(i), :)));
+                if ndims(gplt.params)==3
+                    p = num2cell(squeeze(gplt.params(indx(i), indy(i), :)));
+                else
+                    p = num2cell(squeeze(gplt.params(indx(i), :)));
+                end
                 fitdata = gplt.model_fun(p{:}, gplt.ui.x_data(gplt.ui.t_zero:end));
                 
                 subplot(gplt.y_size, gplt.x_size,sub2ind([gplt.x_size, gplt.y_size],...

@@ -3,4 +3,6 @@ clear classes;
 
 warning('off', 'MATLAB:uitabgroup:OldVersion');
 warning('off', 'MATLAB:HandleGraphics:ObsoletedProperty:JavaFrame');
-u = UI();
+global debug_u
+debug_u = true;
+UI();
