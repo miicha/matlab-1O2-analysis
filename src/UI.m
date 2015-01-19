@@ -53,13 +53,15 @@ classdef UI < handle
         models = containers.Map(...
                  {'1. A*(exp(-t/t1)-exp(-t/t2))+offset'...
                   '2. A*(exp(-t/t1)-exp(-t/t2))+B*exp(-t/t2)+offset'...
-                  '3. A*(exp(-t/t1)-exp(-t/t2))+B*exp(-t/t1)+offset'},...
+                  '3. A*(exp(-t/t1)-exp(-t/t2))+B*exp(-t/t1)+offset'...
+                  '4. A*(exp(-t/t1)+B*exp(-t/t2)+offset'},...
                  {...
                     % function, lower bounds, upper bounds, names of arguments
                     {@(A, t1, t2, offset, t) A*(exp(-t/t1)-exp(-t/t2))+offset, [1 0.1 0.1 1], [500 20 10 50], {'A', 't1', 't2', 'offset'} }...
                     {@(A, t1, t2, B, offset, t) A*(exp(-t/t1)-exp(-t/t2))+B*exp(-t/t2)+offset, [1 0.1 0.1 1 1], [500 20 10 300 50], {'A', 't1', 't2', 'B', 'offset'} }...
                     {@(A, t1, t2, B, offset, t) A*(exp(-t/t1)-exp(-t/t2))+B*exp(-t/t1)+offset, [1 0.1 0.1 1 1], [500 20 10 300 50], {'A', 't1', 't2', 'B', 'offset'} }...
-                 })
+                    {@(A, t1, t2, B, offset, t) A*exp(-t/t1)+B*exp(-t/t2)+offset, [1 0.1 0.1 1 1], [500 20 10 50 50], {'A', 't1', 't2', 'B', 'offset'} }...
+                  })
                     
         h = struct();        % handles
     end
@@ -998,6 +1000,15 @@ classdef UI < handle
             end
         end
         
+        function set_param_glob(ui, glob)
+            if length(glob) == length(ui.gstart)
+                ui.use_gstart = glob;
+                for i = 1:length(glob)
+                    set(ui.h.gst{i}, 'value', glob(i))
+                end
+            end
+        end
+        
         function set_savepath(ui, path)
             if isdir(path)
                 set(ui.h.path, 'string', path, 'tooltipString', path);
@@ -1428,16 +1439,17 @@ classdef UI < handle
             end
             ui.set_gstart_cb();
         end % fix parameter checkbox
-
+        
         function set_param_glob_cb(ui, varargin)
             m = ui.models(ui.model);
             n = length(m{4});
-            ui.use_gstart = zeros(n,1);
+            g = zeros(n,1);
             for i = 1:n
                 if get(ui.h.gst{i}, 'value') == 1
-                    ui.use_gstart(i) = 1;
+                    g(i) = 1;
                 end
             end
+            ui.set_param_glob(g);
         end % global SP checkbox
         
         function set_scale_cb(ui, varargin)
@@ -1480,7 +1492,7 @@ classdef UI < handle
 
     methods (Static=true)
         function [param] = estimate_parameters_p(data, model, t_zero, t_offset, cw)
-            data = smooth(data);
+            data = smooth(data, 'loess');
             switch model
                 case '1. A*(exp(-t/t1)-exp(-t/t2))+offset'
                     [A, t1] = max(data((t_zero + t_offset):end)); % Amplitude, first time
@@ -1504,6 +1516,19 @@ classdef UI < handle
                     t2 = find(abs(data <= round(A/2.7)));
                     t2 = t2(t2 > t1);
                     param(2) = (t2(1) - t1)*cw;
+                case '4. A*(exp(-t/t1)+B*exp(-t/t2)+offset'
+                    [A, i] = max(data((t_zero + t_offset):end));
+                    B = A/4;
+                    t1 = find(abs(data <= round(A/2.7)));
+                    t1 = t1(t1>i);
+                    t2 = t1/4;
+                    param(5) = mean(data(end-100:end));
+                    param(1) = A;
+                    param(2) = t1(1)*cw;
+                    param(3) = t2(1)*cw;
+                    param(4) = B;
+                otherwise
+                    param = 50*ones(5, 1);
             end
         end
     end
