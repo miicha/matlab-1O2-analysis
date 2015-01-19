@@ -18,6 +18,11 @@ classdef UI < handle
         fit_chisq;
         est_params;     % estimated parameters
         
+        overlays = {};  % 1 is always the automatically generated overlay,
+                        % additional overlays can be added
+        current_ov = 1;
+        ov = false;
+        
         fit_selection;
         selection1;
         selection_props;
@@ -35,7 +40,6 @@ classdef UI < handle
         current_sa = 1;
         current_param = 1;
         disp_fit_params = 0;
-        overlay = 0;
         l_min; % maximum of the current parameter over all data points
         l_max; % minimum of the current parameter over all data points
         
@@ -107,10 +111,13 @@ classdef UI < handle
                             ui.h.glob_text = uicontrol(ui.h.bounds);
                     ui.h.fit = uicontrol(ui.h.fit_tab);
                     ui.h.ov_controls = uipanel(ui.h.fit_tab);
-                        ui.h.ov_switch = uicontrol(ui.h.ov_controls);
-                        ui.h.ov_drpd = uicontrol(ui.h.ov_controls);
-                        ui.h.ov_rel = uicontrol(ui.h.ov_controls);
-                        ui.h.ov_val = uicontrol(ui.h.ov_controls);
+                        ui.h.ov_buttongroup = uibuttongroup(ui.h.ov_controls);
+                            ui.h.ov_radiobtns = {uicontrol(ui.h.ov_buttongroup)};
+                            ui.h.ov_drpd = uicontrol(ui.h.ov_controls);
+                            ui.h.ov_rel = uicontrol(ui.h.ov_controls);
+                            ui.h.ov_val = uicontrol(ui.h.ov_controls);
+                            ui.h.ov_add_from_auto = uicontrol(ui.h.ov_controls);
+                            ui.h.add_overlay = uicontrol(ui.h.ov_controls);
                     
                 ui.h.sel_tab = uitab(ui.h.tabs);
                     ui.h.sel_controls = uipanel(ui.h.sel_tab);
@@ -295,31 +302,40 @@ classdef UI < handle
                        
             %% overlay control
             set(ui.h.ov_controls, 'units', 'pixels',...
-                                  'position', [2 360 243 100]);
+                                  'position', [2 260 243 200]);
 
-            set(ui.h.ov_switch, 'units', 'pixels',...
-                                'style', 'checkbox',...
-                                'position', [15 50 60 30],...
-                                'string', 'Overlay',...
-                                'callback', @ui.toggle_overlay_cb);
-                         
+                              
+            set(ui.h.ov_buttongroup, 'SelectionChangedFcn', @ui.set_current_ov_cb);
+            
+            set(ui.h.ov_radiobtns{1}, 'units', 'pixels',...
+                                   'style', 'radiobutton',...
+                                   'position', [15 135 15 15]);
+                               
+            set(ui.h.ov_add_from_auto, 'units', 'pixels',...
+                                       'style', 'pushbutton',...
+                                       'string', '+',...
+                                       'position', [190 133 22 22],...
+                                       'callback', @ui.add_ov_from_auto_cb);
+            
+            set(ui.h.add_overlay, 'visible', 'off');
+                               
             set(ui.h.ov_drpd, 'units', 'pixels',...
                               'style', 'popupmenu',...
-                              'position', [35 25 60 30],...
+                              'position', [35 125 60 30],...
                               'string', {''},...
                               'callback', @ui.change_overlay_cond_cb,...
                               'BackgroundColor', [1 1 1]);
                          
             set(ui.h.ov_rel, 'units', 'pixels',...
                              'style', 'popupmenu',...
-                             'position', [96 25 30 30],...
+                             'position', [96 125 30 30],...
                              'string', {'<', '>'},...
                              'callback', @ui.change_overlay_cond_cb,...
                              'BackgroundColor', [1 1 1]);
             
             set(ui.h.ov_val, 'units', 'pixels',...
                              'style', 'edit',...
-                             'position', [127 33 60 22],...
+                             'position', [127 133 60 22],...
                              'string', '',...
                              'callback', @ui.change_overlay_cond_cb,...
                              'BackgroundColor', [1 1 1]); 
@@ -551,8 +567,8 @@ classdef UI < handle
             tmp = size(ui.data);
             ui.fileinfo.size = tmp(1:4);
             
-            ui.fit_selection = ones(tmp(1), tmp(2), tmp(3), tmp(4));
-            ui.selection1 = zeros(tmp(1), tmp(2), tmp(3), tmp(4));
+            ui.overlays{1} = ones(tmp(1), tmp(2), tmp(3), tmp(4));
+            ui.overlays{2} = zeros(tmp(1), tmp(2), tmp(3), tmp(4));
             
             % UI stuff
             t = keys(ui.models);
@@ -822,13 +838,8 @@ classdef UI < handle
                 cla
                 hold on
                 hmap(squeeze(plot_data(:, :))', false, ui.cmap);
-                if ui.overlay
-                    switch ui.overlay
-                        case 'fit'
-                            plot_overlay(squeeze(ui.fit_selection(:, :, z, sample))');
-                        case '1'
-                            plot_overlay(squeeze(ui.selection1(:, :, z, sample))');
-                    end
+                if ui.ov
+                    plot_overlay(squeeze(ui.overlays{ui.current_ov}(:, :, z, sample))');
                 end
                 hold off
 
@@ -892,8 +903,8 @@ classdef UI < handle
         end
 
         function fit_all(ui, varargin)
-            if get(ui.h.ov_switch, 'value')
-                ma = length(find(ui.fit_selection));
+            if ui.ov
+                ma = length(find(ui.overlays{1}));
             else
                 ma = prod(ui.fileinfo.size);
             end
@@ -901,9 +912,7 @@ classdef UI < handle
             t = ui.models(t{get(ui.h.drpd, 'value')});
             set(ui.h.param, 'visible', 'on',...
                             'string', {t{4}{:}, 'Chi^2'});
-            
-            ov = get(ui.h.ov_switch, 'value');      
-            
+                        
             % set cancel button:
             set(ui.h.fit, 'string', 'Abbrechen', 'callback', @ui.cancel_fit_cb);
 
@@ -915,7 +924,7 @@ classdef UI < handle
                 for j = 1:ui.fileinfo.size(2)
                     for k = 1:ui.fileinfo.size(3)
                         for l = 1:ui.fileinfo.size(4)
-                            if ui.fit_selection(i, j, k, l) || ~ov
+                            if ui.overlays{ui.current_ov}(i, j, k, l) || ~ui.ov
                                 n = n + 1;
                                 y = squeeze(ui.data(i, j, k, l, (ui.t_offset+ui.t_zero):end));
                                 x = ui.x_data((ui.t_zero + ui.t_offset):end);
@@ -1192,7 +1201,7 @@ classdef UI < handle
                                                     'horizontalAlignment', 'left',...
                                                     'position', [15 155-i*23-14 40 20]);
             end
-        end
+        end % mean, std, etc.
 
         function generate_export_fig(ui, ax_in, vis)
             x = ui.fileinfo.size(1);
@@ -1265,6 +1274,37 @@ classdef UI < handle
             ui.generate_sel_vals();
         end
                 
+        function add_ov(ui, init)
+            new_ov_number = length(ui.overlays)+1;
+            ui.overlays{new_ov_number} = init;
+            ui.current_ov = new_ov_number;
+            ui.generate_overlay();
+            ui.plot_array();
+        end
+        
+        function generate_overlay(ui)
+            ov_number = length(ui.overlays);
+            pos_act_r = [15 135 115 20];
+
+            for i = 2:ov_number
+                pos_act_r = pos_act_r-[0 22 0 0];
+                ui.h.ov_radiobtns{i} = uicontrol(ui.h.ov_buttongroup,...
+                                                 'units', 'pixels',...
+                                                 'style', 'radiobutton',...
+                                                 'string', ['Overlay ' num2str(i)],...
+                                                 'position', pos_act_r);
+                if i == ov_number
+                    set(ui.h.add_overlay,...
+                         'units', 'pixels',...
+                         'style', 'pushbutton',...
+                         'string', '+',...
+                         'visible', 'on',...
+                         'position', [150 pos_act_r(2) 20 20],...
+                         'callback', @ui.add_ov_new_cb);
+                end
+            end
+        end
+        
         %% Callbacks:
         function aplot_click_cb(ui, varargin)
             switch get(ui.h.f, 'SelectionType')
@@ -1281,14 +1321,8 @@ classdef UI < handle
                         cp = get(ui.h.axes, 'CurrentPoint');
                         cp = round(cp(1, 1:2));
                         if sum(ui.data(cp(1), cp(2), ui.current_z, ui.current_sa, :))
-                            switch ui.overlay
-                                case 'fit'
-                                   ui.fit_selection(cp(1), cp(2), ui.current_z, ui.current_sa) = ...
-                                       ~ui.fit_selection(cp(1), cp(2), ui.current_z, ui.current_sa);
-                                case '1'
-                                    ui.selection1(cp(1), cp(2), ui.current_z, ui.current_sa) = ...
-                                       ~ui.selection1(cp(1), cp(2), ui.current_z, ui.current_sa);
-                            end
+                            ui.overlays{ui.current_ov}(cp(1), cp(2), ui.current_z, ui.current_sa) = ...
+                            ~ui.overlays{ui.current_ov}(cp(1), cp(2), ui.current_z, ui.current_sa);
                         end
                     end
                     ui.plot_array();
@@ -1315,9 +1349,9 @@ classdef UI < handle
                             for k = 1:ui.fileinfo.size(3)
                                 for l = 1:ui.fileinfo.size(4)
                                     if ui.est_params(i, j, k, l, get(ui.h.ov_drpd, 'value')) < str2double(get(ui.h.ov_val, 'string'))
-                                        ui.fit_selection(i, j, k, l) = 0;
+                                        ui.overlays{1}(i, j, k, l) = 0;
                                     else
-                                        ui.fit_selection(i, j, k, l) = 1;
+                                        ui.overlays{1}(i, j, k, l) = 1;
                                     end
                                 end
                             end
@@ -1329,9 +1363,9 @@ classdef UI < handle
                             for k = 1:ui.fileinfo.size(3)
                                 for l = 1:ui.fileinfo.size(4)
                                     if ui.est_params(i, j, k, l, get(ui.h.ov_drpd, 'value')) > str2double(get(ui.h.ov_val, 'string'))
-                                        ui.fit_selection(i, j, k, l) = 0;
+                                        ui.overlays{1}(i, j, k, l) = 0;
                                     else
-                                        ui.fit_selection(i, j, k, l) = 1;
+                                        ui.overlays{1}(i, j, k, l) = 1;
                                     end
                                 end
                             end
@@ -1363,19 +1397,27 @@ classdef UI < handle
         function toggle_overlay_cb(ui, varargin)
             switch varargin{1} 
                 case ui.h.ov_switch
-                    ov = 'fit';
+                    s_ov = 1;
                     set(ui.h.sel_switch, 'Value', 0);
                 case ui.h.sel_switch
-                    ov = '1';
+                    s_ov = 2;
                     set(ui.h.ov_switch, 'Value', 0);
             end
-            if ui.overlay == ov
-                ui.overlay = false;
+            if ui.current_ov == s_ov
+                ui.ov = true;
             else
-                ui.overlay = ov;
+                ui.ov = false;
             end
             
             ui.plot_array();
+        end
+        
+        function add_ov_from_auto_cb(ui, varargin)
+            ui.add_ov(ui.overlays{1});
+        end
+        
+        function add_ov_new_cb(ui, varargin)
+            ui.add_ov(zeros(size(ui.overlays{1})));
         end
         
         function cancel_fit_cb(ui, varargin)
@@ -1399,6 +1441,12 @@ classdef UI < handle
         
         function generate_export_fig_cb(ui, varargin)
             ui.generate_export_fig(ui.h.axes, 'on');
+        end
+        
+        function set_current_ov_cb(ui, varargin)
+            dat = varargin{2};
+            ui.current_ov = dat.NewValue;
+            ui.plot_array();
         end
 
         function set_gstart_cb(ui, varargin)
