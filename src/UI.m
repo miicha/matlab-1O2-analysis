@@ -1289,7 +1289,7 @@ classdef UI < handle
      
             ui.overlays(position) = [];
             ui.generate_overlay();
-            ui.set_current_ov(position-1);
+            ui.set_current_ov(ui.current_ov-1);
         end
         
         function set_current_ov(ui, pos)
