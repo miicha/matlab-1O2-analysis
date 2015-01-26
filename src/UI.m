@@ -111,6 +111,7 @@ classdef UI < handle
                             ui.h.glob_text = uicontrol(ui.h.bounds);
                     ui.h.fit = uicontrol(ui.h.fit_tab);
                     ui.h.ov_controls = uipanel(ui.h.fit_tab);
+                        ui.h.ov_disp = uicontrol(ui.h.ov_controls);
                         ui.h.ov_buttongroup = uibuttongroup(ui.h.ov_controls);
                             ui.h.ov_radiobtns = {uicontrol(ui.h.ov_buttongroup)};
                             ui.h.ov_drpd = uicontrol(ui.h.ov_controls);
@@ -156,6 +157,8 @@ classdef UI < handle
             set(ui.h.menu, 'Label', 'Datei');
             uimenu(ui.h.menu, 'label', 'Datei öffnen...',...
                               'callback', @ui.open_file_cb);
+            uimenu(ui.h.menu, 'label', 'State speichern',...
+                              'callback', @ui.save_global_state_cb);
             
             set(ui.h.bottombar, 'units', 'pixels',...
                                 'position', [-1 0 1000 18],...
@@ -303,12 +306,21 @@ classdef UI < handle
             %% overlay control
             set(ui.h.ov_controls, 'units', 'pixels',...
                                   'position', [2 260 243 200]);
+                              
+            set(ui.h.ov_buttongroup, 'units', 'pixels',...
+                                     'position', [2 2 237 170]);
 
+            set(ui.h.ov_disp, 'units', 'pixels',...
+                              'style', 'checkbox',...
+                              'position', [15 175 150 20],...
+                              'string', 'Overlay anzeigen',...
+                              'callback', @ui.disp_ov_cb);
                               
             set(ui.h.ov_buttongroup, 'SelectionChangedFcn', @ui.set_current_ov_cb);
             
             set(ui.h.ov_radiobtns{1}, 'units', 'pixels',...
                                    'style', 'radiobutton',...
+                                   'tag', '1',...
                                    'position', [15 135 15 15]);
                                
             set(ui.h.ov_add_from_auto, 'units', 'pixels',...
@@ -411,24 +423,13 @@ classdef UI < handle
             
             set(ui.h.sel_controls, 'units', 'pixels',...
                                    'position', [2 360 243 100])
-        
-            set(ui.h.sel_switch, 'units', 'pixels',...
-                             'style', 'checkbox',...
-                             'position', [15 50 100 30],...
-                             'string', 'Auswahl 1',...
-                             'callback', @ui.toggle_overlay_cb);
-                         
+      
             set(ui.h.sel_btn_plot, 'units', 'pixels',...
                              'style', 'push',...
-                             'position', [15 15 50 20],...
+                             'position', [15 50 50 20],...
                              'string', 'Plotten',...
                              'callback', @ui.plot_selection);
-             
-            set(ui.h.sel_btn_exp, 'units', 'pixels',...
-                             'style', 'push',...
-                             'position', [65 15 70 20],...
-                             'string', 'Exportieren');
-                         
+
             % info about the selected data
             set(ui.h.sel_values, 'units', 'pixels',...
                                  'position', [2 100 243 250])  
@@ -591,12 +592,16 @@ classdef UI < handle
             ui.set_scale(ui.scale);
             ui.set_savepath(filepath);
             ui.set_savename([ui.fileinfo.name{1} '_plot.pdf']);
+            ui.generate_overlay();
         end
         
         function openHDF5(ui)
             filepath = [ui.fileinfo.path ui.fileinfo.name{1}];
             % get dimensions of scan, determine if scan finished
             dims = h5readatt(filepath, '/PATH/DATA', 'GRID DIMENSIONS');
+            if strcmp(dims, 'NULL')
+                dims = '1/0/0';
+            end
             dims = strsplit(dims{:}, '/');
             
                     % offset of 1 should be fixed in labview scan software
@@ -1261,7 +1266,7 @@ classdef UI < handle
         
         function generate_mean(ui)
             s = size(ui.fit_params);
-            sel = find(ui.selection1);
+            sel = find(ui.overlays{ui.current_ov});
             for i = 1:s(end)
                 if ui.fitted && ui.disp_fit_params
                     fp = squeeze(ui.fit_params(:, :, :, :, i));
@@ -1282,30 +1287,63 @@ classdef UI < handle
             ui.plot_array();
         end
         
+        function del_ov(ui, position)
+            if position == 1 % cannot delete first overlay
+                return
+            end
+     
+            ui.overlays(position) = [];
+            ui.set_current_ov(position-1);
+            ui.generate_overlay();
+        end
+        
+        function set_current_ov(ui, pos)
+            ui.current_ov = pos;
+            ui.plot_array();
+            ui.h.ov_radiobtns{pos}.Value = true;
+        end
+        
         function generate_overlay(ui)
             ov_number = length(ui.overlays);
             pos_act_r = [15 135 115 20];
-
+            for i = 2:length(ui.h.ov_radiobtns)
+                delete(ui.h.ov_radiobtns{i});
+                delete(ui.h.del_overlay{i});
+            end 
+            
             for i = 2:ov_number
                 pos_act_r = pos_act_r-[0 22 0 0];
                 ui.h.ov_radiobtns{i} = uicontrol(ui.h.ov_buttongroup,...
                                                  'units', 'pixels',...
                                                  'style', 'radiobutton',...
+                                                 'Tag', num2str(i),...
                                                  'string', ['Overlay ' num2str(i)],...
                                                  'position', pos_act_r);
+                ui.h.del_overlay{i} = uicontrol(ui.h.ov_controls,...
+                                                 'units', 'pixels',...
+                                                 'style', 'pushbutton',...
+                                                 'string', '-',...
+                                                 'visible', 'on',...
+                                                 'position', [170 pos_act_r(2) 20 20],...
+                                                 'callback', {@ui.del_ov_cb, i});
+
                 if i == ov_number
                     set(ui.h.add_overlay,...
                          'units', 'pixels',...
                          'style', 'pushbutton',...
                          'string', '+',...
                          'visible', 'on',...
-                         'position', [150 pos_act_r(2) 20 20],...
+                         'position', [190 pos_act_r(2) 20 20],...
                          'callback', @ui.add_ov_new_cb);
                 end
             end
         end
         
         %% Callbacks:
+        function save_global_state(ui, varargin)
+            save('test.mat', 'ui');
+        end
+        
         function aplot_click_cb(ui, varargin)
             switch get(ui.h.f, 'SelectionType')
                 case 'normal'
@@ -1376,10 +1414,8 @@ classdef UI < handle
         end
         
         function plot_selection(ui, varargin)
-            if ~isnan(ui.selection1)
-                ui.gplt = UIGroupPlot(ui);
-                ui.generate_sel_vals();
-            end
+            ui.gplt = UIGroupPlot(ui);
+            ui.generate_sel_vals();
         end
 
         function save_fig(ui, varargin)
@@ -1420,6 +1456,20 @@ classdef UI < handle
             ui.add_ov(zeros(size(ui.overlays{1})));
         end
         
+        function del_ov_cb(ui, varargin)
+            ui.del_ov(varargin{1}.Callback{2});
+        end
+        
+        function disp_ov_cb(ui, varargin)
+            ui.ov = varargin{1}.Value;
+            ui.plot_array();
+        end
+        
+        function set_current_ov_cb(ui, varargin)
+            dat = varargin{2};
+            ui.set_current_ov(str2double(dat.NewValue.Tag));
+        end
+        
         function cancel_fit_cb(ui, varargin)
             ui.cancel_f = true;
             set(ui.h.fit, 'string', 'Fit', 'callback', @ui.fit_all);
@@ -1443,12 +1493,6 @@ classdef UI < handle
             ui.generate_export_fig(ui.h.axes, 'on');
         end
         
-        function set_current_ov_cb(ui, varargin)
-            dat = varargin{2};
-            ui.current_ov = dat.NewValue;
-            ui.plot_array();
-        end
-
         function set_gstart_cb(ui, varargin)
             m = ui.models(ui.model);
             tmp = zeros(size(m{2}));
