@@ -591,22 +591,40 @@ classdef UI < handle
         function openHDF5(ui)
             filepath = [ui.fileinfo.path ui.fileinfo.name{1}];
             % get dimensions of scan, determine if scan finished
-            dims = h5readatt(filepath, '/PATH/DATA', 'GRID DIMENSIONS');
-            if strcmp(dims{:}, '')
-                dims = {'0/0/0'};
+            try
+                dims = h5readatt(filepath, '/PATH/DATA', 'GRID DIMENSIONS');
+                if strcmp(dims{:}, '')
+                    dims = {'0/0/0'};
+                end
+                dims = strsplit(dims{:}, '/');
+
+                        % offset of 1 should be fixed in labview scan software
+                offset = 1;
+                if str2double(dims{3}) < 0
+                    offset = abs(str2double(dims{3}))+1;
+                end
+                ui.fileinfo.size = [str2double(dims{1})+1 str2double(dims{2})+1 str2double(dims{3})+offset];
+                        % end of fix
+
+                % get attributes from file
+                fin = h5readatt(filepath, '/PATH/DATA', 'LAST POINT');
+                if  strcmp(fin{:}, 'CHECKPOINT')
+                    ui.fileinfo.finished = true;
+                else
+                    ui.fileinfo.finished = false;
+                end
+
+                % get scanned points
+                tmp = h5read(filepath, '/PATH/DATA');
+                tmp = tmp.Name;
+            catch exception
+                display(exception);
+                offset=1;
+                [tmp,dims]=estimate_path(filepath);
+                ui.fileinfo.finished = true;
+                ui.fileinfo.size = [dims{1} dims{2} dims{3}];
+                fin=tmp{end};
             end
-            dims = strsplit(dims{:}, '/');
-            
-                    % offset of 1 should be fixed in labview scan software
-            offset = 1;
-            if str2double(dims{3}) < 0
-                offset = abs(str2double(dims{3}))+1;
-            end
-            ui.fileinfo.size = [str2double(dims{1})+1 str2double(dims{2})+1 str2double(dims{3})+offset];
-                    % end of fix
-            % get max number of samples per point (should be at /0/0/0/sisa)
-            info = h5info(filepath, '/0/0/0/sisa');
-            ui.fileinfo.size(4) = length(info.Datasets);
             
             % read Channel Width
             try
@@ -614,17 +632,10 @@ classdef UI < handle
                 ui.channel_width=single(chanWidth)/1000;
             end
             
-            % get attributes from file
-            fin = h5readatt(filepath, '/PATH/DATA', 'LAST POINT');
-            if  strcmp(fin{:}, 'CHECKPOINT')
-                ui.fileinfo.finished = true;
-            else
-                ui.fileinfo.finished = false;
-            end
+            % get max number of samples per point (should be at /0/0/0/sisa)
+            info = h5info(filepath, '/0/0/0/sisa');
+            ui.fileinfo.size(4) = length(info.Datasets);
             
-            % get scanned points
-            tmp = h5read(filepath, '/PATH/DATA');
-            tmp = tmp.Name;
             % create map between string and position in data
                 % Performance problem here. Not using a map and computing
                 % the position in the vector from the string on the fly is
