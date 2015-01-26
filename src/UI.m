@@ -21,10 +21,7 @@ classdef UI < handle
         overlays = {};  % 1 is always the automatically generated overlay,
                         % additional overlays can be added
         current_ov = 1;
-        ov = false;
-        
-        fit_selection;
-        selection1;
+        disp_ov = false;
         selection_props;
         
         cancel_f = false;
@@ -118,7 +115,7 @@ classdef UI < handle
                             ui.h.ov_rel = uicontrol(ui.h.ov_controls);
                             ui.h.ov_val = uicontrol(ui.h.ov_controls);
                             ui.h.ov_add_from_auto = uicontrol(ui.h.ov_controls);
-                            ui.h.add_overlay = uicontrol(ui.h.ov_controls);
+                            ui.h.add_overlay = {};
                     
                 ui.h.sel_tab = uitab(ui.h.tabs);
                     ui.h.sel_controls = uipanel(ui.h.sel_tab);
@@ -157,7 +154,7 @@ classdef UI < handle
             set(ui.h.menu, 'Label', 'Datei');
             uimenu(ui.h.menu, 'label', 'Datei öffnen...',...
                               'callback', @ui.open_file_cb);
-            uimenu(ui.h.menu, 'label', 'State speichern',...
+            uimenu(ui.h.menu, 'label', 'State speichern (laden geht aber nicht)',...
                               'callback', @ui.save_global_state_cb);
             
             set(ui.h.bottombar, 'units', 'pixels',...
@@ -326,11 +323,9 @@ classdef UI < handle
             set(ui.h.ov_add_from_auto, 'units', 'pixels',...
                                        'style', 'pushbutton',...
                                        'string', '+',...
-                                       'position', [190 133 22 22],...
-                                       'callback', @ui.add_ov_from_auto_cb);
-            
-            set(ui.h.add_overlay, 'visible', 'off');
-                               
+                                       'position', [190 134 20 20],...
+                                       'callback', {@ui.add_ov_cb, 1});
+                                           
             set(ui.h.ov_drpd, 'units', 'pixels',...
                               'style', 'popupmenu',...
                               'position', [35 125 60 30],...
@@ -843,7 +838,7 @@ classdef UI < handle
                 cla
                 hold on
                 hmap(squeeze(plot_data(:, :))', false, ui.cmap);
-                if ui.ov
+                if ui.disp_ov
                     plot_overlay(squeeze(ui.overlays{ui.current_ov}(:, :, z, sample))');
                 end
                 hold off
@@ -908,7 +903,7 @@ classdef UI < handle
         end
 
         function fit_all(ui, varargin)
-            if ui.ov
+            if ui.disp_ov
                 ma = length(find(ui.overlays{1}));
             else
                 ma = prod(ui.fileinfo.size);
@@ -929,7 +924,7 @@ classdef UI < handle
                 for j = 1:ui.fileinfo.size(2)
                     for k = 1:ui.fileinfo.size(3)
                         for l = 1:ui.fileinfo.size(4)
-                            if ui.overlays{ui.current_ov}(i, j, k, l) || ~ui.ov
+                            if ui.overlays{ui.current_ov}(i, j, k, l) || ~ui.disp_ov
                                 n = n + 1;
                                 y = squeeze(ui.data(i, j, k, l, (ui.t_offset+ui.t_zero):end));
                                 x = ui.x_data((ui.t_zero + ui.t_offset):end);
@@ -1282,8 +1277,8 @@ classdef UI < handle
         function add_ov(ui, init)
             new_ov_number = length(ui.overlays)+1;
             ui.overlays{new_ov_number} = init;
-            ui.current_ov = new_ov_number;
             ui.generate_overlay();
+            ui.set_current_ov(new_ov_number);
             ui.plot_array();
         end
         
@@ -1293,8 +1288,8 @@ classdef UI < handle
             end
      
             ui.overlays(position) = [];
-            ui.set_current_ov(position-1);
             ui.generate_overlay();
+            ui.set_current_ov(position-1);
         end
         
         function set_current_ov(ui, pos)
@@ -1309,10 +1304,11 @@ classdef UI < handle
             for i = 2:length(ui.h.ov_radiobtns)
                 delete(ui.h.ov_radiobtns{i});
                 delete(ui.h.del_overlay{i});
-            end 
+                delete(ui.h.add_overlay{i});
+            end
             
             for i = 2:ov_number
-                pos_act_r = pos_act_r-[0 22 0 0];
+                pos_act_r = pos_act_r-[0 25 0 0];
                 ui.h.ov_radiobtns{i} = uicontrol(ui.h.ov_buttongroup,...
                                                  'units', 'pixels',...
                                                  'style', 'radiobutton',...
@@ -1324,24 +1320,22 @@ classdef UI < handle
                                                  'style', 'pushbutton',...
                                                  'string', '-',...
                                                  'visible', 'on',...
-                                                 'position', [170 pos_act_r(2) 20 20],...
+                                                 'position', [190 pos_act_r(2) 20 20],...
                                                  'callback', {@ui.del_ov_cb, i});
-
-                if i == ov_number
-                    set(ui.h.add_overlay,...
-                         'units', 'pixels',...
-                         'style', 'pushbutton',...
-                         'string', '+',...
-                         'visible', 'on',...
-                         'position', [190 pos_act_r(2) 20 20],...
-                         'callback', @ui.add_ov_new_cb);
-                end
+                ui.h.add_overlay{i} = uicontrol(ui.h.ov_controls,...
+                                                 'units', 'pixels',...
+                                                 'style', 'pushbutton',...
+                                                 'string', '+',...
+                                                 'visible', 'on',...
+                                                 'position', [211 pos_act_r(2) 20 20],...
+                                                 'callback', {@ui.add_ov_cb, i});
             end
         end
         
         %% Callbacks:
-        function save_global_state(ui, varargin)
-            save('test.mat', 'ui');
+        function save_global_state_cb(ui, varargin)
+            ui = ui;
+            save([ui.savepath ui.savename '.mat'], 'ui');
         end
         
         function aplot_click_cb(ui, varargin)
@@ -1440,20 +1434,16 @@ classdef UI < handle
                     set(ui.h.ov_switch, 'Value', 0);
             end
             if ui.current_ov == s_ov
-                ui.ov = true;
+                ui.disp_ov = true;
             else
-                ui.ov = false;
+                ui.disp_ov = false;
             end
             
             ui.plot_array();
         end
         
-        function add_ov_from_auto_cb(ui, varargin)
-            ui.add_ov(ui.overlays{1});
-        end
-        
-        function add_ov_new_cb(ui, varargin)
-            ui.add_ov(zeros(size(ui.overlays{1})));
+        function add_ov_cb(ui, varargin)
+            ui.add_ov(ui.overlays{varargin{1}.Callback{2}});
         end
         
         function del_ov_cb(ui, varargin)
@@ -1461,7 +1451,7 @@ classdef UI < handle
         end
         
         function disp_ov_cb(ui, varargin)
-            ui.ov = varargin{1}.Value;
+            ui.disp_ov = varargin{1}.Value;
             ui.plot_array();
         end
         
