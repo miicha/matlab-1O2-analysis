@@ -1,5 +1,5 @@
 <deployment-project plugin="plugin.ezdeploy" plugin-version="1.0">
-  <configuration build-checksum="3835472659" file="C:\Users\pfitzseb\Dokumente\Matlab\sisa-scan-auswertung\Deployment\SiSaScanAuswertung.prj" location="C:\Users\pfitzseb\Dokumente\Matlab\sisa-scan-auswertung\Deployment" name="SiSaScanAuswertung" preferred-package-location="C:\Users\pfitzseb\Dokumente\Matlab\sisa-scan-auswertung\Deployment\SiSaScanAuswertung\for_redistribution" preferred-package-type="package.type.exe" target="target.ezdeploy.standalone" target-name="MATLAB Compiler for Standalone Applications">
+  <configuration build-checksum="1474989479" file="C:\Users\pfitzseb\Dokumente\Matlab\sisa-scan-auswertung\Deployment\SiSaScanAuswertung.prj" location="C:\Users\pfitzseb\Dokumente\Matlab\sisa-scan-auswertung\Deployment" name="SiSaScanAuswertung" preferred-package-location="C:\Users\pfitzseb\Dokumente\Matlab\sisa-scan-auswertung\Deployment\SiSaScanAuswertung\for_redistribution" preferred-package-type="package.type.exe" target="target.ezdeploy.standalone" target-name="MATLAB Compiler for Standalone Applications">
     <param.appname>SiSaScanAuswertung</param.appname>
     <param.icon />
     <param.icons />
@@ -32,7 +32,7 @@
     <param.web.mcr>true</param.web.mcr>
     <param.package.mcr>false</param.package.mcr>
     <param.no.mcr>false</param.no.mcr>
-    <param.web.mcr.name>SiSaScanAuswertung_Web</param.web.mcr.name>
+    <param.web.mcr.name>SiSaScanAuswertung_WebInstaller</param.web.mcr.name>
     <param.package.mcr.name>MyAppInstaller_mcr</param.package.mcr.name>
     <param.no.mcr.name>MyAppInstaller_app</param.no.mcr.name>
     <param.windows.command.prompt>true</param.windows.command.prompt>

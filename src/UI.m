@@ -119,9 +119,7 @@ classdef UI < handle
                     
                 ui.h.sel_tab = uitab(ui.h.tabs);
                     ui.h.sel_controls = uipanel(ui.h.sel_tab);
-                        ui.h.sel_switch = uicontrol(ui.h.sel_controls);
                         ui.h.sel_btn_plot = uicontrol(ui.h.sel_controls);
-                        ui.h.sel_btn_exp = uicontrol(ui.h.sel_controls);
 
                     ui.h.sel_values = uipanel(ui.h.sel_tab);
                         
@@ -594,8 +592,8 @@ classdef UI < handle
             filepath = [ui.fileinfo.path ui.fileinfo.name{1}];
             % get dimensions of scan, determine if scan finished
             dims = h5readatt(filepath, '/PATH/DATA', 'GRID DIMENSIONS');
-            if strcmp(dims, 'NULL')
-                dims = '1/0/0';
+            if strcmp(dims{:}, '')
+                dims = {'0/0/0'};
             end
             dims = strsplit(dims{:}, '/');
             
@@ -823,6 +821,8 @@ classdef UI < handle
             else
                 if param > length(ui.est_params(1, 1, 1, 1, :))
                     param = 1;
+                    set(ui.h.param, 'Value', 1);
+                    ui.current_param = 1;
                 end
                 plot_data = ui.est_params(:, :, :, :, param);
             end
@@ -904,7 +904,7 @@ classdef UI < handle
 
         function fit_all(ui, varargin)
             if ui.disp_ov
-                ma = length(find(ui.overlays{1}));
+                ma = length(find(ui.overlays{ui.current_ov}));
             else
                 ma = prod(ui.fileinfo.size);
             end
@@ -1422,24 +1422,6 @@ classdef UI < handle
             set(ui.h.plot_pre, 'PaperPosition', [0 0 tmp(3) tmp(4)]*.8);
             print(ui.h.plot_pre, '-dpdf', '-r600', [ui.savepath '/' ui.savename]);
             close(ui.h.plot_pre);
-        end
-        
-        function toggle_overlay_cb(ui, varargin)
-            switch varargin{1} 
-                case ui.h.ov_switch
-                    s_ov = 1;
-                    set(ui.h.sel_switch, 'Value', 0);
-                case ui.h.sel_switch
-                    s_ov = 2;
-                    set(ui.h.ov_switch, 'Value', 0);
-            end
-            if ui.current_ov == s_ov
-                ui.disp_ov = true;
-            else
-                ui.disp_ov = false;
-            end
-            
-            ui.plot_array();
         end
         
         function add_ov_cb(ui, varargin)

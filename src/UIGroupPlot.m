@@ -16,7 +16,7 @@ classdef UIGroupPlot
     methods
         function gplt = UIGroupPlot(ui)
             gplt.ui = ui;
-            [gplt.x_pos, gplt.y_pos] = find(ui.selection1); % size of the selection
+            [gplt.x_pos, gplt.y_pos] = find(ui.overlays{ui.current_ov}); % size of the selection
             gplt.x_pos = gplt.x_pos - min(gplt.x_pos) + 1;
             gplt.y_pos = gplt.y_pos - min(gplt.y_pos) + 1;
             gplt.x_size = max(gplt.x_pos) - min(gplt.x_pos) + 1;
@@ -40,7 +40,7 @@ classdef UIGroupPlot
         end
         
         function plot_selection(gplt)
-            [indx, indy] = find(gplt.ui.selection1);
+            [indx, indy] = find(gplt.ui.overlays{gplt.ui.current_ov});
             pltdata = gplt.data(indx, indy, :);
  
             maxy = max(max(max(pltdata(:, :, (gplt.ui.t_zero+gplt.ui.t_offset):end))))*1.2;
