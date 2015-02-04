@@ -72,8 +72,6 @@ classdef UI < handle
         function ui = UI(path, name, pos)
             %% initialize all UI objects:
             ui.h.f = figure();
-            minSize = [700 550]; 
-            
             
             ui.h.menu = uimenu(ui.h.f);
 
@@ -152,7 +150,7 @@ classdef UI < handle
             set(ui.h.menu, 'Label', 'Datei');
             uimenu(ui.h.menu, 'label', 'Datei öffnen...',...
                               'callback', @ui.open_file_cb);
-            uimenu(ui.h.menu, 'label', 'State speichern (laden geht aber nicht)',...
+            uimenu(ui.h.menu, 'label', 'State speichern (experimentell!)',...
                               'callback', @ui.save_global_state_cb);
             
             set(ui.h.bottombar, 'units', 'pixels',...
@@ -523,14 +521,9 @@ classdef UI < handle
                                 
                                  
             %% limit size with java
-            drawnow;
-            jFrame = get(handle(ui.h.f), 'JavaFrame');
-            jWindow = jFrame.fHG2Client.getWindow;
-            tmp = java.awt.Dimension(minSize(1), minSize(2));
-            jWindow.setMinimumSize(tmp);
+            unsafe_limit_size(ui.h.f, [700 550]);
             
             %% init
-            
             ui.resize();
             ui.set_model('1. A*(exp(-t/t1)-exp(-t/t2))+offset');
             
@@ -556,6 +549,9 @@ classdef UI < handle
                 if regexp(name, '\.h5$')
                     ui.fileinfo.name = {name};
                     ui.openHDF5();
+                elseif regexp(name, '\.mat$')
+                    ui.load_global_state()
+                    return
                 end
             end
             tmp = size(ui.data);
@@ -1343,12 +1339,19 @@ classdef UI < handle
             end
         end
         
+        function load_global_state(ui)
+            load('test.mat');
+            unsafe_limit_size(ui_new.h.f, [700 550]);
+            delete(ui.h.f);
+            delete(ui);
+        end
+
         %% Callbacks:
         function save_global_state_cb(ui, varargin)
-            ui = ui;
-            save([ui.savepath ui.savename '.mat'], 'ui');
+            ui_new = ui;
+            save([ui.savepath ui.savename '.mat'], 'ui_new');
         end
-        
+
         function aplot_click_cb(ui, varargin)
             switch get(ui.h.f, 'SelectionType')
                 case 'normal'
@@ -1374,7 +1377,7 @@ classdef UI < handle
         
         function open_file_cb(ui, varargin)
             % get path of file from user
-            [name, filepath] = uigetfile({'*.h5;*.diff'}, 'Dateien auswählen', 'MultiSelect', 'on');
+            [name, filepath] = uigetfile({'*.h5;*.diff;*.mat'}, 'Dateien auswählen', 'MultiSelect', 'on');
             if (~ischar(name) && ~iscell(name)) || ~ischar(filepath) % no file selected
                 return
             end
@@ -1643,4 +1646,12 @@ function hmap(data, grid, cmap)
         end
         hold off
     end
+end
+
+function unsafe_limit_size(fig, minSize)
+    drawnow;
+    jFrame = get(handle(fig), 'JavaFrame');
+    jWindow = jFrame.fHG2Client.getWindow;
+    tmp = java.awt.Dimension(minSize(1), minSize(2));
+    jWindow.setMinimumSize(tmp);
 end
