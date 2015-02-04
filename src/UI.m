@@ -14,7 +14,7 @@ classdef UI < handle
                           'name', '', 'np', 0); 
         data;       % source data from HDF5
         scale = [5 5];          % distance between to pixels in mm
-        x_data;          % time data
+        x_data;         % time data
         fit_params;     % fit params, size(params) = [x y z length(fitparams)]
         fit_params_err;
         fit_chisq;
@@ -45,6 +45,7 @@ classdef UI < handle
         savepath;
         savename;
         genericname;
+        lastpath;
         
         points;
         data_read = false;
@@ -559,7 +560,7 @@ classdef UI < handle
                 if regexp(ext, 'h5$')
                     ui.fileinfo.name = {name};
                     ui.openHDF5();
-                elseif regexp(ext, 'mat$')
+                elseif regexp(ext, 'state$')
                     ui.load_global_state([filepath name])
                     return
                 end
@@ -573,6 +574,8 @@ classdef UI < handle
             
             ui.overlays{1} = ones(tmp(1), tmp(2), tmp(3), tmp(4));
             ui.overlays{2} = zeros(tmp(1), tmp(2), tmp(3), tmp(4));
+            
+            ui.saveini();
             
             % UI stuff
             t = keys(ui.models);
@@ -1355,7 +1358,7 @@ classdef UI < handle
         end
         
         function load_global_state(ui, file)
-            load(file);
+            load(file, '-mat');
             if ui_new.version ~= ui.version
                 wh = warndlg(['Version des geladenen Files (' num2str(ui_new.version)...
                               ') entspricht nicht der Version des aktuellen Programms'...
@@ -1374,10 +1377,10 @@ classdef UI < handle
         function check_version(ui)
             if isdeployed()
                 try
-                    newestversion = str2double(urlread('http://git.daten.tk/snippets/6/raw'));
+                    newestversion = str2double(urlread('http://git.daten.tk/sebastian.pfitzner/binary_versions/raw/master/sisa-scan-auswertung.ver'));
                     if newestversion > ui.version
                         wh = warndlg({['Es ist eine neue Version der Software verfügbar ('...
-                                       num2str(newestversion) '). Aktuelle Version: '...
+                                       num2str(newestversion) ').'], ['Aktuelle Version: '...
                                        num2str(ui.version) '.'],... 
                                        'Download unter: https://git.daten.tk/'}, 'Warnung', 'modal');
                         pos = wh.Position;
@@ -1388,9 +1391,26 @@ classdef UI < handle
             end
         end
         
+        function loadini(ui)
+            if exist('config.ini', 'file')
+                conf = readini('config.ini');
+                ui.version = str2double(conf.version);
+                ui.lastpath = conf.lastpath;
+            else
+                ui.version = 0;
+                ui.lastpath = 'C:/';
+            end
+        end
+        
+        function saveini(ui)
+            strct.version = ui.version;
+            strct.lastpath = ui.fileinfo.path;
+            writeini('config.ini', strct);
+        end
+        
         %% Callbacks:
         function save_global_state_cb(ui, varargin)
-            [name, path] = uiputfile('*.mat', 'State speichern', [ui.savepath ui.genericname '.mat']);
+            [name, path] = uiputfile('*.state', 'State speichern', [ui.savepath ui.genericname '.state']);
             if name == 0
                 return
             end
@@ -1423,8 +1443,9 @@ classdef UI < handle
         end % mousclick on plot
         
         function open_file_cb(ui, varargin)
+            ui.loadini();
             % get path of file from user
-            [name, filepath] = uigetfile({'*.h5;*.diff;*.mat'}, 'Dateien auswählen', 'MultiSelect', 'on');
+            [name, filepath] = uigetfile({[ui.lastpath '*.h5;*.diff;*.state']}, 'Dateien auswählen', 'MultiSelect', 'on');
             if (~ischar(name) && ~iscell(name)) || ~ischar(filepath) % no file selected
                 return
             end
