@@ -7,6 +7,8 @@ classdef UI < handle
         plt
         %%%%%%%        
         
+        version = 0.21;
+        
         % fileinfo (dims, path, ...)
         fileinfo = struct('path', '', 'size', [0 0 0 0],...
                           'name', '', 'np', 0); 
@@ -42,6 +44,7 @@ classdef UI < handle
         
         savepath;
         savename;
+        genericname;
         
         points;
         data_read = false;
@@ -150,6 +153,8 @@ classdef UI < handle
             set(ui.h.menu, 'Label', 'Datei');
             uimenu(ui.h.menu, 'label', 'Datei öffnen...',...
                               'callback', @ui.open_file_cb);
+            uimenu(ui.h.menu, 'label', 'Plot speichern',...
+                              'callback', @ui.save_fig);
             uimenu(ui.h.menu, 'label', 'State speichern (experimentell!)',...
                               'callback', @ui.save_global_state_cb);
             
@@ -546,14 +551,19 @@ classdef UI < handle
                 ui.openDIFF();
             else
                 % single selection
-                if regexp(name, '\.h5$')
+                [~, ~, ext] = fileparts(name);
+                if regexp(ext, 'h5$')
                     ui.fileinfo.name = {name};
                     ui.openHDF5();
-                elseif regexp(name, '\.mat$')
-                    ui.load_global_state()
+                elseif regexp(ext, 'mat$')
+                    ui.load_global_state([filepath name])
                     return
                 end
             end
+            [~, n] = fileparts(name);
+
+            ui.genericname = n;
+            
             tmp = size(ui.data);
             ui.fileinfo.size = tmp(1:4);
             
@@ -1045,70 +1055,71 @@ classdef UI < handle
     methods (Access = private)
         function resize(ui, varargin)
             % resize elements in figure to match window size
-            fP = get(ui.h.f, 'Position');
-            
-            pP = get(ui.h.plotpanel, 'Position');
-            pP(3:4) = [(fP(3)-pP(1))-10 (fP(4)-pP(2))-10];
-            set(ui.h.plotpanel, 'Position', pP);
-            
-            aP = get(ui.h.axes, 'Position');
-            aP(3:4) = [(pP(3)-aP(1))-50 (pP(4)-aP(2))-50];
-            set(ui.h.axes, 'Position', aP);
-            
-            tmp = get(ui.h.legend, 'position');
-            tmp(3) = aP(3);
-            set(ui.h.legend, 'position', tmp);
-            
-            tmp = get(ui.h.tick_max, 'position');
-            tmp(1) = aP(3) + aP(1) + 2;
-            set(ui.h.tick_max, 'position', tmp);
-            
-            tmp = get(ui.h.plttxt, 'position');
-            tmp(2) = aP(2)+aP(4)+2;
-            set(ui.h.plttxt, 'position', tmp);
-            
-            tmp = get(ui.h.param, 'position');
-            tmp(2) = aP(2)+aP(4)+6;
-            set(ui.h.param, 'position', tmp);
-            
-            tmp = get(ui.h.fit_est, 'position');
-            tmp(2) = aP(2)+aP(4)+6;
-            set(ui.h.fit_est, 'position', tmp);
-            
-            tmp = get(ui.h.zslider, 'position');
-            tmp(1) = aP(1) + aP(3) + 10;
-            tmp(4) = aP(4) - 30;
-            set(ui.h.zslider, 'position', tmp);
-            
-            tmp = get(ui.h.zbox, 'position');
-            tmp(1) = aP(1) + aP(3) + 10;
-            tmp(2) = aP(1) + aP(4) - 20;
-            set(ui.h.zbox, 'position', tmp);
-            
-            tmp = get(ui.h.saslider, 'position');
-            tmp(4) = aP(4) - 30;
-            set(ui.h.saslider, 'position', tmp);
-            
-            tmp = get(ui.h.sabox, 'position');
-            tmp(2) = aP(1) + aP(4) - 20;
-            set(ui.h.sabox, 'position', tmp);
-                        
-            bP = get(ui.h.bottombar, 'Position');
-            bP(3) = fP(3)+3;
-            set(ui.h.bottombar, 'Position', bP);
-            
-            bP = get(ui.h.info, 'Position');
-            bP(3) = fP(3);
-            set(ui.h.info, 'Position', bP);
-            
-            tP = get(ui.h.tabs, 'Position');
-            tP(4) = pP(4);
-            set(ui.h.tabs, 'Position', tP);
-            
-            tmp = get(ui.h.ov_controls, 'Position');
-            tmp(2) = tP(4) - tmp(4) - 40;
-            set(ui.h.ov_controls, 'Position', tmp);
-            set(ui.h.sel_controls, 'Position', tmp);
+            if isfield(ui.h, 'f') % workaround for error when a loading a file
+                fP = get(ui.h.f, 'Position');
+                pP = get(ui.h.plotpanel, 'Position');
+                pP(3:4) = [(fP(3)-pP(1))-10 (fP(4)-pP(2))-10];
+                set(ui.h.plotpanel, 'Position', pP);
+
+                aP = get(ui.h.axes, 'Position');
+                aP(3:4) = [(pP(3)-aP(1))-50 (pP(4)-aP(2))-50];
+                set(ui.h.axes, 'Position', aP);
+
+                tmp = get(ui.h.legend, 'position');
+                tmp(3) = aP(3);
+                set(ui.h.legend, 'position', tmp);
+
+                tmp = get(ui.h.tick_max, 'position');
+                tmp(1) = aP(3) + aP(1) + 2;
+                set(ui.h.tick_max, 'position', tmp);
+
+                tmp = get(ui.h.plttxt, 'position');
+                tmp(2) = aP(2)+aP(4)+2;
+                set(ui.h.plttxt, 'position', tmp);
+
+                tmp = get(ui.h.param, 'position');
+                tmp(2) = aP(2)+aP(4)+6;
+                set(ui.h.param, 'position', tmp);
+
+                tmp = get(ui.h.fit_est, 'position');
+                tmp(2) = aP(2)+aP(4)+6;
+                set(ui.h.fit_est, 'position', tmp);
+
+                tmp = get(ui.h.zslider, 'position');
+                tmp(1) = aP(1) + aP(3) + 10;
+                tmp(4) = aP(4) - 30;
+                set(ui.h.zslider, 'position', tmp);
+
+                tmp = get(ui.h.zbox, 'position');
+                tmp(1) = aP(1) + aP(3) + 10;
+                tmp(2) = aP(1) + aP(4) - 20;
+                set(ui.h.zbox, 'position', tmp);
+
+                tmp = get(ui.h.saslider, 'position');
+                tmp(4) = aP(4) - 30;
+                set(ui.h.saslider, 'position', tmp);
+
+                tmp = get(ui.h.sabox, 'position');
+                tmp(2) = aP(1) + aP(4) - 20;
+                set(ui.h.sabox, 'position', tmp);
+
+                bP = get(ui.h.bottombar, 'Position');
+                bP(3) = fP(3)+3;
+                set(ui.h.bottombar, 'Position', bP);
+
+                bP = get(ui.h.info, 'Position');
+                bP(3) = fP(3);
+                set(ui.h.info, 'Position', bP);
+
+                tP = get(ui.h.tabs, 'Position');
+                tP(4) = pP(4);
+                set(ui.h.tabs, 'Position', tP);
+
+                tmp = get(ui.h.ov_controls, 'Position');
+                tmp(2) = tP(4) - tmp(4) - 40;
+                set(ui.h.ov_controls, 'Position', tmp);
+                set(ui.h.sel_controls, 'Position', tmp);
+            end
         end
 
         function generate_bounds(ui)
@@ -1339,17 +1350,32 @@ classdef UI < handle
             end
         end
         
-        function load_global_state(ui)
-            load('test.mat');
+        function load_global_state(ui, file)
+            load(file);
+            if ui_new.version ~= ui.version
+                wh = warndlg(['Version des geladenen Files (' num2str(ui_new.version)...
+                              ') entspricht nicht der Version des aktuellen Programms'...
+                              ' (' num2str(ui.version) '). Dies kann zu Problemen '...
+                              'führen.'], 'Warnung', 'modal');
+                pos = wh.Position;
+                wh.Position = [pos(1) pos(2) pos(3)+20 pos(4)];
+                wh.Children(3).Children.FontSize = 9;
+                
+            end
             unsafe_limit_size(ui_new.h.f, [700 550]);
-            delete(ui.h.f);
+            close(ui.h.f);
             delete(ui);
         end
 
         %% Callbacks:
         function save_global_state_cb(ui, varargin)
+            [name, path] = uiputfile('*.mat', 'State speichern', [ui.savepath ui.genericname '.mat']);
+            if name == 0
+                return
+            end
+           
             ui_new = ui;
-            save([ui.savepath ui.savename '.mat'], 'ui_new');
+            save([path name], 'ui_new');
         end
 
         function aplot_click_cb(ui, varargin)
