@@ -525,6 +525,10 @@ classdef UI < handle
                                      'position', [70, 10, 100, 20]);
                                 
                                  
+                                 
+            %% check version (only if called as a binary)
+            ui.check_version();
+                                 
             %% limit size with java
             unsafe_limit_size(ui.h.f, [700 550]);
             
@@ -1367,6 +1371,23 @@ classdef UI < handle
             delete(ui);
         end
 
+        function check_version(ui)
+            if isdeployed()
+                try
+                    newestversion = str2double(urlread('http://git.daten.tk/snippets/6/raw'));
+                    if newestversion > ui.version
+                        wh = warndlg({['Es ist eine neue Version der Software verfügbar ('...
+                                       num2str(newestversion) '). Aktuelle Version: '...
+                                       num2str(ui.version) '.'],... 
+                                       'Download unter: https://git.daten.tk/'}, 'Warnung', 'modal');
+                        pos = wh.Position;
+                        wh.Position = [pos(1) pos(2) pos(3)+20 pos(4)];
+                        wh.Children(3).Children.FontSize = 9;
+                    end
+                end
+            end
+        end
+        
         %% Callbacks:
         function save_global_state_cb(ui, varargin)
             [name, path] = uiputfile('*.mat', 'State speichern', [ui.savepath ui.genericname '.mat']);
