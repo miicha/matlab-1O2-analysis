@@ -436,13 +436,7 @@ classdef UIPlot < handle
         end
         
         function path = generate_filepath(plt)
-            name = plt.ui.savename;
-            if regexp(name, '\.pdf$')
-                name = name(1:end-4);
-            end
-            
-            name = [name '_' regexprep(num2str(plt.cp), '\s+', '_') '.pdf'];
-            path = [plt.ui.savepath name];
+            path = fullfile(plt.ui.savepath, plt.ui.genericname);
         end
         
         function save_fig(plt, path)

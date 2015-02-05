@@ -29,13 +29,40 @@ classdef UIGroupPlot
             
             
             
-            gplt.h.f = figure();          
+            gplt.h.f = figure(); 
             
             set(gplt.h.f, 'units', 'pixels',...
                           'position', [500 200 1000 710],...
                           'numbertitle', 'off',...
+                          'menubar', 'none',...
+                          'toolbar', 'figure',...
                           'resize', 'on',...
                           'name', 'Auswahl 1');
+                      
+            toolbar_pushtools = findall(findall(gplt.h.f, 'Type', 'uitoolbar'),...
+                                                         'Type', 'uipushtool');
+            toolbar_toggletools = findall(findall(gplt.h.f, 'Type', 'uitoolbar'),...
+                                                    'Type', 'uitoggletool');
+
+            set(findall(toolbar_pushtools, 'Tag', 'Plottools.PlottoolsOn'), 'visible', 'off');
+            set(findall(toolbar_pushtools, 'Tag', 'Plottools.PlottoolsOff'), 'visible', 'off');
+            set(findall(toolbar_pushtools, 'Tag', 'Standard.PrintFigure'), 'visible', 'off');
+            set(findall(toolbar_pushtools, 'Tag', 'Standard.FileOpen'), 'visible', 'off');
+            set(findall(toolbar_pushtools, 'Tag', 'Standard.NewFigure'), 'visible', 'off');
+            
+            set(findall(toolbar_pushtools, 'Tag', 'Standard.SaveFigure'),...
+                                                  'clickedcallback', @gplt.save_fig_cb);
+            
+            set(findall(toolbar_toggletools, 'Tag', 'Annotation.InsertLegend'), 'visible', 'off',...
+                                                                          'Separator', 'off');
+            set(findall(toolbar_toggletools, 'Tag', 'Annotation.InsertColorbar'), 'visible', 'off',...
+                                                                          'Separator', 'off');
+            set(findall(toolbar_toggletools, 'Tag', 'DataManager.Linking'), 'visible', 'off',...
+                                                                          'Separator', 'off');
+            set(findall(toolbar_toggletools, 'Tag', 'Exploration.Rotate'), 'visible', 'off');
+            set(findall(toolbar_toggletools, 'Tag', 'Standard.EditPlot'), 'visible', 'off',...
+                                                                          'Separator', 'off');
+                      
             gplt.plot_selection();
         end
         
@@ -62,6 +89,24 @@ classdef UIGroupPlot
                 xlim([0 max(gplt.ui.x_data)])
                 ylim([0 maxy])
             end
+        end
+        
+        function save_fig_cb(gplt, varargin)
+            [name, path] = uiputfile('*.pdf', 'Plot als PDF speichern', fullfile(gplt.ui.savepath, gplt.ui.genericname));
+            if name == 0
+                return
+            end
+            path = fullfile(path, name);
+            set(gplt.h.f, 'toolbar', 'none');
+            tmp = get(gplt.h.f, 'position');
+            x_pix = tmp(3);
+            y_pix = tmp(4);
+            
+            set(gplt.h.f, 'PaperUnits', 'points');
+            set(gplt.h.f, 'PaperSize', [x_pix+80 y_pix+80]/1.5);
+            set(gplt.h.f, 'PaperPosition', [0 0 x_pix+80 y_pix+80]/1.5);
+            print(gplt.h.f, '-dpdf', '-r600', path);
+            set(gplt.h.f, 'toolbar', 'figure');
         end
     end
     
