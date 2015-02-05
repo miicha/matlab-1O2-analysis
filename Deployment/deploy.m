@@ -40,5 +40,11 @@ end
 
 %% push the binaries to your online repo
 if newver
-    
+    str = ['cd ' path_to_prjct ' & git pull & git add -u :/ & git commit -m "tagged version ' version ' of '...
+           prjct '" & git push origin master'];
+
+    done = system(str);
+    if done == 0
+        disp('Successfully pushed the new version to GitLab!');
+    end
 end
