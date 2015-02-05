@@ -6,11 +6,11 @@ Die Binary-Versionen sollten immer einigermaßen stabil sein, enthalten aber im
 Allgemeinen nicht die neusten Features und Bugfixes.
 
 - Ist die MATLAB Compiler Runtime v8.4 (R2014b) nicht installiert,
-dann bitte den Installer von [hier](https://git.daten.tk/sebastian.pfitzner/sisa-scan-auswertung/raw/master/Deployment/SiSaScanAuswertung/for_redistribution/SiSaScanAuswertung_WebInstaller.exe)
-herunterladen und ausführen.
+dann bitte den [64-bit Installer R2014b (8.4)](http://de.mathworks.com/products/compiler/mcr/index.html)
+herunterladen und ausführen. Dann mit dem nächsten Schritt weiter machen.
 
-- Andernfalls reicht es, den Inhalt [dieses](https://git.daten.tk/sebastian.pfitzner/sisa-scan-auswertung/tree/master/Deployment/SiSaScanAuswertung/for_redistribution_files_only)
-Ordners abzuspeichern und die `SiSaScanAuswertung.exe` auszuführen.
+- Andernfalls reicht es, den Inhalt [diese exe](https://git.daten.tk/sebastian.pfitzner/sisa-scan-auswertung/raw/master/Deployment/SiSaScanAuswertung/standalone/SiSaScanAuswertung.exe)
+herunterzuladen und auszuführen.
 
 #### m-Files
 Zum Installieren
