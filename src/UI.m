@@ -42,11 +42,10 @@ classdef UI < handle
         l_min; % maximum of the current parameter over all data points
         l_max; % minimum of the current parameter over all data points
         
-        savepath;
-        savename;
         genericname;
-        lastpath;
-        
+        openpath; % persistent
+        savepath; % persistent
+
         points;
         data_read = false;
         fitted = false;
@@ -135,11 +134,6 @@ classdef UI < handle
                         ui.h.scale_x = uicontrol(ui.h.pres_controls);
                         ui.h.scale_y_text = uicontrol(ui.h.pres_controls);
                         ui.h.scale_y = uicontrol(ui.h.pres_controls);
-                        ui.h.path_text = uicontrol(ui.h.pres_controls);
-                        ui.h.path = uicontrol(ui.h.pres_controls);
-                        ui.h.filename_text = uicontrol(ui.h.pres_controls);
-                        ui.h.filename = uicontrol(ui.h.pres_controls);
-                        ui.h.file_overwrite = uicontrol(ui.h.pres_controls);
                 
             %% Figure, menu, bottombar
             set(ui.h.f, 'units', 'pixels',...
@@ -149,7 +143,8 @@ classdef UI < handle
                         'name', 'SISA Scan',...
                         'resize', 'on',...
                         'Color', [.95, .95, .95],...
-                        'ResizeFcn', @ui.resize);
+                        'ResizeFcn', @ui.resize,...
+                        'DeleteFcn', @ui.destroy_cb);
      
             set(ui.h.menu, 'Label', 'Datei');
             uimenu(ui.h.menu, 'label', 'Datei öffnen...',...
@@ -492,41 +487,8 @@ classdef UI < handle
             set(ui.h.scale_y, 'units', 'pixels',...
                               'style', 'edit',...
                               'callback', @ui.set_scale_cb,...
-                              'position', [70, 90, 80, 20]);
-                          
-            set(ui.h.path_text, 'units', 'pixels',...
-                                'style', 'text',...
-                                'string', 'Pfad:',...
-                                'horizontalAlignment', 'left',...
-                                'position', [10, 52, 80, 25]);
-
-            set(ui.h.path, 'units', 'pixels',...
-                           'style', 'edit',...
-                           'FontSize', 7,...
-                           'string', pwd,...
-                           'callback', @ui.set_savepath_cb,...
-                           'position', [70, 60, 165, 20]);
-                       
-            set(ui.h.filename_text, 'units', 'pixels',...
-                                    'style', 'text',...
-                                    'string', 'Dateiname:',...
-                                    'horizontalAlignment', 'left',...
-                                    'position', [10, 22, 80, 25]);
-
-            set(ui.h.filename, 'units', 'pixels',...
-                               'style', 'edit',...
-                               'FontSize', 7,...
-                               'string', '',...
-                               'callback', @ui.set_savename_cb,...
-                               'position', [70, 30, 165, 20]);
-                           
-            set(ui.h.file_overwrite, 'units', 'pixels',...
-                                     'style', 'checkbox',...
-                                     'string', 'überschreiben?',...
-                                     'position', [70, 10, 100, 20]);
-                                
-                                 
-                                 
+                              'position', [70, 90, 80, 20]);                             
+           
             %% check version (only if called as a binary)
             ui.check_version();
                                  
@@ -595,10 +557,7 @@ classdef UI < handle
             ui.change_overlay_cond_cb();
             ui.plot_array();
             
-            set(ui.h.filename, 'string', [ui.fileinfo.name{1} '_plot.pdf']);
             ui.set_scale(ui.scale);
-            ui.set_savepath(filepath);
-            ui.set_savename([ui.fileinfo.name{1} '_plot.pdf']);
             ui.generate_overlay();
         end
         
@@ -990,25 +949,6 @@ classdef UI < handle
             ui.update_infos();
         end
 
-        function set_savename(ui, name)
-            if regexp(name, '\.pdf$')
-                name = name(1:end-4);
-            end
-            if ~get(ui.h.file_overwrite, 'value')
-                while exist([ui.savepath '/' name '.pdf'], 'file')
-                    [b, e] = regexp(name, '_[0-9]+$');
-                    if b
-                        name = [name(1:b) num2str(str2double(name(b+1:e))+1)];
-                    else
-                        name = [name '_1'];
-                    end
-                end
-            end
-            name = [name '.pdf'];
-            set(ui.h.filename, 'string', name, 'tooltipString', name);
-            ui.savename = name;
-        end
-        
         function set_model(ui, str)
             t = keys(ui.models);
             set(ui.h.drpd, 'value', find(strcmp(t, str))); % set the model in the drpd
@@ -1040,16 +980,6 @@ classdef UI < handle
                 for i = 1:length(glob)
                     set(ui.h.gst{i}, 'value', glob(i))
                 end
-            end
-        end
-        
-        function set_savepath(ui, path)
-            if isdir(path)
-                set(ui.h.path, 'string', path, 'tooltipString', path);
-                ui.savepath = path;
-            else
-                set(ui.h.path, 'string', ui.savepath, 'tooltipString', ui.savepath);
-                warning(['Path "' path '" not valid!']);
             end
         end
         
@@ -1324,6 +1254,10 @@ classdef UI < handle
             ui.h.ov_radiobtns{pos}.Value = true;
         end
         
+        function set_savepath(ui, path)
+            ui.savepath = path; 
+        end
+        
         function generate_overlay(ui)
             ov_number = length(ui.overlays);
             pos_act_r = [15 135 115 20];
@@ -1396,21 +1330,37 @@ classdef UI < handle
             p = fileparts(mfilename('fullpath'));
             if exist([p filesep() 'config.ini'], 'file')
                 conf = readini('config.ini');
-                if isfield(conf, 'lastpath')
-                    ui.lastpath = conf.lastpath;
+                if isfield(conf, 'openpath')
+                    ui.openpath = conf.openpath;
                 else
-                    ui.lastpath = [p filesep()];
+                    ui.openpath = [p filesep()];
+                end
+                if isfield(conf, 'savepath')
+                    ui.savepath = conf.savepath;
+                else
+                    ui.savepath = [p filesep()];
                 end
             else
-                ui.lastpath = [p filesep()];
+                ui.openpath = [p filesep()];
+                ui.savepath = [p filesep()];
             end
         end
         
         function saveini(ui)
             p = fileparts(mfilename('fullpath'));
             strct.version = ui.version;
-            strct.lastpath = ui.fileinfo.path;
+            strct.openpath = ui.fileinfo.path;
+            strct.savepath = ui.savepath;
+
             writeini([p filesep() 'config.ini'], strct);
+        end
+        
+        function destroy(ui)
+            try
+                ui.saveini();
+            end
+            delete(ui.h.f);
+            delete(ui);
         end
         
         %% Callbacks:
@@ -1419,7 +1369,8 @@ classdef UI < handle
             if name == 0
                 return
             end
-           
+            ui.set_savepath(path);
+
             ui_new = ui;
             save([path name], 'ui_new');
         end
@@ -1450,7 +1401,7 @@ classdef UI < handle
         function open_file_cb(ui, varargin)
             ui.loadini();
             % get path of file from user
-            [name, filepath] = uigetfile({[ui.lastpath '*.h5;*.diff;*.state']}, 'Dateien auswählen', 'MultiSelect', 'on');
+            [name, filepath] = uigetfile({[ui.openpath '*.h5;*.diff;*.state']}, 'Dateien auswählen', 'MultiSelect', 'on');
             if (~ischar(name) && ~iscell(name)) || ~ischar(filepath) % no file selected
                 return
             end
@@ -1500,6 +1451,11 @@ classdef UI < handle
         end
 
         function save_fig(ui, varargin)
+            [file, path] = uiputfile([ui.savepath filesep() ui.genericname '.pdf']);
+            if ~ischar(file) || ~ischar(path) % no file selected
+                return
+            end
+            ui.set_savepath(path);
             ui.generate_export_fig(ui.h.axes, 'off');
             tmp = get(ui.h.plot_pre, 'position');
 
@@ -1507,7 +1463,7 @@ classdef UI < handle
             set(ui.h.plot_pre, 'PaperUnits', 'points');
             set(ui.h.plot_pre, 'PaperSize', [tmp(3) tmp(4)]*.8);
             set(ui.h.plot_pre, 'PaperPosition', [0 0 tmp(3) tmp(4)]*.8);
-            print(ui.h.plot_pre, '-dpdf', '-r600', [ui.savepath '/' ui.savename]);
+            print(ui.h.plot_pre, '-dpdf', '-r600', fullfile(path, file));
             close(ui.h.plot_pre);
         end
         
@@ -1632,13 +1588,9 @@ classdef UI < handle
             ui.models(ui.model) = m;
         end % update bounds
         
-        function set_savepath_cb(ui, varargin)
-            ui.set_savepath(get(varargin{1}, 'string'));
-        end % path
-        
-        function set_savename_cb(ui, varargin)
-            ui.set_savename(get(varargin{1}, 'string'));
-        end % filename
+        function destroy_cb(ui, varargin)
+            ui.destroy();
+        end
     end
 
     methods (Static=true)
