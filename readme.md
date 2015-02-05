@@ -1,7 +1,7 @@
-# SiSa-Scan Auswerte-Software
+## SiSa-Scan Auswerte-Software
 ---
-## Installation
-### Binaries
+### Installation
+#### Binaries
 Die Binary-Versionen sollten immer einigermaßen stabil sein, enthalten aber im 
 Allgemeinen nicht die neusten Features und Bugfixes.
 
@@ -12,7 +12,7 @@ herunterladen und ausführen.
 - Andernfalls reicht es, den Inhalt [dieses](https://git.daten.tk/sebastian.pfitzner/sisa-scan-auswertung/tree/master/Deployment/SiSaScanAuswertung/for_redistribution_files_only)
 Ordners abzuspeichern und die `SiSaScanAuswertung.exe` auszuführen.
 
-### m-Files
+#### m-Files
 Zum Installieren
 
 - `git clone` in ein Verzeichnis
@@ -20,8 +20,18 @@ Zum Installieren
 
 und dann `startUI` in diesem Verzeichnis ausführen.
 
+### Hinweise
+
+- Der state des gerade laufenden Programms lässt sich mit `Datei`->`State speichern`
+speichern und über `Datei`->`Datei öffnen...` wieder laden. Dabei wird allerdings
+die gerade laufende Version der Software mitgespeichert, sodass beim Upgrade auf 
+eine neue Version und anschließendem Laden des states einer alten Version auch die
+alte Version mit allen Bugs (ähh, Features) wiederhergestellt wird.
+- Die Binaries haben eine Versionskontrolle eingebaut, die beim Start auf neue
+Binary-Versionen checkt. Dazu ist natürlich eine Internetverbindung erforderlich.
+
 ---
-### Wichtig!
+#### Wichtig!
 Matlab wurde mit Version R2014b auf ein neues Plot-Backend umgestellt. 
 Bei Matlab R2014a lässt sich das neue Backend auch verwenden, indem Matlab mit 
 `-hgVersion 2` ausgeführt wird.
