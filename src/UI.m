@@ -7,7 +7,7 @@ classdef UI < handle
         plt
         %%%%%%%        
         
-        version = 0.21;
+        version = 0.23;
         
         % fileinfo (dims, path, ...)
         fileinfo = struct('path', '', 'size', [0 0 0 0],...
@@ -547,6 +547,7 @@ classdef UI < handle
         end
 
         function open_file(ui, path, name)
+            ui.loadini();
             ui.fileinfo.path = path;
             filepath = path;
             if iscell(name)
@@ -1392,20 +1393,24 @@ classdef UI < handle
         end
         
         function loadini(ui)
-            if exist('config.ini', 'file')
+            p = fileparts(mfilename('fullpath'));
+            if exist([p filesep() 'config.ini'], 'file')
                 conf = readini('config.ini');
-                ui.version = str2double(conf.version);
-                ui.lastpath = conf.lastpath;
+                if isfield(conf, 'lastpath')
+                    ui.lastpath = conf.lastpath;
+                else
+                    ui.lastpath = [p filesep()];
+                end
             else
-                ui.version = 0;
-                ui.lastpath = 'C:/';
+                ui.lastpath = [p filesep()];
             end
         end
         
         function saveini(ui)
+            p = fileparts(mfilename('fullpath'));
             strct.version = ui.version;
             strct.lastpath = ui.fileinfo.path;
-            writeini('config.ini', strct);
+            writeini([p filesep() 'config.ini'], strct);
         end
         
         %% Callbacks:

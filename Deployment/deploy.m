@@ -5,13 +5,18 @@ else
     deploytool -build SiSaScanAuswertung
 end
 
-version = 0.21;
-
-path_to_binary_versions = 'C:\Users\pfitzseb\Dokumente\Git\binary_versions';
 prjct = 'sisa-scan-auswertung';
+path_to_prjct = 'C:\Users\pfitzseb\Dokumente\Matlab\sisa-scan-auswertung\src';
+path_to_binary_versions = 'C:\Users\pfitzseb\Dokumente\Git\binary_versions';
+
+% get version
+addpath(path_to_prjct);
+strct = readini(fullfile(path_to_prjct, 'config.ini'));
+version = strct.version;
+rmpath(path_to_prjct);
 
 str = ['cd ' path_to_binary_versions ' & git pull & @echo ' num2str(version)...
-       '> ' prjct '.ver & git add ' prjct '.ver & git commit -m "tagged new version of '...
+       '> ' prjct '.ver & git add ' prjct '.ver & git commit -m "tagged version ' version ' of '...
        prjct '" & git push origin master'];
    
 done = system(str);

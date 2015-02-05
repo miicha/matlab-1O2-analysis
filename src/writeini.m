@@ -2,8 +2,12 @@ function writeini(file, content, append)
     if nargin < 3
         append = false;
     end
-    
-    old_content = readini(file);
+    exists = exist(file, 'file');
+    if exists
+        old_content = readini(file);
+    elseif append
+        error('File does not exist! Aborting.')
+    end
     
     if ~append
         g = fopen(file, 'w+');
@@ -16,7 +20,7 @@ function writeini(file, content, append)
         for i = 1:length(fields)
             val = content.(fields{i});
             name = char(fields{i});
-            if ~isfield(old_content, fields{i}) || ~append
+            if ~append || ~isfield(old_content, fields{i})
                 append_line(f, name, val)
             else
                 error('warn:fieldexists', ['Key ' fields{i} ' already exists in ini-file! Aborting']);
@@ -27,8 +31,10 @@ function writeini(file, content, append)
             warning(err.message);
         end
         fclose(f);
-        writeini(file, old_content, false);
-        return
+        if exists
+            writeini(file, old_content, false);
+            return
+        end
     end
     fclose(f);
 end
