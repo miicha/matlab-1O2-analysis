@@ -7,7 +7,7 @@ classdef UI < handle
         plt
         %%%%%%%        
         
-        version = 0.24;
+        version = 0.241;
         
         % fileinfo (dims, path, ...)
         fileinfo = struct('path', '', 'size', [0 0 0 0],...
@@ -1331,7 +1331,7 @@ classdef UI < handle
         end
         
         function loadini(ui)
-            p = fileparts(mfilename('fullpath'));
+            p = get_executable_dir();
             if exist([p filesep() 'config.ini'], 'file')
                 conf = readini('config.ini');
                 if isfield(conf, 'openpath')
@@ -1351,7 +1351,7 @@ classdef UI < handle
         end
         
         function saveini(ui)
-            p = fileparts(mfilename('fullpath'));
+            p = get_executable_dir();
             strct.version = ui.version;
             strct.openpath = ui.openpath;
             strct.savepath = ui.savepath;
@@ -1685,4 +1685,13 @@ function unsafe_limit_size(fig, minSize)
     jWindow = jFrame.fHG2Client.getWindow;
     tmp = java.awt.Dimension(minSize(1), minSize(2));
     jWindow.setMinimumSize(tmp);
+end
+
+function p = get_executable_dir()
+    if isdeployed
+        [~, result] = system('path');
+        p = char(regexpi(result, 'Path=(.*?);', 'tokens', 'once'));
+    else
+        p = fileparts(mfilename('fullpath'));
+    end
 end
