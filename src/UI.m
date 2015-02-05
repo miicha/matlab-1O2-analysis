@@ -5,7 +5,7 @@ classdef UI < handle
         gplt = {};
         plt = {};
         
-        version = 0.241;
+        version = 0.242;
         
         % fileinfo (dims, path, ...)
         fileinfo = struct('path', '', 'size', [0 0 0 0],...

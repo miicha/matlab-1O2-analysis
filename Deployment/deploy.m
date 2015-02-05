@@ -13,6 +13,8 @@ path_to_binary_versions = 'C:\Users\pfitzseb\Dokumente\Git\binary_versions';
 addpath(path_to_prjct);
 strct = readini(fullfile(path_to_prjct, 'config.ini'));
 version = strct.version;
+version = regexprep(version, '0+$', ''); % strip zeroes at the end
+
 rmpath(path_to_prjct);
 
 str = ['cd ' path_to_binary_versions ' & git pull & @echo ' num2str(version)...
