@@ -40,7 +40,7 @@ end
 
 %% push the binaries to your online repo
 if newver
-    str = ['cd ' path_to_prjct ' & git pull & git add -u :/ & git commit -m "tagged version ' version ' of '...
+    str = ['cd ' path_to_prjct ' & git pull origin master & git add -u :/ & git commit -m "tagged version ' version ' of '...
            prjct '" & git push origin master'];
 
     done = system(str);
