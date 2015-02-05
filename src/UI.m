@@ -75,7 +75,8 @@ classdef UI < handle
             ui.h.f = figure();
             
             ui.h.menu = uimenu(ui.h.f);
-
+            ui.h.helpmenu = uimenu(ui.h.f);
+            
             ui.h.plotpanel = uipanel();
                 ui.h.axes = axes('parent', ui.h.plotpanel);
                 ui.h.legend = axes('parent', ui.h.plotpanel);
@@ -151,6 +152,8 @@ classdef UI < handle
                               'callback', @ui.save_fig);
             uimenu(ui.h.menu, 'label', 'State speichern (experimentell!)',...
                               'callback', @ui.save_global_state_cb);
+            set(ui.h.helpmenu, 'Label', '?');
+            
             
             set(ui.h.bottombar, 'units', 'pixels',...
                                 'position', [-1 0 1000 18],...
@@ -523,8 +526,8 @@ classdef UI < handle
                     ui.fileinfo.name = {name};
                     ui.openHDF5();
                 elseif regexp(ext, 'state$')
-                    ui.load_global_state([filepath name])
                     ui.saveini();
+                    ui.load_global_state([filepath name])
                     return
                 end
             end
@@ -1249,6 +1252,9 @@ classdef UI < handle
         end
         
         function set_current_ov(ui, pos)
+            if pos < 1
+                pos = 1;
+            end
             ui.current_ov = pos;
             ui.plot_array();
             ui.h.ov_radiobtns{pos}.Value = true;
@@ -1306,6 +1312,7 @@ classdef UI < handle
                 wh.Children(3).Children.FontSize = 9;
                 
             end
+            ui_new.destroy(true);
             unsafe_limit_size(ui_new.h.f, [700 550]);
             close(ui.h.f);
             delete(ui);
@@ -1357,11 +1364,11 @@ classdef UI < handle
             writeini([p filesep() 'config.ini'], strct);
         end
         
-        function destroy(ui)
+        function destroy(ui, children_only)
             try
                 ui.saveini();
             end
-            delete(ui.h.f);
+            
             if ~isempty(ui.plt)
                 for i = 1:length(ui.plt)
                     if isa(ui.plt{i}, 'UIPlot')
@@ -1378,8 +1385,10 @@ classdef UI < handle
                     end
                 end
             end
-            
-            delete(ui);
+            if ~children_only
+                delete(ui.h.f);
+                delete(ui);
+            end
         end
         
         %% Callbacks:
@@ -1389,7 +1398,7 @@ classdef UI < handle
                 return
             end
             ui.set_savepath(path);
-
+            
             ui_new = ui;
             save([path name], 'ui_new');
         end
@@ -1612,7 +1621,7 @@ classdef UI < handle
         end % update bounds
         
         function destroy_cb(ui, varargin)
-            ui.destroy();
+            ui.destroy(false);
         end
     end
 

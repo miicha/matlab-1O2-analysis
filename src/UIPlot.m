@@ -236,8 +236,8 @@ classdef UIPlot < handle
                 'LineStyle', '-.', 'Tag', 'line');
             hold off
             
-            xlim([min(plt.x_data)-1 max(plt.x_data)+1]);
             if ~realtime
+                xlim([min(plt.x_data)-1 max(plt.x_data)+1]);
                 ylim([0 m]);
                 if plt.fitted
                     plt.plotfit();
@@ -406,7 +406,7 @@ classdef UIPlot < handle
         
         function stop_dragging(plt, varargin)
             set(plt.h.f, 'WindowButtonMotionFcn', '');
-            plt.plotdata();
+%             plt.plotdata();
         end
         
         function globalize(plt, varargin)
@@ -507,20 +507,22 @@ classdef UIPlot < handle
     
     methods (Access = private)
         function resize(plt, varargin)
-            fP = get(plt.h.f, 'position');
-            
-            aP = get(plt.h.axes, 'position');
-            aP(3) = fP(3) - aP(1) - 50;
-            aP(4) = fP(4) - aP(2) - 10;
-            set(plt.h.axes, 'position', aP);
-            
-            aP = get(plt.h.res, 'position');
-            aP(3) = fP(3) - aP(1) - 50;
-            set(plt.h.res, 'position', aP);
-            
-            fpP = get(plt.h.tabs, 'position');
-            fpP(3) = fP(3) - fpP(1) - 50;
-            set(plt.h.tabs, 'position', fpP);
+            if isfield(plt.h, 'f')
+                fP = get(plt.h.f, 'position');
+
+                aP = get(plt.h.axes, 'position');
+                aP(3) = fP(3) - aP(1) - 50;
+                aP(4) = fP(4) - aP(2) - 10;
+                set(plt.h.axes, 'position', aP);
+
+                aP = get(plt.h.res, 'position');
+                aP(3) = fP(3) - aP(1) - 50;
+                set(plt.h.res, 'position', aP);
+
+                fpP = get(plt.h.tabs, 'position');
+                fpP(3) = fP(3) - fpP(1) - 50;
+                set(plt.h.tabs, 'position', fpP);
+            end
         end
     end
     
