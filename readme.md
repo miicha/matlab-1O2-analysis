@@ -2,7 +2,7 @@
 
 ## Installation
 Ist die MATLAB Compiler Runtime v8.4 (R2014b) nicht installiert,
-dann bitte den Installer von [hier](https://git.daten.tk/sebastian.pfitzner/sisa-scan-auswertung/raw/master/Deployment/SiSaScanAuswertung/for_redistribution/MyAppInstaller_web.exe)
+dann bitte den Installer von [hier](https://git.daten.tk/sebastian.pfitzner/sisa-scan-auswertung/raw/master/Deployment/SiSaScanAuswertung/for_redistribution/SiSaScanAuswertung_WebInstaller.exe)
 herunterladen und ausführen.
 
 Andernfalls reicht es, den Inhalt [dieses](https://git.daten.tk/sebastian.pfitzner/sisa-scan-auswertung/tree/master/Deployment/SiSaScanAuswertung/for_redistribution_files_only)
