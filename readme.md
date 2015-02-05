@@ -18,6 +18,8 @@ Zum Installieren
 - `git clone` in ein Verzeichnis
 - oben rechts auf `Download zip` drücken und irgendwo entpacken
 
+und dann `startUI` in diesem Verzeichnis ausführen.
+
 ---
 ### Wichtig!
 Matlab wurde mit Version R2014b auf ein neues Plot-Backend umgestellt. 
