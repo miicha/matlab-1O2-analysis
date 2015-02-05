@@ -7,7 +7,7 @@ classdef UI < handle
         plt
         %%%%%%%        
         
-        version = 0.23;
+        version = 0.24;
         
         % fileinfo (dims, path, ...)
         fileinfo = struct('path', '', 'size', [0 0 0 0],...
