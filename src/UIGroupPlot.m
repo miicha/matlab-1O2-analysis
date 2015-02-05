@@ -1,4 +1,4 @@
-classdef UIGroupPlot
+classdef UIGroupPlot < handle
     %UIGROUPPLOT
     
     properties

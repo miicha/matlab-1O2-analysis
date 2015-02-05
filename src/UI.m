@@ -2,10 +2,8 @@ classdef UI < handle
     %UI 
 
     properties
-        %%%%%%% for debugging only
-        gplt
-        plt
-        %%%%%%%        
+        gplt = {};
+        plt = {};
         
         version = 0.241;
         
@@ -1364,6 +1362,23 @@ classdef UI < handle
                 ui.saveini();
             end
             delete(ui.h.f);
+            if ~isempty(ui.plt)
+                for i = 1:length(ui.plt)
+                    if isa(ui.plt{i}, 'UIPlot')
+                        delete(ui.plt{i}.h.f);
+                        delete(ui.plt{i});
+                    end
+                end
+            end
+            if ~isempty(ui.gplt)
+                for i = 1:length(ui.gplt)
+                    if isa(ui.gplt{i}, 'UIGroupPlot')
+                        delete(ui.gplt{i}.h.f);
+                        delete(ui.gplt{i});
+                    end
+                end
+            end
+            
             delete(ui);
         end
         
@@ -1386,7 +1401,8 @@ classdef UI < handle
                         cp = get(ui.h.axes, 'CurrentPoint');
                         cp = round(cp(1, 1:2));
                         if sum(ui.data(cp(1), cp(2), ui.current_z, ui.current_sa, :))
-                            ui.plt = UIPlot(cp, ui);
+                            i = length(ui.plt);
+                            ui.plt{i+1} = UIPlot(cp, ui);
                         end
                     end
                 case 'alt'
@@ -1452,7 +1468,8 @@ classdef UI < handle
         end
         
         function plot_selection(ui, varargin)
-            ui.gplt = UIGroupPlot(ui);
+            i = length(ui.gplt);
+            ui.gplt{i+1} = UIGroupPlot(ui);
             ui.generate_sel_vals();
         end
 
