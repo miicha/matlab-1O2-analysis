@@ -511,6 +511,7 @@ classdef UI < handle
         function open_file(ui, path, name)
             ui.loadini();
             ui.fileinfo.path = path;
+            ui.openpath = path;
             filepath = path;
             if iscell(name)
                 % multiple selection
@@ -525,6 +526,7 @@ classdef UI < handle
                     ui.openHDF5();
                 elseif regexp(ext, 'state$')
                     ui.load_global_state([filepath name])
+                    ui.saveini();
                     return
                 end
             end
@@ -1295,10 +1297,12 @@ classdef UI < handle
         function load_global_state(ui, file)
             load(file, '-mat');
             if ui_new.version ~= ui.version
-                wh = warndlg(['Version des geladenen Files (' num2str(ui_new.version)...
+                wh = warndlg({['Version des geladenen Files (' num2str(ui_new.version)...
                               ') entspricht nicht der Version des aktuellen Programms'...
-                              ' (' num2str(ui.version) '). Dies kann zu Problemen '...
-                              'führen.'], 'Warnung', 'modal');
+                              ' (' num2str(ui.version) '). Dies kann zu unerwartetem '...
+                              'Verhalten (bspw. fehlender Funktionalität) führen.'], ...
+                              ['Zum Umgehen dieses Problems sollten die zugrundeliegenden'...
+                              'Daten erneut geöffnet und gefittet werden']}, 'Warnung', 'modal');
                 pos = wh.Position;
                 wh.Position = [pos(1) pos(2) pos(3)+20 pos(4)];
                 wh.Children(3).Children.FontSize = 9;
@@ -1349,7 +1353,7 @@ classdef UI < handle
         function saveini(ui)
             p = fileparts(mfilename('fullpath'));
             strct.version = ui.version;
-            strct.openpath = ui.fileinfo.path;
+            strct.openpath = ui.openpath;
             strct.savepath = ui.savepath;
 
             writeini([p filesep() 'config.ini'], strct);
@@ -1405,12 +1409,14 @@ classdef UI < handle
             if (~ischar(name) && ~iscell(name)) || ~ischar(filepath) % no file selected
                 return
             end
+            ui.openpath = filepath;
+            ui.saveini()
             set(ui.h.f, 'visible', 'off');
             UI(filepath, name, get(ui.h.f, 'position'));
             close(ui.h.f);
             delete(ui);
         end
-        
+                
         function change_overlay_cond_cb(ui, varargin)
             switch get(ui.h.ov_rel, 'value')
                 case 1
