@@ -1371,7 +1371,7 @@ classdef UI < handle
             
             if ~isempty(ui.plt)
                 for i = 1:length(ui.plt)
-                    if isa(ui.plt{i}, 'UIPlot')
+                    if isvalid(ui.plt{i}) && isa(ui.plt{i}, 'UIPlot')
                         delete(ui.plt{i}.h.f);
                         delete(ui.plt{i});
                     end
@@ -1379,7 +1379,7 @@ classdef UI < handle
             end
             if ~isempty(ui.gplt)
                 for i = 1:length(ui.gplt)
-                    if isa(ui.gplt{i}, 'UIGroupPlot')
+                    if isvalid(ui.gplt{i}) && isa(ui.gplt{i}, 'UIGroupPlot')
                         delete(ui.gplt{i}.h.f);
                         delete(ui.gplt{i});
                     end
