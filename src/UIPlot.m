@@ -225,14 +225,16 @@ classdef UIPlot < handle
             axes(plt.h.axes);
             cla
             hold on
-            plot(plt.x_data(1:(plt.t_offset+plt.t_zero)), datal(1:(plt.t_offset+plt.t_zero)), '.', 'Color', [.8 .8 1]);
-            plot(plt.x_data((plt.t_offset+plt.t_zero):end), datal((plt.t_offset+plt.t_zero):end), '.b');
+            plot(plt.x_data(1:(plt.t_offset+plt.t_zero)), datal(1:(plt.t_offset+plt.t_zero)),...
+                                                                   '.-', 'Color', [.8 .8 1]);
+            plot(plt.x_data((plt.t_offset+plt.t_zero):end), datal((plt.t_offset+plt.t_zero):end),...
+                                   'Marker', '.', 'Color', [.8 .8 1], 'MarkerEdgeColor', 'blue');
             
-            plt.h.zeroline = line([0 0], [0 realmax], 'Color', [0 1 0],... 
-                      'ButtonDownFcn', @plt.plot_click, 'LineWidth', 1.5, 'LineStyle', '--',...
+            plt.h.zeroline = line([0 0], [0 realmax], 'Color', [.7 0 .5],... 
+                      'ButtonDownFcn', @plt.plot_click, 'LineWidth', 1.2, 'LineStyle', '--',...
                       'Tag', 'line');
             plt.h.offsetline = line([plt.t_offset plt.t_offset]*plt.channel_width,...
-                [0 realmax], 'Color', [0 1 1], 'ButtonDownFcn', @plt.plot_click, 'LineWidth', 1.5,...
+                [0 realmax], 'Color', [0 .6 .5], 'ButtonDownFcn', @plt.plot_click, 'LineWidth', 1.2,...
                 'LineStyle', '-.', 'Tag', 'line');
             hold off
             
@@ -251,7 +253,7 @@ classdef UIPlot < handle
             
             axes(plt.h.axes);
             hold on
-            plot(plt.x_data,  fitdata, 'r', 'LineWidth', 2, 'HitTest', 'off');
+            plot(plt.x_data,  fitdata, 'r', 'LineWidth', 1.5, 'HitTest', 'off');
             hold off
             
             axes(plt.h.res);
@@ -263,7 +265,7 @@ classdef UIPlot < handle
                  (plt.data(1:(plt.t_offset+plt.t_zero))-...
                  fitdata(1:(plt.t_offset+plt.t_zero)))./...
                  sqrt(1+plt.data(1:(plt.t_offset+plt.t_zero))), '.', 'Color', [.8 .8 1]);
-            line([min(plt.x_data)-1 max(plt.x_data)+1], [0 0], 'Color', 'r', 'LineWidth', 2);
+            line([min(plt.x_data)-1 max(plt.x_data)+1], [0 0], 'Color', 'r', 'LineWidth', 1.5);
             xlim([min(plt.x_data)-1 max(plt.x_data)+1]);
             m = max([abs(max(residues)) abs(min(residues))]);
             ylim([-m m]);
@@ -383,10 +385,14 @@ classdef UIPlot < handle
             cpoint = get(plt.h.axes, 'CurrentPoint');
             cpoint = cpoint(1, 1);
             t = plt.t_zero + round(cpoint/plt.channel_width);
-            x = ((1:length(plt.data))-t)'*plt.channel_width;
+            n = length(plt.data);
+            x = ((1:n)-t)'*plt.channel_width;
             if t <= 0
                 t = 1;
-                x = ((1:length(plt.data))-t)'*plt.channel_width;
+                x = ((1:n)-t)'*plt.channel_width;
+            elseif t + plt.t_offset >= n
+                t = length(plt.x_data)-plt.t_offset-1;
+                x = ((1:n)-t)'*plt.channel_width;
             end
             plt.t_zero = t;
             plt.x_data = x;
@@ -398,7 +404,8 @@ classdef UIPlot < handle
             cpoint = cpoint(1, 1);
             if cpoint/plt.channel_width < 0.01
                 cpoint = 0.01;
-            else
+            elseif plt.t_zero+cpoint/plt.channel_width >= length(plt.x_data)-10
+                cpoint = (length(plt.x_data)-plt.t_zero-1)*plt.channel_width;
             end
             plt.t_offset = round(cpoint/plt.channel_width);
             plt.plotdata(true)
