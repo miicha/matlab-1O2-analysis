@@ -237,9 +237,9 @@ classdef UIPlot < handle
                 [0 realmax], 'Color', [0 .6 .5], 'ButtonDownFcn', @plt.plot_click, 'LineWidth', 1.2,...
                 'LineStyle', '-.', 'Tag', 'line');
             hold off
+            xlim([min(plt.x_data)-1 max(plt.x_data)+1]);
             
-            if ~realtime
-                xlim([min(plt.x_data)-1 max(plt.x_data)+1]);
+            if ~realtime             
                 ylim([0 m]);
                 if plt.fitted
                     plt.plotfit();
