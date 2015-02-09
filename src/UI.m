@@ -193,7 +193,6 @@ classdef UI < handle
                            'XColor', get(ui.h.plotpanel, 'BackgroundColor'),...
                            'YColor', get(ui.h.plotpanel, 'BackgroundColor'),...
                            'ButtonDownFcn', @ui.aplot_click_cb);
-                       
                                  
             set(ui.h.legend, 'units', 'pixels',...
                              'position', [50 22 400 20],...
@@ -1404,11 +1403,19 @@ classdef UI < handle
         function aplot_click_cb(ui, varargin)
             cp = get(ui.h.axes, 'CurrentPoint');
             cp = round(cp(1, 1:2));
+            cp(cp == 0) = 1;
             index{ui.curr_dims(1)} = cp(1);
             index{ui.curr_dims(2)} = cp(2);
             index{ui.curr_dims(3)} = ui.ind{ui.curr_dims(3)};
             index{ui.curr_dims(4)} = ui.ind{ui.curr_dims(4)};
-            
+
+            for i = 1:4
+                if index{i} > ui.fileinfo.size(i)
+                    index{i} = ui.fileinfo.size(i);
+                elseif index{i} <= 0
+                     index{i} = 1;
+                end
+            end
             switch get(ui.h.f, 'SelectionType')
                 case 'normal'
                     if ~strcmp(ui.fileinfo.path, '')
