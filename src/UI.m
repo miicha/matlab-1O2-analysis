@@ -5,6 +5,8 @@ classdef UI < handle
         gplt = {};
         plt = {};
         
+        reorder = [3 4 1 2];
+        
         version = 0.253;
         
         % fileinfo (dims, path, ...)
@@ -33,9 +35,23 @@ classdef UI < handle
         t_zero = 0;      % channel in which the maximum of the excitation was reached
            
         file_opened = 0;
+        
+        % slices to be displayed
+        dimnames = {'x', 'y', 'z', 'sa'};
+        curr_dims = [1, 2, 3, 4];
+        ind = {':', ':', 1, 1};
+        transpose = false;
+%         d1 = struct('slice', ':');
+%         d2 = struct('slice', ':');
+%         d3 = struct('slice', 1);
+%         d4 = struct('slice', 1);
+        current_param = 1;
+        
+        % to be replaced by the above ^
         current_z = 1;
         current_sa = 1;
-        current_param = 1;
+
+        
         disp_fit_params = 0;
         l_min; % maximum of the current parameter over all data points
         l_max; % minimum of the current parameter over all data points
@@ -91,7 +107,11 @@ classdef UI < handle
                 ui.h.fit_est = uibuttongroup(ui.h.plotpanel);
                     ui.h.fit_par = uicontrol();
                     ui.h.est_par = uicontrol();
-
+                ui.h.d1_select = uicontrol(ui.h.plotpanel);
+                ui.h.d2_select = uicontrol(ui.h.plotpanel);
+                ui.h.d3_select = uicontrol(ui.h.plotpanel);
+                ui.h.d4_select = uicontrol(ui.h.plotpanel);
+                
             ui.h.bottombar = uipanel();
                 ui.h.info = uicontrol(ui.h.bottombar);
                        
@@ -203,13 +223,13 @@ classdef UI < handle
                               'position', [460 50 20 370],...
                               'value', 1,...
                               'visible', 'off',...
-                              'callback', @ui.update_plot);
+                              'callback', @ui.set_d3_cb);
                            
             set(ui.h.zbox, 'units', 'pixels',...
                            'style', 'edit',...
                            'string', '1',...
                            'position', [460 430 20, 20],...
-                           'callback', @ui.update_plot,...
+                           'callback', @ui.set_d3_cb,...
                            'visible', 'off',...
                            'BackgroundColor', [1 1 1]);
             
@@ -218,13 +238,13 @@ classdef UI < handle
                                'position', [20 50 20 370],... 
                                'value', 1,...
                                'visible', 'off',...
-                               'callback', @ui.update_plot);
+                               'callback', @ui.set_d4_cb);
 
             set(ui.h.sabox, 'units', 'pixels',...
                             'style', 'edit',...
                             'string', '1',...
                             'position', [20 460 20 20],...
-                            'callback', @ui.update_plot,...
+                            'callback', @ui.set_d4_cb,...
                             'visible', 'off',...
                             'BackgroundColor', [1 1 1]);
 
@@ -234,7 +254,7 @@ classdef UI < handle
                             'position', [120 470 80 20],...
                             'FontSize', 9,...
                             'visible', 'off',...
-                            'callback', @ui.update_plot,...
+                            'callback', @ui.set_param_cb,...
                             'BackgroundColor', [1 1 1]);
                         
             set(ui.h.tick_min, 'units', 'pixels',...
@@ -282,7 +302,42 @@ classdef UI < handle
                               'SelectionChangeFcn', @ui.change_par_source_cb,...
                               'position', [220 445 200 21],...
                               'visible', 'off');          
-                      
+                          
+            set(ui.h.d1_select, 'units', 'pixels',...
+                                'style', 'popupmenu',...
+                                'string', ui.dimnames,...
+                                'value', 1,...
+                                'tag', '1',...
+                                'callback', @ui.set_dim_cb,...
+                                'position', [385 520 40 17],...
+                                'BackgroundColor', [1 1 1]);
+                            
+            set(ui.h.d2_select, 'units', 'pixels',...
+                                'style', 'popupmenu',...
+                                'string', ui.dimnames,...
+                                'value', 2,...
+                                'tag', '2',...
+                                'callback', @ui.set_dim_cb,...
+                                'position', [425 520 40 17],...
+                                'BackgroundColor', [1 1 1]);
+
+            set(ui.h.d3_select, 'units', 'pixels',...
+                                'style', 'popupmenu',...
+                                'string', ui.dimnames,...
+                                'value', 3,...
+                                'tag', '3',...
+                                'callback', @ui.set_dim_cb,...
+                                'position', [465 520 40 17],...
+                                'BackgroundColor', [1 1 1]);
+                            
+            set(ui.h.d4_select, 'units', 'pixels',...
+                                'style', 'popupmenu',...
+                                'string', ui.dimnames,...
+                                'value', 4,...
+                                'tag', '4',...
+                                'callback', @ui.set_dim_cb,...
+                                'position', [505 520 40 17],...
+                                'BackgroundColor', [1 1 1]);
             %% tabs for switching selection modes
             set(ui.h.tabs, 'units', 'pixels',...
                            'position', [10 28 250 550],...
@@ -519,6 +574,7 @@ classdef UI < handle
                 % TODO: check if all files end with *.diff
                 ui.fileinfo.name = name;
                 ui.openDIFF();
+                [~, n] = fileparts(name{1});
             else
                 % single selection
                 [~, ~, ext] = fileparts(name);
@@ -530,8 +586,9 @@ classdef UI < handle
                     ui.load_global_state([filepath name])
                     return
                 end
+                [~, n] = fileparts(name);
             end
-            [~, n] = fileparts(name);
+            
 
             ui.genericname = n;
             
@@ -555,9 +612,9 @@ classdef UI < handle
             set(ui.h.tabs, 'visible', 'on');
             
             ui.update_infos();
-            ui.update_sliders();
             ui.set_model('1. A*(exp(-t/t1)-exp(-t/t2))+offset');
             ui.change_overlay_cond_cb();
+            ui.update_sliders();
             ui.plot_array();
             
             ui.set_scale(ui.scale);
@@ -635,7 +692,6 @@ classdef UI < handle
             % UI stuff
             set(ui.h.f, 'name', ['SISA Scan - ' ui.fileinfo.name{1}]);
             
-            ui.update_sliders();
             ui.readHDF5();
         end
 
@@ -699,79 +755,25 @@ classdef UI < handle
             ui.data_read = true;
         end
 
-        function update_plot(ui, varargin)
-            switch varargin{1}
-                case ui.h.zslider
-                    z = round(get(ui.h.zslider, 'value'));
-                    sample = ui.current_sa;
-                    p = ui.current_param;
-                    
-                case ui.h.zbox
-                    z = round(str2double(get(ui.h.zbox, 'string')));
-                    if z > ui.fileinfo.size(3)
-                        z = ui.fileinfo.size(3);
-                    elseif z <= 0
-                        z = 1;
-                    end
-                    sample = ui.current_sa;
-                    p = ui.current_param;
-                    
-                case ui.h.saslider
-                    sample = round(get(ui.h.saslider, 'value'));
-                    z = ui.current_z;
-                    p = ui.current_param;
-                    
-                case ui.h.sabox
-                    sample = round(str2double(get(ui.h.sabox, 'string')));
-                    if sample > ui.fileinfo.size(4)
-                        sample = ui.fileinfo.size(4);
-                    elseif sample <= 0
-                        sample = 1;
-                    end
-                    z = ui.current_z;
-                    p = ui.current_param;
-                    
-                case ui.h.param
-                    p = get(ui.h.param, 'value');
-                    z = ui.current_z;
-                    sample = ui.current_sa;
-                otherwise
-            end
-            if z > ui.fileinfo.size(3)
-                z = ui.fileinfo.size(3);
-            end
-            if z > ui.fileinfo.size(4)
-                sample = ui.fileinfo.size(4);
-            end
-            
-            set(ui.h.zslider, 'value', z);
-            set(ui.h.zbox, 'string', num2str(z));
-            set(ui.h.saslider, 'value', sample);
-            set(ui.h.sabox, 'string', num2str(sample));
-            set(ui.h.param, 'value', p);
-            ui.current_z = z;
-            ui.current_sa = sample;
-            ui.current_param = p;
-            ui.plot_array();
-        end
-
         function update_sliders(ui)
-            set(ui.h.axes, 'xlim', [.5 ui.fileinfo.size(1)+.5], 'ylim', [.5 ui.fileinfo.size(2)+.5]);
+            [s1, s2, s3, s4, ~] = size(ui.est_params);
+            s = [s1 s2 s3 s4];
+
             % handle z-scans
-            if ui.fileinfo.size(3) > 1 
-                set(ui.h.zslider, 'min', 1, 'max', ui.fileinfo.size(3),...
+            if s(ui.curr_dims(3)) > 1 
+                set(ui.h.zslider, 'min', 1, 'max', s(ui.curr_dims(3)),...
                                   'visible', 'on',...
-                                  'SliderStep', [1 5]/(ui.fileinfo.size(3)-1));
+                                  'SliderStep', [1 5]/(s(ui.curr_dims(3))-1));
                 set(ui.h.zbox, 'visible', 'on');
             else 
                 set(ui.h.zbox, 'visible', 'off');
                 set(ui.h.zslider, 'visible', 'off');
             end
             % handle multiple samples
-            if ui.fileinfo.size(4) > 1 
-                set(ui.h.saslider, 'min', 1, 'max', ui.fileinfo.size(4),...
+            if s(ui.curr_dims(4)) > 1 
+                set(ui.h.saslider, 'min', 1, 'max', s(ui.curr_dims(4)),...
                                   'visible', 'on',...
-                                  'SliderStep', [1 5]/(ui.fileinfo.size(4)-1));
+                                  'SliderStep', [1 5]/(s(ui.curr_dims(4))-1));
                 set(ui.h.sabox, 'visible', 'on');
             else 
                 set(ui.h.sabox, 'visible', 'off');
@@ -793,7 +795,7 @@ classdef UI < handle
             set(ui.h.info, 'string', [str text]);
         end
 
-        function plot_array(ui, varargin)
+        function plot_array_old(ui, varargin)
             ui.generate_mean();
             
             z = ui.current_z;
@@ -816,7 +818,8 @@ classdef UI < handle
             
             ui.l_max = max(max(max(max(squeeze(plot_data)))))+10*eps;
             ui.l_min = min(min(min(min(squeeze(plot_data)))))-10*eps;
-            plot_data = squeeze(plot_data(:, :, z, sample));
+            ind = {':', ':', z, sample};
+            plot_data = squeeze(plot_data(ind{ui.reorder}));
             
             % plotting:
             % Memo to self: Don't try using HeatMaps... seriously.
@@ -847,6 +850,63 @@ classdef UI < handle
             end
         end
 
+        function plot_array(ui, varargin)
+            ui.generate_mean();
+            param = ui.current_param;
+            
+            if ui.disp_fit_params
+                if param > length(ui.est_params(1, 1, 1, 1, :))
+                    plot_data = ui.fit_chisq(:, :, :, :);
+                else
+                    plot_data = ui.fit_params(:, :, :, :, param);
+                end
+            else
+                plot_data = ui.est_params(:, :, :, :, param);
+            end
+            
+            % for legend minimum and maximum
+            ui.l_max = max(max(max(max(squeeze(plot_data)))))+10*eps;
+            ui.l_min = min(min(min(min(squeeze(plot_data)))))-10*eps;
+
+            if ui.curr_dims(2) < ui.curr_dims(1)
+                plot_data = squeeze(plot_data(ui.ind{:}))';
+                ov_data = squeeze(ui.overlays{ui.current_ov}(ui.ind{:}));
+            else
+                plot_data = squeeze(plot_data(ui.ind{:}));
+                ov_data = squeeze(ui.overlays{ui.current_ov}(ui.ind{:}))';
+            end
+            % plotting:
+            % Memo to self: Don't try using HeatMaps... seriously.
+            if gcf == ui.h.f  % don't plot when figure is in background
+                set(ui.h.f, 'CurrentAxes', ui.h.axes); 
+                cla
+                hold on
+                hmap(plot_data', false, ui.cmap);
+                if ui.disp_ov
+                    plot_overlay(ov_data);
+                end
+                hold off
+                s = size(plot_data');
+                xlim([.5 s(2)+.5])
+                ylim([.5 s(1)+.5])
+
+                if ui.l_min < ui.l_max
+                    caxis([ui.l_min ui.l_max])
+                    
+                    set(ui.h.f, 'CurrentAxes', ui.h.legend);
+                    l_data =ui.l_min:(ui.l_max-ui.l_min)/20:ui.l_max;
+                    cla
+                    hold on
+                    hmap(l_data, false, ui.cmap);
+                    hold off
+                    xlim([.5 length(l_data)+.5])
+                    set(ui.h.legend, 'visible', 'on');
+                    set(ui.h.tick_min, 'visible', 'on', 'string', num2str(l_data(1),4));
+                    set(ui.h.tick_max, 'visible', 'on', 'string', num2str(l_data(end),4));
+                end
+            end
+        end
+        
         function estimate_parameters(ui)
             n = ui.models(ui.model);
             ui.est_params = zeros(ui.fileinfo.size(1), ui.fileinfo.size(2),...
@@ -1404,23 +1464,31 @@ classdef UI < handle
         end
 
         function aplot_click_cb(ui, varargin)
+            cp = get(ui.h.axes, 'CurrentPoint');
+            cp = round(cp(1, 1:2));
+            if ui.curr_dims(1) < ui.curr_dims(2)
+                index{ui.curr_dims(1)} = cp(2);
+                index{ui.curr_dims(2)} = cp(1);
+            else
+                index{ui.curr_dims(1)} = cp(1);
+                index{ui.curr_dims(2)} = cp(2);
+            end
+            index{ui.curr_dims(3)} = ui.ind{ui.curr_dims(3)};
+            index{ui.curr_dims(4)} = ui.ind{ui.curr_dims(4)};
+            
             switch get(ui.h.f, 'SelectionType')
                 case 'normal'
                     if ~strcmp(ui.fileinfo.path, '')
-                        cp = get(ui.h.axes, 'CurrentPoint');
-                        cp = round(cp(1, 1:2));
-                        if sum(ui.data(cp(1), cp(2), ui.current_z, ui.current_sa, :))
+                        if sum(ui.data(index{:}, :))
                             i = length(ui.plt);
-                            ui.plt{i+1} = UIPlot(cp, ui);
+                            ui.plt{i+1} = UIPlot([index{:}], ui);
                         end
                     end
                 case 'alt'
                     if ~strcmp(ui.fileinfo.path, '')
-                        cp = get(ui.h.axes, 'CurrentPoint');
-                        cp = round(cp(1, 1:2));
-                        if sum(ui.data(cp(1), cp(2), ui.current_z, ui.current_sa, :))
-                            ui.overlays{ui.current_ov}(cp(1), cp(2), ui.current_z, ui.current_sa) = ...
-                            ~ui.overlays{ui.current_ov}(cp(1), cp(2), ui.current_z, ui.current_sa);
+                        if sum(ui.data(index{:}, :))
+                            ui.overlays{ui.current_ov}(index{:}) = ...
+                            ~ui.overlays{ui.current_ov}(index{:});
                         end
                     end
                     ui.plot_array();
@@ -1619,6 +1687,73 @@ classdef UI < handle
             end
             ui.models(ui.model) = m;
         end % update bounds
+        
+        function set_dim_cb(ui, varargin)
+            t = str2double(get(varargin{1}, 'Tag'));
+            val = get(varargin{1}, 'Value');
+            oval = ui.curr_dims(t);
+            a = ui.curr_dims;
+            a([find(a==oval) find(a==val)]) = a([find(a==val) find(a==oval)]);
+            ui.curr_dims = a;
+            
+            hs = {ui.h.d1_select, ui.h.d2_select, ui.h.d3_select, ui.h.d4_select};
+            for i = 1:4
+                set(hs{i}, 'value', ui.curr_dims(i));
+                if i <= 2
+                    ui.ind{ui.curr_dims(i)} = ':';
+                else
+                    ui.ind{ui.curr_dims(i)} = 1;
+                end
+            end         
+            
+            ui.update_sliders();
+            ui.plot_array();
+        end
+        
+        function set_d3_cb(ui, varargin)
+            switch varargin{1}
+                case ui.h.zslider
+                    val = round(get(ui.h.zslider, 'value'));
+                case ui.h.zbox
+                    val = round(str2double(get(ui.h.zbox, 'string')));
+            end
+            if val > ui.fileinfo.size(ui.curr_dims(3))
+                val = ui.fileinfo.size(ui.curr_dims(3));
+            elseif val <= 0
+                val = 1;
+            end
+            
+            set(ui.h.zslider, 'value', val);
+            set(ui.h.zbox, 'string', num2str(val));
+            ui.ind{ui.curr_dims(3)} = val;
+            
+            ui.plot_array();
+        end
+        
+        function set_d4_cb(ui, varargin)
+            switch varargin{1}
+                case ui.h.saslider
+                    val = round(get(ui.h.saslider, 'value'));
+                case ui.h.sabox
+                    val = round(str2double(get(ui.h.sabox, 'string')));
+            end
+            if val > ui.fileinfo.size(ui.curr_dims(4))
+                val = ui.fileinfo.size(ui.curr_dims(4));
+            elseif val <= 0
+                val = 1;
+            end
+            
+            set(ui.h.saslider, 'value', val);
+            set(ui.h.sabox, 'string', num2str(val));
+            ui.ind{ui.curr_dims(4)} = val;
+            
+            ui.plot_array();
+        end
+        
+        function set_param_cb(ui, varargin)
+            ui.current_param = get(ui.h.param, 'value');
+            ui.plot_array();
+        end
         
         function destroy_cb(ui, varargin)
             ui.destroy(false);

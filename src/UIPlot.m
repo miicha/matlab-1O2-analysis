@@ -26,7 +26,7 @@ classdef UIPlot < handle
     end
     
     methods
-        function plt = UIPlot(cp, ui)
+        function plt = UIPlot(point, ui)
             %% get data from main UI
             plt.ui = ui;                % keep refs to the memory in which
                                         % the UI object is saved
@@ -34,7 +34,7 @@ classdef UIPlot < handle
             if ui.model
                 plt.model = plt.models(ui.model);
             end
-            plt.cp = [cp ui.current_z ui.current_sa];
+            plt.cp = point;
             if ~isnan(ui.fit_chisq(plt.cp(1), plt.cp(2), plt.cp(3), plt.cp(4)))
                 plt.fitted = true;
             end
