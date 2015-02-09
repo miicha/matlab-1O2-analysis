@@ -41,15 +41,8 @@ classdef UI < handle
         curr_dims = [1, 2, 3, 4];
         ind = {':', ':', 1, 1};
         transpose = false;
-%         d1 = struct('slice', ':');
-%         d2 = struct('slice', ':');
-%         d3 = struct('slice', 1);
-%         d4 = struct('slice', 1);
+
         current_param = 1;
-        
-        % to be replaced by the above ^
-        current_z = 1;
-        current_sa = 1;
 
         
         disp_fit_params = 0;
@@ -795,61 +788,6 @@ classdef UI < handle
             set(ui.h.info, 'string', [str text]);
         end
 
-        function plot_array_old(ui, varargin)
-            ui.generate_mean();
-            
-            z = ui.current_z;
-            sample = ui.current_sa;
-            param = ui.current_param;
-            if ui.disp_fit_params
-                if param > length(ui.est_params(1, 1, 1, 1, :))
-                    plot_data = ui.fit_chisq(:, :, :, :);
-                else
-                    plot_data = ui.fit_params(:, :, :, :, param);
-                end
-            else
-                if param > length(ui.est_params(1, 1, 1, 1, :))
-                    param = 1;
-                    set(ui.h.param, 'Value', 1);
-                    ui.current_param = 1;
-                end
-                plot_data = ui.est_params(:, :, :, :, param);
-            end
-            
-            ui.l_max = max(max(max(max(squeeze(plot_data)))))+10*eps;
-            ui.l_min = min(min(min(min(squeeze(plot_data)))))-10*eps;
-            ind = {':', ':', z, sample};
-            plot_data = squeeze(plot_data(ind{ui.reorder}));
-            
-            % plotting:
-            % Memo to self: Don't try using HeatMaps... seriously.
-            if gcf == ui.h.f  % don't plot when figure is in background
-                set(ui.h.f, 'CurrentAxes', ui.h.axes); 
-                cla
-                hold on
-                hmap(squeeze(plot_data(:, :))', false, ui.cmap);
-                if ui.disp_ov
-                    plot_overlay(squeeze(ui.overlays{ui.current_ov}(:, :, z, sample))');
-                end
-                hold off
-
-                if ui.l_min < ui.l_max
-                    caxis([ui.l_min ui.l_max])
-                    
-                    set(ui.h.f, 'CurrentAxes', ui.h.legend);
-                    l_data =ui.l_min:(ui.l_max-ui.l_min)/20:ui.l_max;
-                    cla
-                    hold on
-                    hmap(l_data, false, ui.cmap);
-                    hold off
-                    xlim([.5 length(l_data)+.5])
-                    set(ui.h.legend, 'visible', 'on');
-                    set(ui.h.tick_min, 'visible', 'on', 'string', num2str(l_data(1),4));
-                    set(ui.h.tick_max, 'visible', 'on', 'string', num2str(l_data(end),4));
-                end
-            end
-        end
-
         function plot_array(ui, varargin)
             ui.generate_mean();
             param = ui.current_param;
@@ -868,12 +806,12 @@ classdef UI < handle
             ui.l_max = max(max(max(max(squeeze(plot_data)))))+10*eps;
             ui.l_min = min(min(min(min(squeeze(plot_data)))))-10*eps;
 
-            if ui.curr_dims(2) < ui.curr_dims(1)
+            if ui.transpose
                 plot_data = squeeze(plot_data(ui.ind{:}))';
-                ov_data = squeeze(ui.overlays{ui.current_ov}(ui.ind{:}));
+                ov_data = squeeze(ui.overlays{ui.current_ov}(ui.ind{:}))';
             else
                 plot_data = squeeze(plot_data(ui.ind{:}));
-                ov_data = squeeze(ui.overlays{ui.current_ov}(ui.ind{:}))';
+                ov_data = squeeze(ui.overlays{ui.current_ov}(ui.ind{:}));
             end
             % plotting:
             % Memo to self: Don't try using HeatMaps... seriously.
@@ -1466,13 +1404,8 @@ classdef UI < handle
         function aplot_click_cb(ui, varargin)
             cp = get(ui.h.axes, 'CurrentPoint');
             cp = round(cp(1, 1:2));
-            if ui.curr_dims(1) < ui.curr_dims(2)
-                index{ui.curr_dims(1)} = cp(2);
-                index{ui.curr_dims(2)} = cp(1);
-            else
-                index{ui.curr_dims(1)} = cp(1);
-                index{ui.curr_dims(2)} = cp(2);
-            end
+            index{ui.curr_dims(1)} = cp(1);
+            index{ui.curr_dims(2)} = cp(2);
             index{ui.curr_dims(3)} = ui.ind{ui.curr_dims(3)};
             index{ui.curr_dims(4)} = ui.ind{ui.curr_dims(4)};
             
@@ -1705,7 +1638,11 @@ classdef UI < handle
                     ui.ind{ui.curr_dims(i)} = 1;
                 end
             end         
-            
+            if ui.curr_dims(1) > ui.curr_dims(2)
+                ui.transpose = true;
+            else
+                ui.transpose = false;
+            end
             ui.update_sliders();
             ui.plot_array();
         end
