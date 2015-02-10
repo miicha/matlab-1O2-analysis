@@ -1,5 +1,6 @@
 ## SiSa-Scan Auswerte-Software
 ---
+![screen](side/screen.png)
 ### Installation
 #### Binaries
 Die Binary-Versionen sollten immer einigermaßen stabil sein, enthalten aber im 

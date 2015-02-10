@@ -200,13 +200,13 @@ classdef UIPlot < handle
             plt.chisq = 0;
             if ~ui.data_read
                 dataset = ['/' num2str(plt.cp(1)-1) '/' num2str(plt.cp(2)-1)...
-                           '/' num2str(plt.cp(3)-1) '/sisa/' num2str(ui.current_sa)];
+                           '/' num2str(plt.cp(3)-1) '/sisa/' num2str(plt.cp(4)-1)];
                 plt.data(1, :) = h5read(ui.fileinfo.path, dataset);
             else
                 plt.data = squeeze(ui.data(plt.cp(1), plt.cp(2), plt.cp(3), plt.cp(4), :));
                 plt.x_data = ui.x_data;
                 if plt.fitted
-                    plt.chisq =  squeeze(ui.fit_chisq(plt.cp(1), plt.cp(2), plt.cp(3), ui.current_sa, :));
+                    plt.chisq =  squeeze(ui.fit_chisq(plt.cp(1), plt.cp(2), plt.cp(3), plt.cp(4), :));
                     plt.fit_params = squeeze(ui.fit_params(plt.cp(1), plt.cp(2), plt.cp(3), plt.cp(4), :));
                     plt.fit_params_err = squeeze(ui.fit_params_err(plt.cp(1), plt.cp(2), plt.cp(3), plt.cp(4), :));
                 end

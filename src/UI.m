@@ -1556,7 +1556,7 @@ classdef UI < handle
         end
         
         function disp_ov_cb(ui, varargin)
-            ui.set_disp_ov(varargin{1}.Value);
+            ui.disp_ov = varargin{1}.Value;
             ui.plot_array();
         end
         
