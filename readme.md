@@ -1,6 +1,7 @@
 ## SiSa-Scan Auswerte-Software
 ---
-![screen](side/screen.png)
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;  ![screen](side/screen.png)
+
 Mit dieser Software lassen sich die an den Scanning-Messplätzen gewonnen Datensätze
 und auch generische `*.diff`s leicht auswerten und in ansprechendem Format visualisieren.
 
