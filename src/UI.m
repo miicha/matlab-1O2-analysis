@@ -37,7 +37,7 @@ classdef UI < handle
         file_opened = 0;
         
         % slices to be displayed
-        dimnames = {'x', 'y', 'z', 'sa'};
+        dimnames = {'x', 'y', 'z', 's'};
         curr_dims = [1, 2, 3, 4];
         ind = {':', ':', 1, 1};
         transpose = false;
@@ -50,8 +50,8 @@ classdef UI < handle
         l_max; % minimum of the current parameter over all data points
         
         genericname;
-        openpath; % persistent
-        savepath; % persistent
+        openpath; % persistent, in ini
+        savepath; % persistent, in ini
 
         points;
         data_read = false;
@@ -149,7 +149,7 @@ classdef UI < handle
                 
             %% Figure, menu, bottombar
             set(ui.h.f, 'units', 'pixels',...
-                        'position', [200 200 1000 600],...
+                        'position', [200 200 1010 600],...
                         'numbertitle', 'off',...
                         'menubar', 'none',...
                         'name', 'SISA Scan',...
@@ -187,15 +187,15 @@ classdef UI < handle
                                 'BackgroundColor', [.85 .85 .85]);
             
             set(ui.h.axes, 'units', 'pixels',...
-                           'position', [50 50 400 400],...
-                           'xtick', [], 'ytick', [],...
+                           'position', [40 60 380 390],...
                            'Color', get(ui.h.plotpanel, 'BackgroundColor'),...
+                           'xtick', [], 'ytick', [],...
                            'XColor', get(ui.h.plotpanel, 'BackgroundColor'),...
                            'YColor', get(ui.h.plotpanel, 'BackgroundColor'),...
                            'ButtonDownFcn', @ui.aplot_click_cb);
-                                 
+                       
             set(ui.h.legend, 'units', 'pixels',...
-                             'position', [50 22 400 20],...
+                             'position', [40 12 400 20],...
                              'xtick', [], 'ytick', [],...
                              'XColor', get(ui.h.plotpanel, 'BackgroundColor'),...
                              'YColor', get(ui.h.plotpanel, 'BackgroundColor'),...
@@ -212,7 +212,7 @@ classdef UI < handle
                                                        
             set(ui.h.zslider, 'units', 'pixels',...
                               'style', 'slider',...
-                              'position', [460 50 20 370],...
+                              'position', [460 85 20 340],...
                               'value', 1,...
                               'visible', 'off',...
                               'callback', @ui.set_d3_cb);
@@ -227,7 +227,7 @@ classdef UI < handle
             
             set(ui.h.saslider, 'units', 'pixels',...
                                'style', 'slider',...
-                               'position', [20 50 20 370],... 
+                               'position', [490 85 20 340],... 
                                'value', 1,...
                                'visible', 'off',...
                                'callback', @ui.set_d4_cb);
@@ -235,7 +235,7 @@ classdef UI < handle
             set(ui.h.sabox, 'units', 'pixels',...
                             'style', 'edit',...
                             'string', '1',...
-                            'position', [20 460 20 20],...
+                            'position', [490 460 20 20],...
                             'callback', @ui.set_d4_cb,...
                             'visible', 'off',...
                             'BackgroundColor', [1 1 1]);
@@ -256,7 +256,7 @@ classdef UI < handle
                                'FontSize', 9,...
                                'string', '1',...
                                'horizontalAlignment', 'right',...
-                               'position', [12 22 35 17]);
+                               'position', [2 12 35 17]);
                            
             set(ui.h.tick_max, 'units', 'pixels',...
                                'style', 'text',...
@@ -265,7 +265,7 @@ classdef UI < handle
                                'BackgroundColor', get(ui.h.plotpanel, 'BackgroundColor'),...
                                'string', '100',...
                                'horizontalAlignment', 'left',...
-                               'position', [460 22 35 17]);  
+                               'position', [470 12 35 17]);  
                            
             set(ui.h.est_par, 'units', 'pixels',...
                               'style', 'radiobutton',...
@@ -300,36 +300,41 @@ classdef UI < handle
                                 'string', ui.dimnames,...
                                 'value', 1,...
                                 'tag', '1',...
+                                'visible', 'off',...
                                 'callback', @ui.set_dim_cb,...
-                                'position', [385 520 40 17],...
+                                'position', [385 40 30 17],...
                                 'BackgroundColor', [1 1 1]);
                             
             set(ui.h.d2_select, 'units', 'pixels',...
                                 'style', 'popupmenu',...
                                 'string', ui.dimnames,...
                                 'value', 2,...
+                                'visible', 'off',...
                                 'tag', '2',...
                                 'callback', @ui.set_dim_cb,...
-                                'position', [425 520 40 17],...
+                                'position', [5 300 30 17],...
                                 'BackgroundColor', [1 1 1]);
 
             set(ui.h.d3_select, 'units', 'pixels',...
                                 'style', 'popupmenu',...
                                 'string', ui.dimnames,...
                                 'value', 3,...
+                                'visible', 'off',...
                                 'tag', '3',...
                                 'callback', @ui.set_dim_cb,...
-                                'position', [465 520 40 17],...
+                                'position', [465 520 30 17],...
                                 'BackgroundColor', [1 1 1]);
                             
             set(ui.h.d4_select, 'units', 'pixels',...
                                 'style', 'popupmenu',...
                                 'string', ui.dimnames,...
                                 'value', 4,...
+                                'visible', 'off',...
                                 'tag', '4',...
                                 'callback', @ui.set_dim_cb,...
-                                'position', [505 520 40 17],...
+                                'position', [505 520 30 17],...
                                 'BackgroundColor', [1 1 1]);
+                            
             %% tabs for switching selection modes
             set(ui.h.tabs, 'units', 'pixels',...
                            'position', [10 28 250 550],...
@@ -757,9 +762,11 @@ classdef UI < handle
                                   'visible', 'on',...
                                   'SliderStep', [1 5]/(s(ui.curr_dims(3))-1));
                 set(ui.h.zbox, 'visible', 'on');
+                set(ui.h.d3_select, 'visible', 'on');
             else 
                 set(ui.h.zbox, 'visible', 'off');
                 set(ui.h.zslider, 'visible', 'off');
+                set(ui.h.d3_select, 'visible', 'off');
             end
             % handle multiple samples
             if s(ui.curr_dims(4)) > 1 
@@ -767,9 +774,11 @@ classdef UI < handle
                                   'visible', 'on',...
                                   'SliderStep', [1 5]/(s(ui.curr_dims(4))-1));
                 set(ui.h.sabox, 'visible', 'on');
+                set(ui.h.d4_select, 'visible', 'on');
             else 
                 set(ui.h.sabox, 'visible', 'off');
                 set(ui.h.saslider, 'visible', 'off');
+                set(ui.h.d4_select, 'visible', 'off');
             end
         end
 
@@ -820,7 +829,7 @@ classdef UI < handle
                 hold on
                 hmap(plot_data', false, ui.cmap);
                 if ui.disp_ov
-                    plot_overlay(ov_data);
+                    plot_overlay(ov_data');
                 end
                 hold off
                 s = size(plot_data');
@@ -842,6 +851,8 @@ classdef UI < handle
                     set(ui.h.tick_max, 'visible', 'on', 'string', num2str(l_data(end),4));
                 end
             end
+            set(ui.h.d1_select, 'visible', 'on');
+            set(ui.h.d2_select, 'visible', 'on');
         end
         
         function estimate_parameters(ui)
@@ -1000,9 +1011,25 @@ classdef UI < handle
                 set(ui.h.plotpanel, 'Position', pP);
 
                 aP = get(ui.h.axes, 'Position');
-                aP(3:4) = [(pP(3)-aP(1))-50 (pP(4)-aP(2))-50];
+                aP(3:4) = [(pP(3)-aP(1))-80 (pP(4)-aP(2))-50];
                 set(ui.h.axes, 'Position', aP);
 
+                tmp = get(ui.h.d2_select, 'Position');
+                tmp(2) = aP(2) + aP(4)/2;
+                set(ui.h.d2_select, 'Position', tmp);
+                
+                tmp = get(ui.h.d1_select, 'Position');
+                tmp(1) = aP(1) + aP(3)/2;
+                set(ui.h.d1_select, 'Position', tmp);
+                
+                tmp = get(ui.h.d3_select, 'Position');
+                tmp(1) = aP(1) + aP(3) + 5;
+                tmp(2) = aP(2) + aP(4) - 16;
+                set(ui.h.d3_select, 'Position', tmp);
+                
+                tmp(1) = aP(1) + aP(3) + 40;
+                set(ui.h.d4_select, 'Position', tmp);
+                
                 tmp = get(ui.h.legend, 'position');
                 tmp(3) = aP(3);
                 set(ui.h.legend, 'position', tmp);
@@ -1020,25 +1047,23 @@ classdef UI < handle
                 set(ui.h.param, 'position', tmp);
 
                 tmp = get(ui.h.fit_est, 'position');
-                tmp(2) = aP(2)+aP(4)+6;
+                tmp(2) = aP(2)+aP(4) + 6;
                 set(ui.h.fit_est, 'position', tmp);
 
                 tmp = get(ui.h.zslider, 'position');
-                tmp(1) = aP(1) + aP(3) + 10;
-                tmp(4) = aP(4) - 30;
+                tmp(1) = aP(1) + aP(3) + 15;
+                tmp(4) = aP(4) - 50;
                 set(ui.h.zslider, 'position', tmp);
-
-                tmp = get(ui.h.zbox, 'position');
-                tmp(1) = aP(1) + aP(3) + 10;
-                tmp(2) = aP(1) + aP(4) - 20;
-                set(ui.h.zbox, 'position', tmp);
-
-                tmp = get(ui.h.saslider, 'position');
-                tmp(4) = aP(4) - 30;
+                
+                tmp(1) = tmp(1) + 25;
                 set(ui.h.saslider, 'position', tmp);
-
-                tmp = get(ui.h.sabox, 'position');
-                tmp(2) = aP(1) + aP(4) - 20;
+                
+                tmp = get(ui.h.zbox, 'position');
+                tmp(1) = aP(1) + aP(3) + 15;
+                tmp(2) = aP(1) + 20;
+                set(ui.h.zbox, 'position', tmp);
+                
+                tmp(1) = tmp(1) + 25;
                 set(ui.h.sabox, 'position', tmp);
 
                 bP = get(ui.h.bottombar, 'Position');
@@ -1057,6 +1082,7 @@ classdef UI < handle
                 tmp(2) = tP(4) - tmp(4) - 40;
                 set(ui.h.ov_controls, 'Position', tmp);
                 set(ui.h.sel_controls, 'Position', tmp);
+                
             end
         end
 
@@ -1160,8 +1186,8 @@ classdef UI < handle
         end % mean, std, etc.
 
         function generate_export_fig(ui, ax_in, vis)
-            x = ui.fileinfo.size(1);
-            y = ui.fileinfo.size(2);
+            x = size(ui.data, ui.curr_dims(1));
+            y = size(ui.data, ui.curr_dims(2));
 
             if x > y
                 d = x;
@@ -1179,12 +1205,11 @@ classdef UI < handle
             if isfield(ui.h, 'plot_pre') && ishandle(ui.h.plot_pre)
                 figure(ui.h.plot_pre);
                 clf();
-                windowpos = get( ui.h.plot_pre, 'position');
             else
                 ui.h.plot_pre = figure('visible', vis);
-                screensize = get(0, 'ScreenSize');
-                windowpos = [screensize(3)-(x_pix+150) screensize(4)-(y_pix+150)  x_pix+80 y_pix+100];
             end
+            screensize = get(0, 'ScreenSize');
+            windowpos = [screensize(3)-(x_pix+150) screensize(4)-(y_pix+150)  x_pix+80 y_pix+100];
             set(ui.h.plot_pre, 'units', 'pixels',...
                    'position', windowpos,...
                    'numbertitle', 'off',...
@@ -1197,8 +1222,8 @@ classdef UI < handle
             set(ax, 'position', [tmp(1) tmp(2) x_pix y_pix],...
                     'XColor', 'black',...
                     'YColor', 'black');
-            xlabel('X [mm]')
-            ylabel('Y [mm]')
+            xlabel([ui.dimnames{ui.curr_dims(1)} ' [mm]'])
+            ylabel([ui.dimnames{ui.curr_dims(2)} ' [mm]'])
             set(ax, 'xtick', 1:x, 'ytick', 1:y,...
                     'xticklabel', num2cell((0:x-1)*ui.scale(1)),...
                     'yticklabel', num2cell((0:y-1)*ui.scale(2)));
@@ -1388,6 +1413,11 @@ classdef UI < handle
             end
         end
         
+        function set_disp_ov(ui, val)
+            ui.disp_ov = val;
+            set(ui.h.ov_disp, 'Value', 1);
+        end
+        
         %% Callbacks:
         function save_global_state_cb(ui, varargin)
             [name, path] = uiputfile('*.state', 'State speichern', [ui.savepath ui.genericname '.state']);
@@ -1404,11 +1434,18 @@ classdef UI < handle
             cp = get(ui.h.axes, 'CurrentPoint');
             cp = round(cp(1, 1:2));
             cp(cp == 0) = 1;
-            index{ui.curr_dims(1)} = cp(1);
-            index{ui.curr_dims(2)} = cp(2);
+
+            % no clue why this workaround is necessary, but it is...
+            if ui.curr_dims(1) == 1 || ui.curr_dims(2) == 1
+                index{ui.curr_dims(1)} = cp(1); % x ->
+                index{ui.curr_dims(2)} = cp(2); % y ^
+            else
+                index{ui.curr_dims(1)} = cp(2); % x ->
+                index{ui.curr_dims(2)} = cp(1); % y ^
+            end
             index{ui.curr_dims(3)} = ui.ind{ui.curr_dims(3)};
             index{ui.curr_dims(4)} = ui.ind{ui.curr_dims(4)};
-
+            
             for i = 1:4
                 if index{i} > ui.fileinfo.size(i)
                     index{i} = ui.fileinfo.size(i);
@@ -1425,6 +1462,9 @@ classdef UI < handle
                         end
                     end
                 case 'alt'
+                    if ~ui.disp_ov
+                        ui.set_disp_ov(true);
+                    end
                     if ~strcmp(ui.fileinfo.path, '')
                         if sum(ui.data(index{:}, :))
                             ui.overlays{ui.current_ov}(index{:}) = ...
@@ -1516,7 +1556,7 @@ classdef UI < handle
         end
         
         function disp_ov_cb(ui, varargin)
-            ui.disp_ov = varargin{1}.Value;
+            ui.set_disp_ov(varargin{1}.Value);
             ui.plot_array();
         end
         
@@ -1632,6 +1672,7 @@ classdef UI < handle
             t = str2double(get(varargin{1}, 'Tag'));
             val = get(varargin{1}, 'Value');
             oval = ui.curr_dims(t);
+            % swap elements
             a = ui.curr_dims;
             a([find(a==oval) find(a==val)]) = a([find(a==val) find(a==oval)]);
             ui.curr_dims = a;
@@ -1644,12 +1685,14 @@ classdef UI < handle
                 else
                     ui.ind{ui.curr_dims(i)} = 1;
                 end
-            end         
-            if ui.curr_dims(1) > ui.curr_dims(2)
+            end
+
+            if ui.curr_dims(1) > ui.curr_dims(2) % something strange here with respect to y... need to investigate
                 ui.transpose = true;
             else
                 ui.transpose = false;
             end
+            
             ui.update_sliders();
             ui.plot_array();
         end
@@ -1749,7 +1792,6 @@ classdef UI < handle
 end
 
 function plot_overlay(data)
-    opengl software;
     [m, n] = size(data);
     image = ones(m, n, 3);
     image(:, :, 1) = (image(:, :, 1) - data);
