@@ -813,6 +813,8 @@ classdef UI < handle
                 plot_data = ui.est_params(:, :, :, :, param);
             end
             
+            ui.set_transpose();
+            
             sx = size(plot_data, ui.curr_dims(1));
             sy = size(plot_data, ui.curr_dims(2));
             
@@ -822,7 +824,11 @@ classdef UI < handle
             
             [sxn, syn] = size(plot_data);
            
-            if (sxn ~= sx || syn ~= sy) || (sx > 1 && sy > 1 && ui.transpose) % breaks for sx == sy...
+            if (sxn ~= sx || syn ~= sy) % breaks for sx == sy...
+                ui.transpose = ~ui.transpose;
+                plot_data = plot_data';
+                ov_data = squeeze(ui.overlays{ui.current_ov}(ui.ind{:}))';
+            elseif sx > 1 && sy > 1 && ui.transpose
                 plot_data = plot_data';
                 ov_data = squeeze(ui.overlays{ui.current_ov}(ui.ind{:}))';
             else
@@ -1455,13 +1461,8 @@ classdef UI < handle
             cp = round(cp(1, 1:2));
             cp(cp == 0) = 1;
 
-            if ~ui.transpose
-                index{ui.curr_dims(1)} = cp(1); % x ->
-                index{ui.curr_dims(2)} = cp(2); % y ^
-            else
-                index{ui.curr_dims(1)} = cp(2); % x ->
-                index{ui.curr_dims(2)} = cp(1); % y ^
-            end
+            index{ui.curr_dims(1)} = cp(1); % x ->
+            index{ui.curr_dims(2)} = cp(2); % y ^
             index{ui.curr_dims(3)} = ui.ind{ui.curr_dims(3)};
             index{ui.curr_dims(4)} = ui.ind{ui.curr_dims(4)};
 
@@ -1710,9 +1711,7 @@ classdef UI < handle
                     ui.ind{ui.curr_dims(i)} = 1;
                 end
             end
-
-            ui.set_transpose();
-                        
+                       
             ui.update_sliders();
             ui.plot_array();
         end
