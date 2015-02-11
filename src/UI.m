@@ -215,7 +215,8 @@ classdef UI < handle
                               'position', [460 85 20 340],...
                               'value', 1,...
                               'visible', 'off',...
-                              'callback', @ui.set_d3_cb);
+                              'callback', @ui.set_d3_cb,...
+                              'BackgroundColor', [1 1 1]);
                            
             set(ui.h.zbox, 'units', 'pixels',...
                            'style', 'edit',...
@@ -230,6 +231,8 @@ classdef UI < handle
                                'position', [490 85 20 340],... 
                                'value', 1,...
                                'visible', 'off',...
+                               'BackgroundColor', [1 1 1],...
+                               'ForegroundColor', [0 0 0],...
                                'callback', @ui.set_d4_cb);
 
             set(ui.h.sabox, 'units', 'pixels',...
@@ -810,17 +813,26 @@ classdef UI < handle
                 plot_data = ui.est_params(:, :, :, :, param);
             end
             
+            sx = size(plot_data, ui.curr_dims(1));
+            sy = size(plot_data, ui.curr_dims(2));
+            
+            plot_data = squeeze(plot_data(ui.ind{:}));
+            
+            % squeeze does strange things: (1x3x1)-array -> (3x1)-array
+            
+            [sxn, syn] = size(plot_data);
+           
+            if (sxn ~= sx || syn ~= sy) || (sx > 1 && sy > 1 && ui.transpose) % breaks for sx == sy...
+                plot_data = plot_data';
+                ov_data = squeeze(ui.overlays{ui.current_ov}(ui.ind{:}))';
+            else
+                ov_data = squeeze(ui.overlays{ui.current_ov}(ui.ind{:}));
+            end
+            
             % for legend minimum and maximum
             ui.l_max = max(max(max(max(squeeze(plot_data)))))+10*eps;
             ui.l_min = min(min(min(min(squeeze(plot_data)))))-10*eps;
 
-            if ui.transpose
-                plot_data = squeeze(plot_data(ui.ind{:}))';
-                ov_data = squeeze(ui.overlays{ui.current_ov}(ui.ind{:}))';
-            else
-                plot_data = squeeze(plot_data(ui.ind{:}));
-                ov_data = squeeze(ui.overlays{ui.current_ov}(ui.ind{:}));
-            end
             % plotting:
             % Memo to self: Don't try using HeatMaps... seriously.
             if gcf == ui.h.f  % don't plot when figure is in background
@@ -1418,6 +1430,14 @@ classdef UI < handle
             set(ui.h.ov_disp, 'Value', 1);
         end
         
+        function set_transpose(ui)
+            if ui.curr_dims(1) > ui.curr_dims(2)
+                ui.transpose = true;
+            else 
+                ui.transpose = false;
+            end
+        end
+        
         %% Callbacks:
         function save_global_state_cb(ui, varargin)
             [name, path] = uiputfile('*.state', 'State speichern', [ui.savepath ui.genericname '.state']);
@@ -1435,8 +1455,7 @@ classdef UI < handle
             cp = round(cp(1, 1:2));
             cp(cp == 0) = 1;
 
-            % no clue why this workaround is necessary, but it is...
-            if ui.curr_dims(1) == 1 || ui.curr_dims(2) == 1
+            if ~ui.transpose
                 index{ui.curr_dims(1)} = cp(1); % x ->
                 index{ui.curr_dims(2)} = cp(2); % y ^
             else
@@ -1445,7 +1464,7 @@ classdef UI < handle
             end
             index{ui.curr_dims(3)} = ui.ind{ui.curr_dims(3)};
             index{ui.curr_dims(4)} = ui.ind{ui.curr_dims(4)};
-            
+
             for i = 1:4
                 if index{i} > ui.fileinfo.size(i)
                     index{i} = ui.fileinfo.size(i);
@@ -1485,7 +1504,12 @@ classdef UI < handle
             ui.openpath = filepath;
             ui.saveini()
             set(ui.h.f, 'visible', 'off');
-            UI(filepath, name, get(ui.h.f, 'position'));
+            global debug_u
+            if debug_u == true
+                debug_u = UI(filepath, name, get(ui.h.f, 'position'));
+            else
+                UI(filepath, name, get(ui.h.f, 'position'));
+            end
             close(ui.h.f);
             delete(ui);
         end
@@ -1687,12 +1711,8 @@ classdef UI < handle
                 end
             end
 
-            if ui.curr_dims(1) > ui.curr_dims(2) % something strange here with respect to y... need to investigate
-                ui.transpose = true;
-            else
-                ui.transpose = false;
-            end
-            
+            ui.set_transpose();
+                        
             ui.update_sliders();
             ui.plot_array();
         end
