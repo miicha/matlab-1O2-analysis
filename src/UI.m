@@ -1362,7 +1362,7 @@ classdef UI < handle
         function check_version(ui)
             if isdeployed()
                 try
-                    newestversion = str2double(urlread('http://git.daten.tk/sebastian.pfitzner/binary_versions/raw/master/sisa-scan-auswertung.ver'));
+                    newestversion = str2double(urlread('http://www.daten.tk/webhook/tags.php?project=SISA%20Scan%20Auswertung'));
                     if newestversion > ui.version
                         wh = warndlg({['Es ist eine neue Version der Software verfügbar ('...
                                        num2str(newestversion) ').'], ['Aktuelle Version: '...
