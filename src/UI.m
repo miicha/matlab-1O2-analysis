@@ -7,7 +7,7 @@ classdef UI < handle
         
         reorder = [3 4 1 2];
         
-        version = 0.261;
+        version = 0.262;
         
         % fileinfo (dims, path, ...)
         fileinfo = struct('path', '', 'size', [0 0 0 0],...
@@ -976,6 +976,7 @@ classdef UI < handle
             set(ui.h.fit, 'string', 'global Fitten', 'callback', @ui.fit_all);
             ui.fitted = true;
             ui.update_infos();
+            ui.plot_array();
         end
 
         function set_model(ui, str)
