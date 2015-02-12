@@ -37,21 +37,22 @@ if newver
 
     done = system(str);
     if done == 0
-        sprintf('\n ----- \n');
+        fprintf('\n\n ----- \n\n');
         disp('Successfully pushed the new version number to GitLab!');
-        sprintf('\n ----- \n');
+        fprintf('\n\n ----- \n\n');
     end
 end
 
 %% push the binaries to your online repo
 if newver
-    str = ['cd ' path_to_prjct ' && git pull origin master && git add -u :/ && git commit -m "tagged version ' local_version ' of '...
+    str = ['cd ' path_to_prjct ' && git pull origin master && git add -u :/'... 
+           ' && git commit -m "tagged version ' local_version ' of '...
            prjct '" && git push origin master'];
 
     done = system(str);
     if done == 0
-        sprintf('\n ----- \n');
+        fprintf('\n\n ----- \n\n');
         disp('Successfully pushed the new version''s binaries to GitLab!');
-        sprintf('\n ----- \n');
+        fprintf('\n\n ----- \n\n');
     end
 end
