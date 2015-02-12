@@ -16,14 +16,16 @@ online_version = str2double(urlread(version_url));
 
 if online_version >= str2double(local_version)
     newver = false;
-    warning(['Local version (' local_version ') is NOT greater than'...
+    warning(['Local version (' local_version ') is NOT greater than '...
              'online version (' num2str(online_version) ').']);
     build = input('Build anyway? (0|1) ');
 end
 
 %% compile the binary
 if build
+    fprintf('\nBuilding the binary...\n')
     mcc -e  -o SiSaScanAuswertung -d SiSaScanAuswertung/standalone ../src/startUI.m
+    fprintf('...Done.\n\n')
     if ~newver
         warning('Will not push the new version and will not update the version number.');
     end
@@ -39,7 +41,7 @@ if newver
     if done == 0
         fprintf('\n\n ----- \n\n');
         disp('Successfully pushed the new version number to GitLab!');
-        fprintf('\n\n ----- \n\n');
+        fprintf('\n ----- \n\n');
     end
 end
 
@@ -53,6 +55,6 @@ if newver
     if done == 0
         fprintf('\n\n ----- \n\n');
         disp('Successfully pushed the new version''s binaries to GitLab!');
-        fprintf('\n\n ----- \n\n');
+        fprintf('\n ----- \n\n');
     end
 end

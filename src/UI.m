@@ -899,9 +899,7 @@ classdef UI < handle
                 end
             end
             ui.fitted = false;
-            ui.fit_chisq = nan(ui.fileinfo.size(1), ui.fileinfo.size(2),...
-                                 ui.fileinfo.size(3), ui.fileinfo.size(4));
-                             
+                          
             % set bounds from estimated parameters
             tmp = ui.models(ui.model);
             tmp{3} = ub*1.5;
@@ -929,9 +927,11 @@ classdef UI < handle
             % set cancel button:
             set(ui.h.fit, 'string', 'Abbrechen', 'callback', @ui.cancel_fit_cb);
 
-            ui.fit_params = nan(size(ui.est_params));
-            ui.fit_chisq = nan(size(ui.est_params(:,:,:,:)));
-            ui.fit_params_err = nan(size(ui.est_params));
+            s = num2cell(size(ui.est_params));
+            
+            ui.fit_chisq = nan(s{1:4});
+            ui.fit_params = nan(s{:});
+            ui.fit_params_err = nan(s{:});
             n = 0;
             for i = 1:ui.fileinfo.size(1)
                 for j = 1:ui.fileinfo.size(2)

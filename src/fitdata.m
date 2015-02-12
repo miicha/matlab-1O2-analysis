@@ -33,15 +33,14 @@ function [params, p_err, chisq] = fitdata(model, x, y, err, start_in, fix)
 
     [fitobject, gof] = fit(double(x), y, ft, fo);
     
-    params = zeros(length(start_in),1);
+    params = nan(length(start_in),1);
     params(fix_ind) = start_in(fix_ind);
-    
-    p_err = ones(length(start_in),1);
+    p_err = nan(length(start_in),1);
     p_err(fix_ind) = 0;
 
     chisq = sum(((feval(fitobject, x) - y)./err).^2)/(length(x)-length(start)-1);
-    params(params == 0) = coeffvalues(fitobject);
-    p_err(p_err == 1) = mean(abs(confint(fitobject) - [coeffvalues(fitobject); coeffvalues(fitobject)]), 1);
+    params(isnan(params)) = coeffvalues(fitobject);
+    p_err(isnan(p_err)) = mean(abs(confint(fitobject) - [coeffvalues(fitobject); coeffvalues(fitobject)]), 1);
 
 
 end

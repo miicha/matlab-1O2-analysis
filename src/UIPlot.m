@@ -438,12 +438,13 @@ classdef UIPlot < handle
         end
         
         function save_fig_cb(plt, varargin)
-            path = plt.generate_filepath();
-            save_fig(path);
+            plt.save_fig_selloc_cb();
         end
         
         function path = generate_filepath(plt)
-            path = fullfile(plt.ui.savepath, plt.ui.genericname);
+            point = regexprep(num2str(plt.cp), '\s+', '_');
+            name = [plt.ui.genericname '_p' point];
+            path = fullfile(plt.ui.savepath, name);
         end
         
         function save_fig(plt, path)
