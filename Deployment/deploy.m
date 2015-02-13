@@ -5,7 +5,7 @@
 prjct = 'sisa-scan-auswertung';
 path_to_prjct = 'C:\Users\pfitzseb\Dokumente\Matlab\sisa-scan-auswertung\src';
 local_version = get_local_version(path_to_prjct);
-version_url = ['http://www.daten.tk/webhook/tags.php?project=SISA%20Scan%20Auswertung];
+version_url = 'http://www.daten.tk/webhook/tags.php?project=SISA%20Scan%20Auswertung';
 
 %% read new version from source file and check against latest online version
 build = true;
