@@ -7,7 +7,7 @@ classdef UI < handle
         
         reorder = [3 4 1 2];
         
-        version = 0.263;
+        version = 0.264;
         
         % fileinfo (dims, path, ...)
         fileinfo = struct('path', '', 'size', [0 0 0 0],...

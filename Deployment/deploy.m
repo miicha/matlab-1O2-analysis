@@ -27,15 +27,20 @@ if build
     fprintf('...Done.\n\n')
     if ~newver
         warning('Will not push the new version and will not update the version number.');
+    else
+        ver_msg = input('Version message: ', 's');
     end
 end
 
 %% push the binaries to your online repo
 if newver
     str = ['cd ' path_to_prjct ' && git pull origin master && git add -u :/'... 
-           ' && git commit -m "tagged version ' local_version ' of '...
-           prjct '" && git push origin master'];
-
+               ' && git commit -m "tagged version ' local_version ' of ' prjct '"'];
+    if isempty(ver_msg)
+         str = [str '&& git tag -a ' local_version ' -m "' ver_msg '" && git push origin master --tags'];
+    else
+        str = [str '&& git tag ' local_version ' && git push origin master --tags'];
+    end
     done = system(str);
     if done == 0
         fprintf('\n\n ----- \n\n');
