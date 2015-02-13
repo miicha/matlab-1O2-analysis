@@ -5,7 +5,7 @@
 prjct = 'sisa-scan-auswertung';
 path_to_prjct = 'C:\Users\pfitzseb\Dokumente\Matlab\sisa-scan-auswertung\src';
 local_version = get_local_version(path_to_prjct);
-version_url = 'http://www.daten.tk/webhook/tags.php?project=SISA%20Scan%20Auswertung';
+version_url = 'http://www.daten.tk/webhook/tags.php?owner=sebastian.pfitzner&project=sisa-scan-auswertung';
 
 %% read new version from source file and check against latest online version
 build = true;
@@ -36,7 +36,7 @@ end
 if newver
     str = ['cd ' path_to_prjct ' && git pull origin master && git add -u :/'... 
                ' && git commit -m "tagged version ' local_version ' of ' prjct '"'];
-    if isempty(ver_msg)
+    if ~isempty(ver_msg)
          str = [str '&& git tag -a ' local_version ' -m "' ver_msg '" && git push origin master --tags'];
     else
         str = [str '&& git tag ' local_version ' && git push origin master --tags'];

@@ -443,7 +443,7 @@ classdef UIPlot < handle
         
         function path = generate_filepath(plt)
             point = regexprep(num2str(plt.cp), '\s+', '_');
-            name = [plt.ui.genericname '_p' point];
+            name = [plt.ui.genericname '_p_' point];
             path = fullfile(plt.ui.savepath, name);
         end
         
@@ -504,8 +504,23 @@ classdef UIPlot < handle
         end
         
         function generate_fit_info_ov(plt)
-            ax = plt.h.plot_pre.Children(1);
-            m = text()
+            ax = plt.h.plot_pre.Children(2);
+            axes(ax);
+
+            m_names = {'A', '\tau_1', '\tau_2', 'B', 'o'};
+            m_units = {'Counts', '$$\mu$$s', '$$\mu$$s', 'Counts', 'Counts'};
+            m_str = ['$$A\cdot \left[\exp \left(\frac{t}{\tau_1}\right) - '...
+                   '\exp \left(\frac{t}{\tau_2}\right) \right] + B \cdot \exp\left(\frac{t}{\tau_2}\right) + o$$'];
+               
+            str{1} = m_str;
+               
+            for i = 1:length(plt.fit_params)
+                str{i+1} = ['$$ ' m_names{i} ' = (' num2str(plt.fit_params(i)) '\pm' num2str(plt.fit_params_err(i)) ')$$ ' m_units{i}];
+            end
+            m = text(.92, .94, str, 'Interpreter', 'latex',...
+                                    'units', 'normalized',...
+                                    'HorizontalAlignment', 'right',...
+                                    'VerticalAlignment', 'top');
         end
         
         function generate_export_fig_cb(plt, varargin)
