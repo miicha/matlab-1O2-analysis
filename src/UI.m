@@ -7,7 +7,7 @@ classdef UI < handle
         
         reorder = [3 4 1 2];
         
-        version = 0.264;
+        version = 0.265;
         
         % fileinfo (dims, path, ...)
         fileinfo = struct('path', '', 'size', [0 0 0 0],...
@@ -619,6 +619,11 @@ classdef UI < handle
             
             ui.set_scale(ui.scale);
             ui.generate_overlay();
+            
+            % initialise here, so we can check whether a point is fitted or
+            % not
+            s = num2cell(size(ui.est_params));
+            ui.fit_chisq = nan(s{1:4});
         end
         
         function openHDF5(ui)
@@ -929,7 +934,6 @@ classdef UI < handle
 
             s = num2cell(size(ui.est_params));
             
-            ui.fit_chisq = nan(s{1:4});
             ui.fit_params = nan(s{:});
             ui.fit_params_err = nan(s{:});
             n = 0;
