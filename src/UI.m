@@ -651,15 +651,18 @@ classdef UI < handle
 
                 % get attributes from file
                 fin = h5readatt(filepath, '/PATH/DATA', 'LAST POINT');
-                if  strcmp(fin{:}, 'CHECKPOINT')
-                    ui.fileinfo.finished = true;
-                else
-                    ui.fileinfo.finished = false;
-                end
 
                 % get scanned points
                 tmp = h5read(filepath, '/PATH/DATA');
                 tmp = tmp.Name;
+                
+                if  strcmp(fin{:}, 'CHECKPOINT')
+                    ui.fileinfo.finished = true;
+                    num_of_points = length(tmp) - 1;
+                else
+                    ui.fileinfo.finished = false;
+                    num_of_points = length(tmp);
+                end
             catch exception
                 display(exception);
                 offset=1;
@@ -667,6 +670,7 @@ classdef UI < handle
                 ui.fileinfo.finished = true;
                 ui.fileinfo.size = [dims{1} dims{2} dims{3}];
                 fin=tmp{end};
+                num_of_points = length(tmp);
             end
             
             % read Channel Width
@@ -686,8 +690,7 @@ classdef UI < handle
                 % but vec is the complete matrix and I don't know how to 
                 % put this matrix into ui.points()
             ui.points = containers.Map;
-            tic
-            for i = 1:length(tmp) - 1
+            for i = 1:num_of_points
                 vec = cell2mat(textscan(tmp{i},'%n/%n/%n')) + [1 1 offset];
                 ui.points(tmp{i}) = vec;
                 if mod(i, round((length(tmp) - 1)/10)) == 0
@@ -697,7 +700,6 @@ classdef UI < handle
                     break
                 end
             end
-            toc
 
             % get number of scanned points
             ui.fileinfo.np = ui.points.Count;
