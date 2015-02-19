@@ -680,13 +680,15 @@ classdef UI < handle
             ui.fileinfo.size(4) = length(info.Datasets);
             
             % create map between string and position in data
-                % Performance problem here. Not using a map and computing
-                % the position in the vector from the string on the fly is
-                % almost as slow (-.1s). Might try to only save a matrix of
-                % indices and compute the string from that.
+                % now reasonably fast(about 10 times faster then before), 
+                % approx factor 2 possible with:
+                % vec = cellfun(@(x) textscan(x,'%d/%d/%d', 'CollectOutput', 1),tmp);
+                % but vec is the complete matrix and I don't know how to 
+                % put this matrix into ui.points()
             ui.points = containers.Map;
+            tic
             for i = 1:length(tmp) - 1
-                vec = str2double(strsplit(tmp{i}, '/'))+[1 1 offset];
+                vec = cell2mat(textscan(tmp{i},'%n/%n/%n')) + [1 1 offset];
                 ui.points(tmp{i}) = vec;
                 if mod(i, round((length(tmp) - 1)/10)) == 0
                     ui.update_infos(['   |   Metadaten einlesen ' num2str(i) '.']);
@@ -695,6 +697,7 @@ classdef UI < handle
                     break
                 end
             end
+            toc
 
             % get number of scanned points
             ui.fileinfo.np = ui.points.Count;
