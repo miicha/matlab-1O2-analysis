@@ -737,18 +737,21 @@ classdef UI < handle
             filepath = [ui.fileinfo.path ui.fileinfo.name{1}];
             time_zero = 0;
             k = keys(ui.points);
+            fid = H5F.open(filepath);
             for i = 1:ui.fileinfo.np
                 ind = ui.points(k{i});
                 % every point should have exactly as many samples
                 % as the first point, except for the last one
 %                 if i == ui.fileinfo.np % get number of samples for last point
-                    info = h5info(filepath, ['/' k{i} '/sisa']);
-                    samples = length(info.Datasets); 
+                    dataset_group= sprintf('/%s/sisa',k{i});
+                    gid = H5G.open(fid,dataset_group);
+                    info = H5G.get_info(gid);
+                    H5G.close(gid);
 %                 else % take number of samples of first point
 %                     samples = ui.fileinfo.size(4);
 %                 end
-                for j = 1:samples % iterate over all samples
-                    d = h5read(filepath, ['/' k{i} '/sisa/' num2str(j)]);
+                for j = 1:info.nlinks % iterate over all samples
+                    d = h5read(filepath, sprintf('%s/%d',dataset_group,j));
                     ui.data(ind(1), ind(2), ind(3), j, :) = d;
                     [~, t] = max(d(1:end));
                     time_zero = (time_zero + t)/2;
@@ -757,6 +760,7 @@ classdef UI < handle
                     ui.update_infos(['   |   Daten einlesen ' num2str(i) '/' num2str(ui.fileinfo.np) '.']);
                 end
             end
+            H5F.close(fid);
             
             ui.t_zero = round(time_zero);
             ui.x_data = ((1:length(ui.data(1, 1, 1, 1, :)))-ui.t_zero)'*ui.channel_width;
