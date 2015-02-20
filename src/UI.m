@@ -1261,9 +1261,27 @@ classdef UI < handle
                     'YColor', 'black');
             xlabel([ui.dimnames{ui.curr_dims(1)} ' [mm]'])
             ylabel([ui.dimnames{ui.curr_dims(2)} ' [mm]'])
-            set(ax, 'xtick', 1:x, 'ytick', 1:y,...
-                    'xticklabel', num2cell((0:x-1)*ui.scale(1)),...
-                    'yticklabel', num2cell((0:y-1)*ui.scale(2)));
+            
+            x_label_res = 1;
+            x_tick = 1:x_label_res:x;
+            while length(x_tick) > 10
+                x_label_res = x_label_res + 1;
+                x_tick = 1:x_label_res:x;
+            end
+            
+            y_label_res = 1;
+            y_tick = 1:y_label_res:y;
+            while length(y_tick) > 10
+                y_label_res = y_label_res + 1;
+                y_tick = 1:y_label_res:y;
+            end
+            
+            x_tick_label = num2cell((0:x_label_res:x-1)*ui.scale(1));
+            y_tick_label = num2cell((0:y_label_res:y-1)*ui.scale(2));
+            
+            set(ax, 'xtick', x_tick, 'ytick', y_tick,...
+                    'xticklabel', x_tick_label,...
+                    'yticklabel', y_tick_label);
             caxis([ui.l_min ui.l_max]);
             colormap(ui.cmap);
             c = colorbar();
