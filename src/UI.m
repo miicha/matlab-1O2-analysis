@@ -753,16 +753,18 @@ classdef UI < handle
                     dataset_group= sprintf('/%s/sisa',k{i});
                     gid = H5G.open(fid,dataset_group);
                     info = H5G.get_info(gid);
-                    H5G.close(gid);
 %                 else % take number of samples of first point
 %                     samples = ui.fileinfo.size(4);
 %                 end
                 for j = 1:info.nlinks % iterate over all samples
-                    d = h5read(filepath, sprintf('%s/%d',dataset_group,j));
+                    dset_id = H5D.open(gid,sprintf('%d',j));
+                    d = H5D.read(dset_id);
+                    H5D.close(dset_id);
                     ui.data(ind(1), ind(2), ind(3), j, :) = d;
                     [~, t] = max(d(1:end));
                     time_zero = (time_zero + t)/2;
                 end
+                H5G.close(gid);
                 if mod(i, round(ui.fileinfo.np/20)) == 0
                     ui.update_infos(['   |   Daten einlesen ' num2str(i) '/' num2str(ui.fileinfo.np) '.']);
                 end
