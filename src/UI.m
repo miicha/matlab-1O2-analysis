@@ -635,6 +635,12 @@ classdef UI < handle
             filepath = [ui.fileinfo.path ui.fileinfo.name{1}];
             % get dimensions of scan, determine if scan finished
             try
+                x_step = h5readatt(filepath, '/PATH/DATA','X Step Size mm');
+                y_step = h5readatt(filepath, '/PATH/DATA','Y Step Size mm');
+                z_step = h5readatt(filepath, '/PATH/DATA','Z Step Size mm');
+                ui.scale = [x_step y_step z_step];
+            end
+            try
                 dims = h5readatt(filepath, '/PATH/DATA', 'GRID DIMENSIONS');
                 if strcmp(dims{:}, '')
                     dims = {'0/0/0'};
