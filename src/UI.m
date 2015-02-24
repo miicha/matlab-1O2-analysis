@@ -24,6 +24,7 @@ classdef UI < handle
         overlays = {};  % 1 is always the automatically generated overlay,
                         % additional overlays can be added
         current_ov = 1;
+        overlay_data;
         disp_ov = false;
         selection_props;
         
@@ -853,6 +854,8 @@ classdef UI < handle
             else
                 ov_data = squeeze(ui.overlays{ui.current_ov}(ui.ind{:}));
             end
+            
+            ui.overlay_data = ov_data;
             
             % for legend minimum and maximum
             ui.l_max = max(max(max(max(squeeze(plot_data)))))+10*eps;

@@ -5,6 +5,8 @@ classdef UIGroupPlot < handle
         ui
         x_pos
         y_pos
+        x_data
+        y_data
         x_size
         y_size
         data
@@ -16,17 +18,24 @@ classdef UIGroupPlot < handle
     methods
         function gplt = UIGroupPlot(ui)
             gplt.ui = ui;
-            [gplt.x_pos, gplt.y_pos] = find(ui.overlays{ui.current_ov}); % size of the selection
+            [gplt.x_pos, gplt.y_pos] = find(ui.overlay_data); % size of the selection
+            if ui.curr_dims(1) < ui.curr_dims(2)
+                gplt.x_data = gplt.x_pos;
+                gplt.y_data = gplt.y_pos;
+            else
+                gplt.y_data = gplt.x_pos;
+                gplt.x_data = gplt.y_pos;
+            end
+            
             gplt.x_pos = gplt.x_pos - min(gplt.x_pos) + 1;
             gplt.y_pos = gplt.y_pos - min(gplt.y_pos) + 1;
             gplt.x_size = max(gplt.x_pos) - min(gplt.x_pos) + 1;
             gplt.y_size = max(gplt.y_pos) - min(gplt.y_pos) + 1;
             
-            gplt.data = squeeze(ui.data(:, :, ui.current_z, ui.current_sa, :));
-            gplt.params = squeeze(ui.fit_params(:, :, ui.current_z, ui.current_sa, :));
+            gplt.data = squeeze(ui.data(ui.ind{:}, :));
+            gplt.params = squeeze(ui.fit_params(ui.ind{:}, :));
             tmp = gplt.ui.models(gplt.ui.model);
             gplt.model_fun =  tmp{1};
-            
             
             
             gplt.h.f = figure(); 
@@ -67,7 +76,9 @@ classdef UIGroupPlot < handle
         end
         
         function plot_selection(gplt)
-            [indx, indy] = find(gplt.ui.overlays{gplt.ui.current_ov});
+            indx = gplt.x_data;
+            indy = gplt.y_data;
+%             size(gplt.data)
             pltdata = gplt.data(indx, indy, :);
  
             maxy = max(max(max(pltdata(:, :, (gplt.ui.t_zero+gplt.ui.t_offset):end))))*1.2;
