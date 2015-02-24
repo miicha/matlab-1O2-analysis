@@ -636,6 +636,12 @@ classdef UI < handle
             filepath = [ui.fileinfo.path ui.fileinfo.name{1}];
             % get dimensions of scan, determine if scan finished
             try
+                x_step = h5readatt(filepath, '/PATH/DATA','X Step Size mm');
+                y_step = h5readatt(filepath, '/PATH/DATA','Y Step Size mm');
+                z_step = h5readatt(filepath, '/PATH/DATA','Z Step Size mm');
+                ui.scale = [x_step y_step z_step];
+            end
+            try
                 dims = h5readatt(filepath, '/PATH/DATA', 'GRID DIMENSIONS');
                 if strcmp(dims{:}, '')
                     dims = {'0/0/0'};
@@ -754,16 +760,18 @@ classdef UI < handle
                     dataset_group= sprintf('/%s/sisa',k{i});
                     gid = H5G.open(fid,dataset_group);
                     info = H5G.get_info(gid);
-                    H5G.close(gid);
 %                 else % take number of samples of first point
 %                     samples = ui.fileinfo.size(4);
 %                 end
                 for j = 1:info.nlinks % iterate over all samples
-                    d = h5read(filepath, sprintf('%s/%d',dataset_group,j));
+                    dset_id = H5D.open(gid,sprintf('%d',j));
+                    d = H5D.read(dset_id);
+                    H5D.close(dset_id);
                     ui.data(ind(1), ind(2), ind(3), j, :) = d;
                     [~, t] = max(d(1:end));
                     time_zero = (time_zero + t)/2;
                 end
+                H5G.close(gid);
                 if mod(i, round(ui.fileinfo.np/20)) == 0
                     ui.update_infos(['   |   Daten einlesen ' num2str(i) '/' num2str(ui.fileinfo.np) '.']);
                 end
@@ -1862,36 +1870,38 @@ classdef UI < handle
             switch model
                 case '1. A*(exp(-t/t1)-exp(-t/t2))+offset'
                     [A, t1] = max(data((t_zero + t_offset):end)); % Amplitude, first time
+                    t1 = t1 + t_zero + t_offset;
                     param(1) = A;
-                    param(3) = t1*cw/2;
+                    param(3) = (t1-t_zero)*cw/2;
                     param(4) = mean(data(end-100:end));
                     data = data-param(4);
                     A = A-param(4);
                     t2 = find(abs(data <= round(A/2.7)));
                     t2 = t2(t2 > t1);
-                    param(2) = (t2(1) - t1)*cw;
+                    param(2) = (t2(1) - t_zero)*cw;
                 case {'2. A*(exp(-t/t1)-exp(-t/t2))+B*exp(-t/t2)+offset',...
                       '3. A*(exp(-t/t1)-exp(-t/t2))+B*exp(-t/t1)+offset'}
                     [A, t1] = max(data((t_zero + t_offset):end)); % Amplitude, first time
+                    t1 = t1 + t_zero + t_offset;
                     param(1) = A;
-                    param(3) = t1*cw/2;
+                    param(3) = (t1-t_zero)*cw/2;
                     param(4) = A/4;
                     param(5) = mean(data(end-100:end));
                     data = data-param(5);
                     A = A-param(5);
                     t2 = find(abs(data <= round(A/2.7)));
                     t2 = t2(t2 > t1);
-                    param(2) = (t2(1) - t1)*cw;
+                    param(2) = (t2(1) - t_zero)*cw;
                 case '4. A*(exp(-t/t1)+B*exp(-t/t2)+offset'
                     [A, i] = max(data((t_zero + t_offset):end));
                     B = A/4;
                     t1 = find(abs(data <= round(A/2.7)));
-                    t1 = t1(t1>i);
-                    t2 = t1/4;
+                    t1 = t1(t1>i+t_offset);
+                    t2 = t1(1)/4;
                     param(5) = mean(data(end-100:end));
                     param(1) = A;
                     param(2) = t1(1)*cw;
-                    param(3) = t2(1)*cw;
+                    param(3) = t2*cw;
                     param(4) = B;
                 case '4. Summe'
                     offset = mean(raw_data(end-50:end));
