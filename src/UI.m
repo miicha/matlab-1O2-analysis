@@ -14,6 +14,7 @@ classdef UI < handle
         fileinfo = struct('path', '', 'size', [0 0 0 0],...
                           'name', '', 'np', 0); 
         data;       % source data from HDF5
+        data_sum;
         scale = [5 5];          % distance between to pixels in mm
         x_data;         % time data
         fit_params;     % fit params, size(params) = [x y z length(fitparams)]
@@ -68,14 +69,13 @@ classdef UI < handle
                   '2. A*(exp(-t/t1)-exp(-t/t2))+B*exp(-t/t2)+offset'...
                   '3. A*(exp(-t/t1)-exp(-t/t2))+B*exp(-t/t1)+offset'...
                   '4. A*(exp(-t/t1)+B*exp(-t/t2)+offset'...
-                  '4. Summe'},...
+                 },...
                  {...
                     % function, lower bounds, upper bounds, names of arguments
                     {@(A, t1, t2, offset, t) A*(exp(-t/t1)-exp(-t/t2))+offset, [1 0.1 0.1 1], [500 20 10 50], {'A', 't1', 't2', 'offset'} }...
                     {@(A, t1, t2, B, offset, t) A*(exp(-t/t1)-exp(-t/t2))+B*exp(-t/t2)+offset, [1 0.1 0.1 1 1], [500 20 10 300 50], {'A', 't1', 't2', 'B', 'offset'} }...
                     {@(A, t1, t2, B, offset, t) A*(exp(-t/t1)-exp(-t/t2))+B*exp(-t/t1)+offset, [1 0.1 0.1 1 1], [500 20 10 300 50], {'A', 't1', 't2', 'B', 'offset'} }...
                     {@(A, t1, t2, B, offset, t) A*exp(-t/t1)+B*exp(-t/t2)+offset, [1 0.1 0.1 1 1], [500 20 10 50 50], {'A', 't1', 't2', 'B', 'offset'} }...
-                    {@(A, offset, t) A*t, [1 1], [500 800], {'A', 'offset'} }...
                   })
                     
         h = struct();        % handles
@@ -173,7 +173,6 @@ classdef UI < handle
             uimenu(ui.h.helpmenu, 'label', 'Über',...
                                   'Callback', @ui.open_versioninfo_cb);
             
-            
             set(ui.h.bottombar, 'units', 'pixels',...
                                 'position', [-1 0 1000 18],...
                                 'BorderType', 'EtchedOut');
@@ -264,8 +263,8 @@ classdef UI < handle
                                'visible', 'off',...
                                'FontSize', 9,...
                                'string', '1',...
-                               'horizontalAlignment', 'right',...
-                               'position', [2 12 35 17]);
+                               'horizontalAlignment', 'left',...
+                               'position', [40 32 65 17]);
                            
             set(ui.h.tick_max, 'units', 'pixels',...
                                'style', 'text',...
@@ -273,8 +272,8 @@ classdef UI < handle
                                'FontSize', 9,...
                                'BackgroundColor', get(ui.h.plotpanel, 'BackgroundColor'),...
                                'string', '100',...
-                               'horizontalAlignment', 'left',...
-                               'position', [470 12 35 17]);  
+                               'horizontalAlignment', 'right',...
+                               'position', [405 32 65 17]);  
                            
             set(ui.h.est_par, 'units', 'pixels',...
                               'style', 'radiobutton',...
@@ -396,6 +395,7 @@ classdef UI < handle
                              'style', 'popupmenu',...
                              'position', [96 125 30 30],...
                              'string', {'<', '>'},...
+                             'value', 2,...
                              'callback', @ui.change_overlay_cond_cb,...
                              'BackgroundColor', [1 1 1]);
             
@@ -612,9 +612,8 @@ classdef UI < handle
              
             set(ui.h.plttxt, 'visible', 'on');
             set(ui.h.fit_est, 'visible', 'on');
-            set(ui.h.param, 'visible', 'on',...
-                            'string', t{4});
-            set(ui.h.ov_drpd, 'string', t{4});
+            set(ui.h.param, 'visible', 'on', 'string', [t{4}, 'Summe']);
+            set(ui.h.ov_drpd, 'string', [t{4}, 'Summe']);
             set(ui.h.tabs, 'visible', 'on');
             
             ui.update_infos();
@@ -830,15 +829,21 @@ classdef UI < handle
         function plot_array(ui, varargin)
             ui.generate_mean();
             param = ui.current_param;
-            
+
             if ui.disp_fit_params
-                if param > length(ui.est_params(1, 1, 1, 1, :))
-                    plot_data = ui.fit_chisq(:, :, :, :);
-                else
-                    plot_data = ui.fit_params(:, :, :, :, param);
+                switch param
+                    case length(ui.est_params(1, 1, 1, 1, :)) + 1
+                        plot_data = ui.fit_chisq;
+                    otherwise
+                        plot_data = ui.fit_params(:, :, :, :, param);
                 end
             else
-                plot_data = ui.est_params(:, :, :, :, param);
+                switch param
+                    case length(ui.est_params(1, 1, 1, 1, :)) + 1
+                        plot_data = ui.data_sum;
+                    otherwise
+                        plot_data = ui.est_params(:, :, :, :, param);
+                end
             end
             
             ui.set_transpose();
@@ -928,6 +933,7 @@ classdef UI < handle
                     end
                 end
             end
+            ui.data_sum = sum(ui.data, 5);
             ui.fitted = false;
                           
             % set bounds from estimated parameters
@@ -949,10 +955,6 @@ classdef UI < handle
             else
                 ma = prod(ui.fileinfo.size);
             end
-            t = keys(ui.models);
-            t = ui.models(t{get(ui.h.drpd, 'value')});
-            set(ui.h.param, 'visible', 'on',...
-                            'string', {t{4}{:}, 'Chi^2'});
                         
             % set cancel button:
             set(ui.h.fit, 'string', 'Abbrechen', 'callback', @ui.cancel_fit_cb);
@@ -1015,15 +1017,15 @@ classdef UI < handle
             t = ui.models(str);
             ui.fit_params = nan(ui.fileinfo.size(1), ui.fileinfo.size(2),...
                                 ui.fileinfo.size(3), ui.fileinfo.size(4), length(t{4}));
+                            
             ui.model = str;
             if ui.data_read
                 ui.estimate_parameters();
                 set(ui.h.plttxt, 'visible', 'on');
                 set(ui.h.param, 'visible', 'on',...
-                                'string', t{4});
+                                'string', [t{4}, 'Summe']);
                 ui.plot_array();
             end
-            set(ui.h.ov_drpd, 'string', t{4});
         end
         
         function set_gstart(ui, gst)
@@ -1083,7 +1085,7 @@ classdef UI < handle
                 set(ui.h.legend, 'position', tmp);
 
                 tmp = get(ui.h.tick_max, 'position');
-                tmp(1) = aP(3) + aP(1) + 2;
+                tmp(1) = aP(3) + aP(1) - tmp(3);
                 set(ui.h.tick_max, 'position', tmp);
 
                 tmp = get(ui.h.plttxt, 'position');
@@ -1564,34 +1566,21 @@ classdef UI < handle
         end
                 
         function change_overlay_cond_cb(ui, varargin)
+            val = str2double(get(ui.h.ov_val, 'string'));
+            par = get(ui.h.ov_drpd, 'value');
+            no_pars = size(ui.est_params, 5);
             switch get(ui.h.ov_rel, 'value')
                 case 1
-                    for i = 1:ui.fileinfo.size(1)
-                        for j = 1:ui.fileinfo.size(2)
-                            for k = 1:ui.fileinfo.size(3)
-                                for l = 1:ui.fileinfo.size(4)
-                                    if ui.est_params(i, j, k, l, get(ui.h.ov_drpd, 'value')) < str2double(get(ui.h.ov_val, 'string'))
-                                        ui.overlays{1}(i, j, k, l) = 0;
-                                    else
-                                        ui.overlays{1}(i, j, k, l) = 1;
-                                    end
-                                end
-                            end
-                        end
+                    if par <= no_pars
+                        ui.overlays{1} = ui.est_params(:, :, :, :, par) < val;
+                    else
+                        ui.overlays{1} = ui.data_sum < val;
                     end
                 case 2
-                    for i = 1:ui.fileinfo.size(1)
-                        for j = 1:ui.fileinfo.size(2)
-                            for k = 1:ui.fileinfo.size(3)
-                                for l = 1:ui.fileinfo.size(4)
-                                    if ui.est_params(i, j, k, l, get(ui.h.ov_drpd, 'value')) > str2double(get(ui.h.ov_val, 'string'))
-                                        ui.overlays{1}(i, j, k, l) = 0;
-                                    else
-                                        ui.overlays{1}(i, j, k, l) = 1;
-                                    end
-                                end
-                            end
-                        end
+                    if par <= no_pars
+                        ui.overlays{1} = ui.est_params(:, :, :, :, par) > val;
+                    else
+                        ui.overlays{1} = ui.data_sum > val;
                     end
             end
             ui.plot_array();
@@ -1644,14 +1633,21 @@ classdef UI < handle
         end
         
         function change_par_source_cb(ui, varargin)
+            t = ui.models(ui.model);  
+            
             ov = get(varargin{2}.OldValue, 'String');
             nv = get(varargin{2}.NewValue, 'String');
             if ~strcmp(ov, nv)
                 if strcmp(nv, get(ui.h.fit_par, 'string'))
                     ui.disp_fit_params = true;
+                    params = [t{4}, 'Chi^2'];
                 else
                     ui.disp_fit_params = false;
+                    params = [t{4}, 'Summe'];
                 end
+                set(ui.h.param, 'visible', 'on',...
+                                'string', params);
+                
                 ui.generate_mean();
                 ui.plot_array();
             end
@@ -1865,7 +1861,6 @@ classdef UI < handle
 
     methods (Static=true)
         function [param] = estimate_parameters_p(data, model, t_zero, t_offset, cw)
-            raw_data = data;
             data = smooth(data, 'loess');
             switch model
                 case '1. A*(exp(-t/t1)-exp(-t/t2))+offset'
@@ -1903,10 +1898,6 @@ classdef UI < handle
                     param(2) = t1(1)*cw;
                     param(3) = t2*cw;
                     param(4) = B;
-                case '4. Summe'
-                    offset = mean(raw_data(end-50:end));
-                    param(1) = sum(raw_data((t_zero + t_offset):end)-offset);
-                    param(2) = offset;
                 otherwise
                     param = 50*ones(5, 1);
             end
