@@ -159,12 +159,12 @@ classdef UIPlot < handle
                            'position', [223 10 62 45]);
                        
             set(plt.h.param, 'units', 'pixels',...
-                             'position', [300 10 600 55]);
+                             'position', [300 5 620 65]);
                          
             plt.h.pe = cell(1, 1);
             plt.h.pd = cell(1, 1);
             plt.h.pc = cell(1, 1);
-                      
+            plt.h.pt = cell(1, 1);
             
             %% export
             set(plt.h.exp_tab, 'units', 'pixels',...
@@ -342,12 +342,21 @@ classdef UIPlot < handle
                 set(plt.h.pd{i}, 'visible', 'off');
                 delete(plt.h.pd{i});
                 delete(plt.h.pc{i});
-                clear('plt.h.pe', 'plt.h.pd', 'plt.h.pc');
+                delete(plt.h.pt{i});
             end           
+            clear('plt.h.pe', 'plt.h.pd', 'plt.h.pc', 'plt.h.pt');
+
+            plt.h.pt = cell(plt.n_param, 1);
             plt.h.pe = cell(plt.n_param, 1);
             plt.h.pd = cell(plt.n_param, 1);
             plt.h.pc = cell(plt.n_param, 1);
             for i = 1:plt.n_param
+                 plt.h.pt{i} = uicontrol(plt.h.param, 'units', 'pixels',...
+                                                      'style', 'text',...
+                                                      'string', plt.model{4}{i},...
+                                                      'HorizontalAlignment', 'left',...
+                                                      'FontSize', 9,...
+                                                      'position', [10+(i-1)*100 40 41 20]);
                  plt.h.pe{i} = uicontrol(plt.h.param, 'units', 'pixels',...
                                                       'style', 'edit',...
                                                       'string', sprintf('%1.2f', par(i)),...
