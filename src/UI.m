@@ -7,7 +7,7 @@ classdef UI < handle
         
         reorder = [3 4 1 2];
         
-        version = 0.266;
+        version = 0.31;
         online_ver = 'http://www.daten.tk/webhook/tags.php?owner=sebastian.pfitzner&project=sisa-scan-auswertung';
         
         % fileinfo (dims, path, ...)
