@@ -51,6 +51,9 @@ classdef UI < handle
         disp_fit_params = 0;
         l_min; % maximum of the current parameter over all data points
         l_max; % minimum of the current parameter over all data points
+        use_user_legend;
+        user_l_min;
+        user_l_max;
         
         genericname;
         openpath; % persistent, in ini
@@ -258,22 +261,22 @@ classdef UI < handle
                             'BackgroundColor', [1 1 1]);
                         
             set(ui.h.tick_min, 'units', 'pixels',...
-                               'style', 'text',...
-                               'BackgroundColor', get(ui.h.plotpanel, 'BackgroundColor'),...
+                               'style', 'edit',...
                                'visible', 'off',...
                                'FontSize', 9,...
                                'string', '1',...
                                'horizontalAlignment', 'left',...
-                               'position', [40 32 65 17]);
+                               'callback', @ui.set_tick_cb,...
+                               'position', [40 34 65 17]);
                            
             set(ui.h.tick_max, 'units', 'pixels',...
-                               'style', 'text',...
+                               'style', 'edit',...
                                'visible', 'off',...
                                'FontSize', 9,...
-                               'BackgroundColor', get(ui.h.plotpanel, 'BackgroundColor'),...
                                'string', '100',...
                                'horizontalAlignment', 'right',...
-                               'position', [405 32 65 17]);  
+                               'callback', @ui.set_tick_cb,...
+                               'position', [405 34 65 17]);  
                            
             set(ui.h.est_par, 'units', 'pixels',...
                               'style', 'radiobutton',...
@@ -625,8 +628,7 @@ classdef UI < handle
             ui.set_scale(ui.scale);
             ui.generate_overlay();
             
-            % initialise here, so we can check whether a point is fitted or
-            % not
+            % initialise here, so we can check whether a point is fitted or not
             s = num2cell(size(ui.est_params));
             ui.fit_chisq = nan(s{1:4});
         end
@@ -871,12 +873,15 @@ classdef UI < handle
             ui.overlay_data = ov_data;
             
             % for legend minimum and maximum
-            ui.l_max = max(max(max(max(squeeze(plot_data)))))+10*eps;
-            ui.l_min = min(min(min(min(squeeze(plot_data)))))-10*eps;
-
+            if isnan(ui.l_max(param)) || isnan(ui.l_min(param))
+                ui.l_max(param) = max(max(max(max(squeeze(plot_data)))))+10*eps;
+                ui.l_min(param) = min(min(min(min(squeeze(plot_data)))))-10*eps;
+            end
+            tickmax = ui.l_max(param);
+            tickmin = ui.l_min(param);
             % plotting:
             % Memo to self: Don't try using HeatMaps... seriously.
-            if gcf == ui.h.f  % don't plot when figure is in background
+            if gcf == ui.h.f || ui.fitted % don't plot when figure is in background
                 set(ui.h.f, 'CurrentAxes', ui.h.axes); 
                 cla
                 hold on
@@ -889,11 +894,11 @@ classdef UI < handle
                 xlim([.5 s(2)+.5])
                 ylim([.5 s(1)+.5])
 
-                if ui.l_min < ui.l_max
-                    caxis([ui.l_min ui.l_max])
+                if tickmin < tickmax
+                    caxis([tickmin tickmax])
                     
                     set(ui.h.f, 'CurrentAxes', ui.h.legend);
-                    l_data =ui.l_min:(ui.l_max-ui.l_min)/20:ui.l_max;
+                    l_data = tickmin:(tickmax-tickmin)/20:tickmax;
                     cla
                     hold on
                     hmap(l_data, false, ui.cmap);
@@ -1017,7 +1022,8 @@ classdef UI < handle
             t = ui.models(str);
             ui.fit_params = nan(ui.fileinfo.size(1), ui.fileinfo.size(2),...
                                 ui.fileinfo.size(3), ui.fileinfo.size(4), length(t{4}));
-                            
+            ui.l_max = nan(length(t{4}) + 1);
+            ui.l_min = nan(length(t{4}) + 1);
             ui.model = str;
             if ui.data_read
                 ui.estimate_parameters();
@@ -1802,6 +1808,26 @@ classdef UI < handle
         
         function set_param_cb(ui, varargin)
             ui.current_param = get(ui.h.param, 'value');
+            ui.plot_array();
+        end
+        
+        function set_tick_cb(ui, varargin)
+            switch varargin{1}
+                case ui.h.tick_min
+                    new_l_min = str2double(get(ui.h.tick_min, 'string'));
+                    if new_l_min < ui.l_max(ui.current_param)
+                        ui.l_min(ui.current_param) = new_l_min;
+                    else
+                        set(ui.h.tick_min, 'string', ui.l_min(ui.current_param));
+                    end
+                case ui.h.tick_max
+                    new_l_max = str2double(get(ui.h.tick_max, 'string'));
+                    if new_l_max > ui.l_min(ui.current_param)
+                        ui.l_max(ui.current_param) = new_l_max;
+                    else
+                        set(ui.h.tick_max, 'string', ui.l_max(ui.current_param));
+                    end
+            end
             ui.plot_array();
         end
         
