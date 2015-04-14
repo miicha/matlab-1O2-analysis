@@ -128,6 +128,7 @@ classdef UI < handle
                             ui.h.gstart_text = uicontrol(ui.h.bounds);
                             ui.h.fix_text = uicontrol(ui.h.bounds);
                             ui.h.glob_text = uicontrol(ui.h.bounds);
+                    ui.h.parallel = uicontrol(ui.h.fit_tab);
                     ui.h.fit = uicontrol(ui.h.fit_tab);
                     ui.h.hold = uicontrol(ui.h.fit_tab);
                     ui.h.ov_controls = uipanel(ui.h.fit_tab);
@@ -372,6 +373,11 @@ classdef UI < handle
                            'visible', 'off',...
                            'callback', @ui.hold_fit_cb);
                        
+            set(ui.h.parallel, 'units', 'pixels',...
+                            'style', 'checkbox',...
+                            'string', 'parallel Fitten? (keine Interaktivität!)',...
+                            'position', [2 35 200 15]);
+                        
             %% overlay control
             set(ui.h.ov_controls, 'units', 'pixels',...
                                   'position', [2 260 243 200]);
@@ -422,7 +428,7 @@ classdef UI < handle
                          
             %% Fit-Panel:
             set(ui.h.fitpanel, 'units', 'pixels',...
-                               'position', [2 35 243 260],...
+                               'position', [2 55 243 260],...
                                'title', 'Fit-Optionen',...
                                'FontSize', 9);
 
@@ -859,6 +865,7 @@ classdef UI < handle
                 str = [str '   |    Daten eingelesen.'];
             end
             set(ui.h.info, 'string', [str text]);
+            pause(.0001);
         end
 
         function plot_array(ui, varargin)
@@ -1388,6 +1395,66 @@ classdef UI < handle
             ui.plot_array();
         end
         
+        function fit_all_par(ui, start)
+            if ui.disp_ov
+                ma = length(find(ui.overlays{ui.current_ov}));
+            else
+                ma = prod(ui.fileinfo.size);
+            end
+            
+            ui.update_infos('   |   Fitte parallel.')
+            
+            s = num2cell(size(ui.est_params));
+            if start == 1
+                ui.fit_params = nan(s{:});
+                ui.fit_params_err = nan(s{:});
+            end
+            s = ui.fileinfo.size;
+            ov = ui.overlays{ui.current_ov};
+            d_ov = ui.disp_ov;
+            d = ui.data;
+            xd = ui.x_data;
+            t_o = ui.t_offset;
+            t_z = ui.t_zero;
+            u_gstart = ui.use_gstart;
+            gstart = ui.gstart;
+            m = ui.models(ui.model);
+            e_pars = ui.est_params;
+            f = ui.fix;
+            f_pars = zeros(ma, 4);
+            f_pars_e = zeros(ma, 4);
+            f_chisq = zeros(ma, 1);
+
+            parfor n = start:ma
+                [i,j,k,l] = ind2sub(s, n);               
+                if ov(i,j,k,l) || ~d_ov
+                    y = squeeze(d(i, j, k, l, (t_o+t_z):end));
+                    x = xd((t_o+t_z):end);
+                    w = sqrt(y);
+                    w(w == 0) = 1;
+                    if sum(u_gstart) > 0
+                        start = ui.est_params(i, j, k, l, :);
+                        start(find(u_gstart)) = gstart(find(u_gstart));
+                        [p, p_err, chi] = fitdata(m ,...
+                            x, y, w, start, ui.fix);
+                    else
+                        [p, p_err, chi] = fitdata(m,...
+                            x, y, w, e_pars(i, j, k, l, :), f); 
+                    end
+                    f_pars(n, :) = p;
+                    f_pars_e(n, :) = p_err;
+                    f_chisq(n) = chi;
+                end
+            end
+            set(ui.h.fit_par, 'visible', 'on');
+            ui.fitted = true;
+            ui.update_infos();
+            ui.fit_params = reshape(f_pars, [ui.fileinfo.size size(f_pars, 2)]);
+            ui.fit_params_err = reshape(f_pars_e, [ui.fileinfo.size size(f_pars, 2)]);
+            ui.fit_chisq = reshape(f_chisq, ui.fileinfo.size);
+            ui.plot_array();
+        end
+        
         function generate_bounds(ui)
             m = ui.models(ui.model);
             n = length(m{4});
@@ -1873,7 +1940,11 @@ classdef UI < handle
         end
         
         function fit_all_cb(ui, varargin)
-            ui.fit_all(1);
+            if get(ui.h.parallel, 'value')
+                ui.fit_all_par(1);
+            else
+                ui.fit_all(1);
+            end
         end
         
         function resume_fit_cb(ui, varargin)
