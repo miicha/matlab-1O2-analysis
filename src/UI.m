@@ -362,20 +362,19 @@ classdef UI < handle
                            'style', 'push',...
                            'position', [2 2 80 28],...
                            'string', 'global Fitten',...
-                           'BackgroundColor', [.8 .8 .8],...
                            'callback', @ui.fit_all_cb);
                        
             set(ui.h.hold, 'units', 'pixels',...
                            'style', 'push',...
                            'position', [84 2 80 28],...
                            'string', 'Fit anhalten',...
-                           'BackgroundColor', [.8 .8 .8],...
                            'visible', 'off',...
                            'callback', @ui.hold_fit_cb);
                        
             set(ui.h.parallel, 'units', 'pixels',...
                             'style', 'checkbox',...
                             'string', 'parallel Fitten? (keine Interaktivität!)',...
+                            'tooltipString', 'Dauert am Anfang ein bisschen. Keine Fortschrittsanzeige!',...
                             'position', [2 35 200 15]);
                         
             %% overlay control
@@ -522,14 +521,12 @@ classdef UI < handle
                               'style', 'push',...
                               'position', [2 2 80 28],...
                               'string', 'Plot speichern',...
-                              'BackgroundColor', [.8 .8 .8],...
                               'callback', @ui.save_fig);
                           
             set(ui.h.prevfig, 'units', 'pixels',...
                               'style', 'push',...
                               'position', [92 2 80 28],...
                               'string', 'Vorschau',...
-                              'BackgroundColor', [.8 .8 .8],...
                               'callback', @ui.generate_export_fig_cb);
                           
             set(ui.h.colormap_drpd_text, 'units', 'pixels',...
@@ -1254,25 +1251,25 @@ classdef UI < handle
                 
     % functions that actually compute something
         function compute_ov(ui)
-             if ui.disp_fit_params
-                val = str2double(get(ui.h.ov_val, 'string'));
-                par = get(ui.h.ov_drpd, 'value');
-                no_pars = size(ui.fit_params, 5);
-                switch get(ui.h.ov_rel, 'value')
-                    case 1
-                        if par <= no_pars
-                            ui.overlays{1} = ui.fit_params(:, :, :, :, par) < val;
-                        else
-                            ui.overlays{1} = ui.fit_chisq < val;
-                        end
-                    case 2
-                        if par <= no_pars
-                            ui.overlays{1} = ui.fit_params(:, :, :, :, par) > val;
-                        else
-                            ui.overlays{1} = ui.fit_chisq > val;
-                        end
-                end
-            else
+%              if ui.disp_fit_params
+%                 val = str2double(get(ui.h.ov_val, 'string'));
+%                 par = get(ui.h.ov_drpd, 'value');
+%                 no_pars = size(ui.fit_params, 5);
+%                 switch get(ui.h.ov_rel, 'value')
+%                     case 1
+%                         if par <= no_pars
+%                             ui.overlays{1} = ui.fit_params(:, :, :, :, par) < val;
+%                         else
+%                             ui.overlays{1} = ui.fit_chisq < val;
+%                         end
+%                     case 2
+%                         if par <= no_pars
+%                             ui.overlays{1} = ui.fit_params(:, :, :, :, par) > val;
+%                         else
+%                             ui.overlays{1} = ui.fit_chisq > val;
+%                         end
+%                 end
+%             else
                 val = str2double(get(ui.h.ov_val, 'string'));
                 par = get(ui.h.ov_drpd, 'value');
                 no_pars = size(ui.est_params, 5);
@@ -1289,7 +1286,7 @@ classdef UI < handle
                         else
                             ui.overlays{1} = ui.data_sum > val;
                         end
-                end
+%                 end
             end
         end
     
@@ -1349,8 +1346,8 @@ classdef UI < handle
                 ui.fit_params = nan(s{:});
                 ui.fit_params_err = nan(s{:});
             end
-           
-            for n = start:ma
+            m = 1;
+            for n = start:prod(ui.fileinfo.size)
                 [i,j,k,l] = ind2sub(ui.fileinfo.size, n);               
                 if ui.overlays{ui.current_ov}(i, j, k, l) || ~ui.disp_ov
                     y = squeeze(ui.data(i, j, k, l, (ui.t_offset+ui.t_zero):end));
@@ -1370,7 +1367,8 @@ classdef UI < handle
                     ui.fit_params(i, j, k, l, :) = p;
                     ui.fit_params_err(i, j, k, l, :) = p_err;
                     ui.fit_chisq(i, j, k, l) = chi;
-                    ui.update_infos(['   |   Fitte ' num2str(n) '/' num2str(ma) '.'])
+                    ui.update_infos(['   |   Fitte ' num2str(m) '/' num2str(ma) '.'])
+                    m = m + 1;
                     ui.last_fitted = n;
                 end
                 if n == 1
@@ -1380,13 +1378,11 @@ classdef UI < handle
                     ui.plot_array();
                 end
                 if ui.hold_f
-                    ui.hold_f = false;
                     set(ui.h.hold, 'string', 'Fortsetzen',...
                                    'callback', @ui.resume_fit_cb);
                     return
                 end
                 if ui.cancel_f
-                    ui.cancel_f = false;
                     return
                 end
             end
@@ -1399,11 +1395,7 @@ classdef UI < handle
         end
         
         function fit_all_par(ui, start)
-            if ui.disp_ov
-                ma = length(find(ui.overlays{ui.current_ov}));
-            else
-                ma = prod(ui.fileinfo.size);
-            end
+            ov_vec = find(ui.overlays{ui.current_ov});
             
             ui.update_infos('   |   Fitte parallel.')
             
@@ -1412,49 +1404,48 @@ classdef UI < handle
                 ui.fit_params = nan(s{:});
                 ui.fit_params_err = nan(s{:});
             end
-            s = ui.fileinfo.size;
-            ov = ui.overlays{ui.current_ov};
+            ov = reshape(ui.overlays{ui.current_ov}, numel(ui.overlays{ui.current_ov}), 1);
             d_ov = ui.disp_ov;
-            d = ui.data;
-            xd = ui.x_data;
-            t_o = ui.t_offset;
-            t_z = ui.t_zero;
-            u_gstart = ui.use_gstart;
-            gstart = ui.gstart;
+            t_length = size(ui.data, 5) - (ui.t_offset + ui.t_zero) + 1;
+            d = reshape(ui.data(:, :, :, :, (ui.t_offset+ui.t_zero):end), prod(ui.fileinfo.size), 1, t_length);
+           
             m = ui.models(ui.model);
-            e_pars = ui.est_params;
+            parcount = length(m{2});
+            e_pars = reshape(ui.est_params, prod(ui.fileinfo.size), 1, parcount);
             f = ui.fix;
-            f_pars = zeros(ma, 4);
-            f_pars_e = zeros(ma, 4);
-            f_chisq = zeros(ma, 1);
-
-            parfor n = start:ma
-                [i,j,k,l] = ind2sub(s, n);               
-                if ov(i,j,k,l) || ~d_ov
-                    y = squeeze(d(i, j, k, l, (t_o+t_z):end));
-                    x = xd((t_o+t_z):end);
+            f_pars = nan(prod(ui.fileinfo.size), parcount);
+            f_pars_e = nan(prod(ui.fileinfo.size), parcount);
+            f_chisq = nan(prod(ui.fileinfo.size), 1);
+            local_par = find(ui.use_gstart);
+            global_start = ui.gstart;
+            
+            x = ui.x_data((ui.t_offset+ui.t_zero):end);
+            parfor n = start:prod(ui.fileinfo.size)
+                if ov(n) || ~d_ov
+                    y = squeeze(d(n, :))';
                     w = sqrt(y);
                     w(w == 0) = 1;
-                    if sum(u_gstart) > 0
-                        start = ui.est_params(i, j, k, l, :);
-                        start(find(u_gstart)) = gstart(find(u_gstart));
-                        [p, p_err, chi] = fitdata(m ,...
-                            x, y, w, start, ui.fix);
+                    if ~isempty(local_par)
+                        tmp = e_pars(n, :);
+                        tmp(local_par) = global_start(local_par);
+                        [p, p_err, chi] = fitdata(m, x, y, w, tmp, f);
                     else
-                        [p, p_err, chi] = fitdata(m,...
-                            x, y, w, e_pars(i, j, k, l, :), f); 
+                        [p, p_err, chi] = fitdata(m, x, y, w, e_pars(n, :), f); 
                     end
                     f_pars(n, :) = p;
                     f_pars_e(n, :) = p_err;
                     f_chisq(n) = chi;
                 end
             end
+            
             set(ui.h.fit_par, 'visible', 'on');
             ui.fitted = true;
             ui.update_infos();
+            
             ui.fit_params = reshape(f_pars, [ui.fileinfo.size size(f_pars, 2)]);
             ui.fit_params_err = reshape(f_pars_e, [ui.fileinfo.size size(f_pars, 2)]);
             ui.fit_chisq = reshape(f_chisq, ui.fileinfo.size);
+            
             ui.plot_array();
         end
         
@@ -1781,7 +1772,9 @@ classdef UI < handle
                                 'string', params);
                 
                 ui.generate_mean();
-                ui.compute_ov();
+                if (ui.fitted || ui.hold_f || ui.cancel_f)
+                    ui.compute_ov();
+                end
                 ui.plot_array();
             end
         end
@@ -1943,14 +1936,19 @@ classdef UI < handle
         end
         
         function fit_all_cb(ui, varargin)
+            tic
+            ui.hold_f = false;
+            ui.cancel_f = false;
             if get(ui.h.parallel, 'value')
                 ui.fit_all_par(1);
             else
                 ui.fit_all(1);
             end
+            toc
         end
         
         function resume_fit_cb(ui, varargin)
+            ui.hold_f = false;
             set(ui.h.hold, 'string', 'Fit anhalten', 'callback', @ui.hold_fit_cb);
             ui.fit_all(ui.last_fitted);
         end
@@ -2016,7 +2014,7 @@ classdef UI < handle
                           'string', 'Autor: Sebastian Pfitzner, pfitzseb@physik');
                       
             try
-                server_ver =urlread(ui.online_ver);
+                server_ver = urlread(ui.online_ver);
             catch
                 server_ver = 'keine Internet-Verbindung!';
             end
