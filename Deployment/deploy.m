@@ -10,13 +10,13 @@ version_url = 'http://www.daten.tk/webhook/tags.php?owner=sebastian.pfitzner&pro
 %% read new version from source file and check against latest online version
 build = true;
 newver = true;
+ov = urlread(version_url);
+online_version = str2double(strsplit(ov, '.'));
 
-online_version = str2double(urlread(version_url));
-
-if online_version >= str2double(local_version)
+if online_version >= local_version
     newver = false;
     warning(['Local version (' local_version ') is NOT greater than '...
-             'online version (' num2str(online_version) ').']);
+             'online version (' ov ').']);
     build = input('Build anyway? (0|1) ');
 end
 

@@ -7,7 +7,7 @@ classdef UI < handle
         
         reorder = [3 4 1 2];
         
-        version = 0.31;
+        version = '0.3.2';
         online_ver = 'http://www.daten.tk/webhook/tags.php?owner=sebastian.pfitzner&project=sisa-scan-auswertung';
         
         % fileinfo (dims, path, ...)
@@ -804,10 +804,12 @@ classdef UI < handle
         
         function load_global_state(ui, file)
             load(file, '-mat');
-            if ui_new.version ~= ui.version
+            v = str2double(strsplit(ui.version));
+            nv = str2double(strsplit(ui_new.version));
+            if sum(nv > v) > 0
                 wh = warndlg({['Version des geladenen Files (' num2str(ui_new.version)...
                               ') entspricht nicht der Version des aktuellen Programms'...
-                              ' (' num2str(ui.version) '). Dies wird zu unerwartetem '...
+                              ' (' ui.version '). Dies wird zu unerwartetem '...
                               'Verhalten (bspw. fehlender Funktionalität) führen!'], ...
                               ['Zum Umgehen dieses Problems sollten die zugrundeliegenden '...
                               'Daten erneut geöffnet und gefittet werden']}, 'Warnung', 'modal');
@@ -1165,8 +1167,9 @@ classdef UI < handle
         function check_version(ui)
             if isdeployed()
                 try
-                    newestversion = str2double(urlread(ui.online_ver));
-                    if newestversion > ui.version
+                    nv = str2double(strsplit(urlread(ui.online_ver), '.'));
+                    v = str2double(strsplit(ui.version));
+                    if sum(nv > v) > 0
                         wh = warndlg({['Es ist eine neue Version der Software verfügbar ('...
                                        num2str(newestversion) ').'], ['Aktuelle Version: '...
                                        num2str(ui.version) '.'],... 
@@ -1955,6 +1958,7 @@ classdef UI < handle
         function cancel_fit_cb(ui, varargin)
             ui.cancel_f = true;
             set(ui.h.fit, 'string', 'global Fitten', 'callback', @ui.fit_all_cb);
+            set(ui.h.hold, 'visible', 'off');
         end
         
         % upper and lower bound of legend
