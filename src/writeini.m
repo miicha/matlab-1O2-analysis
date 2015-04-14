@@ -1,4 +1,13 @@
 function writeini(file, content, append)
+    %WRITEINI Writes dict to ini-file.
+    %   Not a standard-conforming implementation.
+    %   
+    %       writeini(file, content, append)
+    %
+    %   Writes the dict `content` to `file` if `append` is false.
+    %   If `append` is true, the conents of `content` will be appended to
+    %   the end of `file`, if the keys do not already exist.
+    
     if nargin < 3
         append = false;
     end

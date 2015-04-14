@@ -51,7 +51,7 @@ classdef UI < handle
         disp_fit_params = 0;
         l_min; % maximum of the current parameter over all data points
         l_max; % minimum of the current parameter over all data points
-        use_user_legend;
+        use_user_legend = false;
         user_l_min;
         user_l_max;
         
@@ -572,7 +572,8 @@ classdef UI < handle
                 ui.open_file(path, name);
             end
         end
-
+        
+    % functions for opening and reading various files:
         function open_file(ui, path, name)
             ui.loadini();
             ui.fileinfo.path = path;
@@ -718,36 +719,6 @@ classdef UI < handle
             ui.readHDF5();
         end
 
-        function openDIFF(ui)
-            time_zero = 0;
-            name = ui.fileinfo.name;
-            if iscell(name)
-                for i = 1:length(name)
-                    ui.fileinfo.size = [length(name), 1, 1];
-                    d = dlmread([ui.fileinfo.path name{i}]);
-                    [~, t] = max(d(1:end));
-                    time_zero = (time_zero + t)/2;
-                    ui.data(i, 1, 1, 1,:) = d;
-                end
-                ui.fileinfo.np = length(name);
-            end
-            ui.t_zero = round(time_zero);
-            ui.x_data = ((1:length(ui.data(1, 1, 1, 1, :)))-ui.t_zero)'*ui.channel_width;
-            ui.data_read = true;
-            
-            tmp = size(ui.data);
-            ui.fileinfo.size = tmp(1:4);
-            
-            ui.points = containers.Map;
-            for i = 1:length(name)
-                vec = [i 1 1];
-                ui.points(num2str(vec)) = vec;
-                if mod(i, round(length(name)/10)) == 0
-                    ui.update_infos(['   |   Metadaten einlesen ' num2str(i) '.']);
-                end
-            end
-        end
-
         function readHDF5(ui, varargin)
             filepath = [ui.fileinfo.path ui.fileinfo.name{1}];
             time_zero = 0;
@@ -783,7 +754,58 @@ classdef UI < handle
             ui.x_data = ((1:length(ui.data(1, 1, 1, 1, :)))-ui.t_zero)'*ui.channel_width;
             ui.data_read = true;
         end
-
+        
+        function openDIFF(ui)
+            time_zero = 0;
+            name = ui.fileinfo.name;
+            if iscell(name)
+                for i = 1:length(name)
+                    ui.fileinfo.size = [length(name), 1, 1];
+                    d = dlmread([ui.fileinfo.path name{i}]);
+                    [~, t] = max(d(1:end));
+                    time_zero = (time_zero + t)/2;
+                    ui.data(i, 1, 1, 1,:) = d;
+                end
+                ui.fileinfo.np = length(name);
+            end
+            ui.t_zero = round(time_zero);
+            ui.x_data = ((1:length(ui.data(1, 1, 1, 1, :)))-ui.t_zero)'*ui.channel_width;
+            ui.data_read = true;
+            
+            tmp = size(ui.data);
+            ui.fileinfo.size = tmp(1:4);
+            
+            ui.points = containers.Map;
+            for i = 1:length(name)
+                vec = [i 1 1];
+                ui.points(num2str(vec)) = vec;
+                if mod(i, round(length(name)/10)) == 0
+                    ui.update_infos(['   |   Metadaten einlesen ' num2str(i) '.']);
+                end
+            end
+        end
+        
+        function load_global_state(ui, file)
+            load(file, '-mat');
+            if ui_new.version ~= ui.version
+                wh = warndlg({['Version des geladenen Files (' num2str(ui_new.version)...
+                              ') entspricht nicht der Version des aktuellen Programms'...
+                              ' (' num2str(ui.version) '). Dies wird zu unerwartetem '...
+                              'Verhalten (bspw. fehlender Funktionalität) führen!'], ...
+                              ['Zum Umgehen dieses Problems sollten die zugrundeliegenden '...
+                              'Daten erneut geöffnet und gefittet werden']}, 'Warnung', 'modal');
+                pos = wh.Position;
+                wh.Position = [pos(1) pos(2) pos(3)+20 pos(4)];
+                wh.Children(3).Children.FontSize = 9;
+                
+            end
+            ui_new.destroy(true);
+            unsafe_limit_size(ui_new.h.f, [700 550]);
+            close(ui.h.f);
+            delete(ui);
+        end
+        
+    % functions for updating the GUI
         function update_sliders(ui)
             [s1, s2, s3, s4, ~] = size(ui.est_params);
             s = [s1 s2 s3 s4];
@@ -873,9 +895,8 @@ classdef UI < handle
             ui.overlay_data = ov_data;
             
             % for legend minimum and maximum
-            if isnan(ui.l_max(param)) || isnan(ui.l_min(param))
-                ui.l_max(param) = max(max(max(max(squeeze(plot_data)))))+10*eps;
-                ui.l_min(param) = min(min(min(min(squeeze(plot_data)))))-10*eps;
+            if ~ui.use_user_legend
+                ui.calculate_legend();
             end
             tickmax = ui.l_max(param);
             tickmin = ui.l_min(param);
@@ -913,108 +934,6 @@ classdef UI < handle
             set(ui.h.d2_select, 'visible', 'on');
         end
         
-        function estimate_parameters(ui)
-            n = ui.models(ui.model);
-            ui.est_params = zeros(ui.fileinfo.size(1), ui.fileinfo.size(2),...
-                              ui.fileinfo.size(3), ui.fileinfo.size(4), length(n{2}));
-            ub = zeros(length(n{3}), 1);
-            lb = ones(length(n{2}), 1)*100;
-            p = values(ui.points);
-            for i = 1:ui.fileinfo.np
-                for j = 1:ui.fileinfo.size(4)
-                    d = ui.data(p{i}(1), p{i}(2), p{i}(3), j, :);
-                    ps = UI.estimate_parameters_p(d, ui.model, ui.t_zero, ui.t_offset, ui.channel_width);
-                    ui.est_params(p{i}(1), p{i}(2), p{i}(3), j, :) = ps;
-                    if mod(i, round(ui.fileinfo.np/20)) == 0
-                        ui.update_infos(['   |   Parameter abschätzen ' num2str(i) '/' num2str(ui.fileinfo.np) '.']);
-                    end
-                    for k = 1:length(ps) % find biggest and smallest params
-                        if ps(k) > ub(k)
-                            ub(k) = ps(k);
-                        end
-                        if ps(k) < lb(k) && ps(k) ~= 0
-                            lb(k) = ps(k);
-                        end
-                    end
-                end
-            end
-            ui.data_sum = sum(ui.data, 5);
-            ui.fitted = false;
-                          
-            % set bounds from estimated parameters
-            tmp = ui.models(ui.model);
-            tmp{3} = ub*1.5;
-            tmp{2} = lb*0.5;
-            ui.models(ui.model) = tmp;
-            ui.gstart = (ub+lb)./2;
-            
-            ui.generate_bounds();
-            
-            ui.update_infos();
-            set(ui.h.ov_val, 'string', mean(mean(mean(mean(squeeze(ui.est_params(:, :, :, :, 1)))))));
-        end
-
-        function fit_all(ui, varargin)
-            if ui.disp_ov
-                ma = length(find(ui.overlays{ui.current_ov}));
-            else
-                ma = prod(ui.fileinfo.size);
-            end
-                        
-            % set cancel button:
-            set(ui.h.fit, 'string', 'Abbrechen', 'callback', @ui.cancel_fit_cb);
-
-            s = num2cell(size(ui.est_params));
-            
-            ui.fit_params = nan(s{:});
-            ui.fit_params_err = nan(s{:});
-            n = 0;
-            for i = 1:ui.fileinfo.size(1)
-                for j = 1:ui.fileinfo.size(2)
-                    for k = 1:ui.fileinfo.size(3)
-                        for l = 1:ui.fileinfo.size(4)
-                            if ui.overlays{ui.current_ov}(i, j, k, l) || ~ui.disp_ov
-                                n = n + 1;
-                                y = squeeze(ui.data(i, j, k, l, (ui.t_offset+ui.t_zero):end));
-                                x = ui.x_data((ui.t_zero + ui.t_offset):end);
-                                w = sqrt(y);
-                                w(w == 0) = 1;
-                                if sum(ui.use_gstart) > 0
-                                    start = ui.est_params(i, j, k, l, :);
-                                    start(find(ui.use_gstart)) = ui.gstart(find(ui.use_gstart));
-                                    [p, p_err, chi] = fitdata(ui.models(ui.model),...
-                                        x, y, w, start, ui.fix);
-                                else
-                                    
-                                    [p, p_err, chi] = fitdata(ui.models(ui.model),...
-                                        x, y, w, ui.est_params(i, j, k, l, :), ui.fix); 
-                                end
-                                ui.fit_params(i, j, k, l, :) = p;
-                                ui.fit_params_err(i, j, k, l, :) = p_err;
-                                ui.fit_chisq(i, j, k, l) = chi;
-                                ui.update_infos(['   |   Fitte ' num2str(n) '/' num2str(ma) '.'])
-                            end
-                            if n == 1
-                                set(ui.h.fit_par, 'visible', 'on');
-                            end
-                            if ui.disp_fit_params
-                                ui.plot_array();
-                            end
-                            if ui.cancel_f
-                                ui.cancel_f = false;
-                                return
-                            end
-                        end
-                    end
-                end
-            end
-            
-            set(ui.h.fit, 'string', 'global Fitten', 'callback', @ui.fit_all);
-            ui.fitted = true;
-            ui.update_infos();
-            ui.plot_array();
-        end
-
         function set_model(ui, str)
             t = keys(ui.models);
             set(ui.h.drpd, 'value', find(strcmp(t, str))); % set the model in the drpd
@@ -1022,8 +941,8 @@ classdef UI < handle
             t = ui.models(str);
             ui.fit_params = nan(ui.fileinfo.size(1), ui.fileinfo.size(2),...
                                 ui.fileinfo.size(3), ui.fileinfo.size(4), length(t{4}));
-            ui.l_max = nan(length(t{4}) + 1);
-            ui.l_min = nan(length(t{4}) + 1);
+            ui.l_max = nan(length(t{4}) + 1, 1);
+            ui.l_min = nan(length(t{4}) + 1, 1);
             ui.model = str;
             if ui.data_read
                 ui.estimate_parameters();
@@ -1055,161 +974,7 @@ classdef UI < handle
             set(ui.h.scale_x, 'string', ui.scale(1));
             set(ui.h.scale_y, 'string', ui.scale(2));
         end
-    end
-
-    methods (Access = private)
-        function resize(ui, varargin)
-            % resize elements in figure to match window size
-            if isfield(ui.h, 'f') % workaround for error when a loading a file
-                fP = get(ui.h.f, 'Position');
-                pP = get(ui.h.plotpanel, 'Position');
-                pP(3:4) = [(fP(3)-pP(1))-10 (fP(4)-pP(2))-10];
-                set(ui.h.plotpanel, 'Position', pP);
-
-                aP = get(ui.h.axes, 'Position');
-                aP(3:4) = [(pP(3)-aP(1))-80 (pP(4)-aP(2))-50];
-                set(ui.h.axes, 'Position', aP);
-
-                tmp = get(ui.h.d2_select, 'Position');
-                tmp(2) = aP(2) + aP(4)/2;
-                set(ui.h.d2_select, 'Position', tmp);
-                
-                tmp = get(ui.h.d1_select, 'Position');
-                tmp(1) = aP(1) + aP(3)/2;
-                set(ui.h.d1_select, 'Position', tmp);
-                
-                tmp = get(ui.h.d3_select, 'Position');
-                tmp(1) = aP(1) + aP(3) + 5;
-                tmp(2) = aP(2) + aP(4) - 16;
-                set(ui.h.d3_select, 'Position', tmp);
-                
-                tmp(1) = aP(1) + aP(3) + 40;
-                set(ui.h.d4_select, 'Position', tmp);
-                
-                tmp = get(ui.h.legend, 'position');
-                tmp(3) = aP(3);
-                set(ui.h.legend, 'position', tmp);
-
-                tmp = get(ui.h.tick_max, 'position');
-                tmp(1) = aP(3) + aP(1) - tmp(3);
-                set(ui.h.tick_max, 'position', tmp);
-
-                tmp = get(ui.h.plttxt, 'position');
-                tmp(2) = aP(2)+aP(4)+2;
-                set(ui.h.plttxt, 'position', tmp);
-
-                tmp = get(ui.h.param, 'position');
-                tmp(2) = aP(2)+aP(4)+6;
-                set(ui.h.param, 'position', tmp);
-
-                tmp = get(ui.h.fit_est, 'position');
-                tmp(2) = aP(2)+aP(4) + 6;
-                set(ui.h.fit_est, 'position', tmp);
-
-                tmp = get(ui.h.zslider, 'position');
-                tmp(1) = aP(1) + aP(3) + 15;
-                tmp(4) = aP(4) - 50;
-                set(ui.h.zslider, 'position', tmp);
-                
-                tmp(1) = tmp(1) + 25;
-                set(ui.h.saslider, 'position', tmp);
-                
-                tmp = get(ui.h.zbox, 'position');
-                tmp(1) = aP(1) + aP(3) + 15;
-                tmp(2) = aP(1) + 20;
-                set(ui.h.zbox, 'position', tmp);
-                
-                tmp(1) = tmp(1) + 25;
-                set(ui.h.sabox, 'position', tmp);
-
-                bP = get(ui.h.bottombar, 'Position');
-                bP(3) = fP(3)+3;
-                set(ui.h.bottombar, 'Position', bP);
-
-                bP = get(ui.h.info, 'Position');
-                bP(3) = fP(3);
-                set(ui.h.info, 'Position', bP);
-
-                tP = get(ui.h.tabs, 'Position');
-                tP(4) = pP(4);
-                set(ui.h.tabs, 'Position', tP);
-
-                tmp = get(ui.h.ov_controls, 'Position');
-                tmp(2) = tP(4) - tmp(4) - 40;
-                set(ui.h.ov_controls, 'Position', tmp);
-                set(ui.h.sel_controls, 'Position', tmp);
-                
-            end
-        end
-
-        function generate_bounds(ui)
-            m = ui.models(ui.model);
-            n = length(m{4});
-            
-            if  length(ui.gstart) < n
-                ui.gstart = (m{2}(:)+m{3}(:))./2;
-            end
-            if length(ui.use_gstart) < n
-                ui.use_gstart = [ui.use_gstart; zeros(n - length(ui.use_gstart), 1)];
-            end
-            
-            for i = 1:length(ui.h.lb)
-                delete(ui.h.lb{i});
-                delete(ui.h.ub{i});
-                delete(ui.h.n{i});
-                delete(ui.h.st{i});
-                delete(ui.h.fix{i});
-                delete(ui.h.gst{i});
-            end 
-            ui.h.lb = cell(n, 1);
-            ui.h.ub = cell(n, 1);
-            ui.h.n = cell(n, 1);
-            ui.h.st = cell(n, 1);
-            ui.h.fix = cell(n, 1);
-            ui.h.gst = cell(n, 1);
-
-            for i = 1:n
-                ui.h.n{i} = uicontrol(ui.h.bounds,  'units', 'pixels',...
-                                                    'style', 'text',...
-                                                    'string', m{4}{i},...
-                                                    'horizontalAlignment', 'left',...
-                                                    'position', [5 155-i*23-14 35 20]);
-                                                
-                ui.h.lb{i} = uicontrol(ui.h.bounds, 'units', 'pixels',...
-                                                    'style', 'edit',...
-                                                    'string', sprintf('%1.2f', m{2}(i)),...
-                                                    'position', [40 155-i*23-10 45 20],...
-                                                    'callback', @ui.set_bounds_cb,...
-                                                    'BackgroundColor', [1 1 1]);
-                                                
-                ui.h.ub{i} = uicontrol(ui.h.bounds, 'units', 'pixels',...
-                                                    'style', 'edit',...
-                                                    'string', sprintf('%1.2f', m{3}(i)),...
-                                                    'position', [95 155-i*23-10 45 20],...
-                                                    'callback', @ui.set_bounds_cb,...
-                                                    'BackgroundColor', [1 1 1]);
-
-                ui.h.st{i} = uicontrol(ui.h.bounds, 'units', 'pixels',...
-                                                    'style', 'edit',...
-                                                    'string', sprintf('%1.2f', ui.gstart(i)),...
-                                                    'position', [150 155-i*23-10 45 20],...
-                                                    'callback', @ui.set_gstart_cb,...
-                                                    'BackgroundColor', [1 1 1]);
-                                                
-                ui.h.fix{i} = uicontrol(ui.h.bounds, 'units', 'pixels',...
-                                                     'style', 'checkbox',...
-                                                     'value', ismember(m{4}(i), ui.fix),...
-                                                     'position', [198 155-i*23-10 40 20],...
-                                                     'callback', @ui.set_param_fix_cb);
-                                                 
-                ui.h.gst{i} = uicontrol(ui.h.bounds, 'units', 'pixels',...
-                                                     'style', 'checkbox',...
-                                                     'value', ui.use_gstart(i),...
-                                                     'position', [215 155-i*23-10 40 20],...
-                                                     'callback', @ui.set_param_glob_cb);
-            end
-        end
-
+        
         function generate_sel_vals(ui)
             m = ui.models(ui.model);
             n = length(m{4});
@@ -1313,22 +1078,7 @@ classdef UI < handle
                 set(ui.h.plot_pre, 'position', windowpos);
             end
         end
-        
-        function generate_mean(ui)
-            s = size(ui.fit_params);
-            sel = find(ui.overlays{ui.current_ov});
-            for i = 1:s(end)
-                if ui.fitted && ui.disp_fit_params
-                    fp = squeeze(ui.fit_params(:, :, :, :, i));
-                else
-                    fp = squeeze(ui.est_params(:, :, :, :, i));
-                end
-                ui.selection_props.mean(i) = mean(fp(sel));
-                ui.selection_props.var(i) = std(fp(sel));
-            end
-            ui.generate_sel_vals();
-        end
-                
+
         function add_ov(ui, init)
             new_ov_number = length(ui.overlays)+1;
             ui.overlays{new_ov_number} = init;
@@ -1392,26 +1142,6 @@ classdef UI < handle
                                                  'position', [211 pos_act_r(2) 20 20],...
                                                  'callback', {@ui.add_ov_cb, i});
             end
-        end
-        
-        function load_global_state(ui, file)
-            load(file, '-mat');
-            if ui_new.version ~= ui.version
-                wh = warndlg({['Version des geladenen Files (' num2str(ui_new.version)...
-                              ') entspricht nicht der Version des aktuellen Programms'...
-                              ' (' num2str(ui.version) '). Dies wird zu unerwartetem '...
-                              'Verhalten (bspw. fehlender Funktionalität) führen!'], ...
-                              ['Zum Umgehen dieses Problems sollten die zugrundeliegenden '...
-                              'Daten erneut geöffnet und gefittet werden']}, 'Warnung', 'modal');
-                pos = wh.Position;
-                wh.Position = [pos(1) pos(2) pos(3)+20 pos(4)];
-                wh.Children(3).Children.FontSize = 9;
-                
-            end
-            ui_new.destroy(true);
-            unsafe_limit_size(ui_new.h.f, [700 550]);
-            close(ui.h.f);
-            delete(ui);
         end
 
         function check_version(ui)
@@ -1489,7 +1219,8 @@ classdef UI < handle
         
         function set_disp_ov(ui, val)
             ui.disp_ov = val;
-            set(ui.h.ov_disp, 'Value', 1);
+            set(ui.h.ov_disp, 'Value', val);
+            ui.plot_array();
         end
         
         function set_transpose(ui)
@@ -1499,7 +1230,339 @@ classdef UI < handle
                 ui.transpose = false;
             end
         end
+                
+    % functions that actually compute something
+        function compute_ov(ui)
+             if ui.disp_fit_params
+                val = str2double(get(ui.h.ov_val, 'string'));
+                par = get(ui.h.ov_drpd, 'value');
+                no_pars = size(ui.fit_params, 5);
+                switch get(ui.h.ov_rel, 'value')
+                    case 1
+                        if par <= no_pars
+                            ui.overlays{1} = ui.fit_params(:, :, :, :, par) < val;
+                        else
+                            ui.overlays{1} = ui.fit_chisq < val;
+                        end
+                    case 2
+                        if par <= no_pars
+                            ui.overlays{1} = ui.fit_params(:, :, :, :, par) > val;
+                        else
+                            ui.overlays{1} = ui.fit_chisq > val;
+                        end
+                end
+            else
+                val = str2double(get(ui.h.ov_val, 'string'));
+                par = get(ui.h.ov_drpd, 'value');
+                no_pars = size(ui.est_params, 5);
+                switch get(ui.h.ov_rel, 'value')
+                    case 1
+                        if par <= no_pars
+                            ui.overlays{1} = ui.est_params(:, :, :, :, par) < val;
+                        else
+                            ui.overlays{1} = ui.data_sum < val;
+                        end
+                    case 2
+                        if par <= no_pars
+                            ui.overlays{1} = ui.est_params(:, :, :, :, par) > val;
+                        else
+                            ui.overlays{1} = ui.data_sum > val;
+                        end
+                end
+            end
+        end
+    
+        function estimate_parameters(ui)
+            n = ui.models(ui.model);
+            ui.est_params = zeros(ui.fileinfo.size(1), ui.fileinfo.size(2),...
+                              ui.fileinfo.size(3), ui.fileinfo.size(4), length(n{2}));
+            ub = zeros(length(n{3}), 1);
+            lb = ones(length(n{2}), 1)*100;
+            p = values(ui.points);
+            for i = 1:ui.fileinfo.np
+                for j = 1:ui.fileinfo.size(4)
+                    d = ui.data(p{i}(1), p{i}(2), p{i}(3), j, :);
+                    ps = UI.estimate_parameters_p(d, ui.model, ui.t_zero, ui.t_offset, ui.channel_width);
+                    ui.est_params(p{i}(1), p{i}(2), p{i}(3), j, :) = ps;
+                    if mod(i, round(ui.fileinfo.np/20)) == 0
+                        ui.update_infos(['   |   Parameter abschätzen ' num2str(i) '/' num2str(ui.fileinfo.np) '.']);
+                    end
+                    for k = 1:length(ps) % find biggest and smallest params
+                        if ps(k) > ub(k)
+                            ub(k) = ps(k);
+                        end
+                        if ps(k) < lb(k) && ps(k) ~= 0
+                            lb(k) = ps(k);
+                        end
+                    end
+                end
+            end
+            ui.data_sum = sum(ui.data(:, :, :, :, (ui.t_zero+ui.t_offset):end), 5);
+            ui.fitted = false;
+                          
+            % set bounds from estimated parameters
+            tmp = ui.models(ui.model);
+            tmp{3} = ub*1.5;
+            tmp{2} = lb*0.5;
+            ui.models(ui.model) = tmp;
+            ui.gstart = (ub+lb)./2;
+            
+            ui.generate_bounds();
+            
+            ui.update_infos();
+            set(ui.h.ov_val, 'string', mean(mean(mean(mean(squeeze(ui.est_params(:, :, :, :, 1)))))));
+        end
+
+        function fit_all(ui, varargin)
+            if ui.disp_ov
+                ma = length(find(ui.overlays{ui.current_ov}));
+            else
+                ma = prod(ui.fileinfo.size);
+            end
+                        
+            % set cancel button:
+            set(ui.h.fit, 'string', 'Abbrechen', 'callback', @ui.cancel_fit_cb);
+
+            s = num2cell(size(ui.est_params));
+            
+            ui.fit_params = nan(s{:});
+            ui.fit_params_err = nan(s{:});
+            n = 0;
+            for i = 1:ui.fileinfo.size(1)
+                for j = 1:ui.fileinfo.size(2)
+                    for k = 1:ui.fileinfo.size(3)
+                        for l = 1:ui.fileinfo.size(4)
+                            if ui.overlays{ui.current_ov}(i, j, k, l) || ~ui.disp_ov
+                                n = n + 1;
+                                y = squeeze(ui.data(i, j, k, l, (ui.t_offset+ui.t_zero):end));
+                                x = ui.x_data((ui.t_zero + ui.t_offset):end);
+                                w = sqrt(y);
+                                w(w == 0) = 1;
+                                if sum(ui.use_gstart) > 0
+                                    start = ui.est_params(i, j, k, l, :);
+                                    start(find(ui.use_gstart)) = ui.gstart(find(ui.use_gstart));
+                                    [p, p_err, chi] = fitdata(ui.models(ui.model),...
+                                        x, y, w, start, ui.fix);
+                                else
+                                    
+                                    [p, p_err, chi] = fitdata(ui.models(ui.model),...
+                                        x, y, w, ui.est_params(i, j, k, l, :), ui.fix); 
+                                end
+                                ui.fit_params(i, j, k, l, :) = p;
+                                ui.fit_params_err(i, j, k, l, :) = p_err;
+                                ui.fit_chisq(i, j, k, l) = chi;
+                                ui.update_infos(['   |   Fitte ' num2str(n) '/' num2str(ma) '.'])
+                            end
+                            if n == 1
+                                set(ui.h.fit_par, 'visible', 'on');
+                            end
+                            if ui.disp_fit_params
+                                ui.plot_array();
+                            end
+                            if ui.cancel_f
+                                ui.cancel_f = false;
+                                return
+                            end
+                        end
+                    end
+                end
+            end
+            
+            set(ui.h.fit, 'string', 'global Fitten', 'callback', @ui.fit_all);
+            ui.fitted = true;
+            ui.update_infos();
+            ui.plot_array();
+        end
         
+        function generate_bounds(ui)
+            m = ui.models(ui.model);
+            n = length(m{4});
+            
+            if  length(ui.gstart) < n
+                ui.gstart = (m{2}(:)+m{3}(:))./2;
+            end
+            if length(ui.use_gstart) < n
+                ui.use_gstart = [ui.use_gstart; zeros(n - length(ui.use_gstart), 1)];
+            end
+            
+            for i = 1:length(ui.h.lb)
+                delete(ui.h.lb{i});
+                delete(ui.h.ub{i});
+                delete(ui.h.n{i});
+                delete(ui.h.st{i});
+                delete(ui.h.fix{i});
+                delete(ui.h.gst{i});
+            end 
+            ui.h.lb = cell(n, 1);
+            ui.h.ub = cell(n, 1);
+            ui.h.n = cell(n, 1);
+            ui.h.st = cell(n, 1);
+            ui.h.fix = cell(n, 1);
+            ui.h.gst = cell(n, 1);
+
+            for i = 1:n
+                ui.h.n{i} = uicontrol(ui.h.bounds,  'units', 'pixels',...
+                                                    'style', 'text',...
+                                                    'string', m{4}{i},...
+                                                    'horizontalAlignment', 'left',...
+                                                    'position', [5 155-i*23-14 35 20]);
+                                                
+                ui.h.lb{i} = uicontrol(ui.h.bounds, 'units', 'pixels',...
+                                                    'style', 'edit',...
+                                                    'string', sprintf('%1.2f', m{2}(i)),...
+                                                    'position', [40 155-i*23-10 45 20],...
+                                                    'callback', @ui.set_bounds_cb,...
+                                                    'BackgroundColor', [1 1 1]);
+                                                
+                ui.h.ub{i} = uicontrol(ui.h.bounds, 'units', 'pixels',...
+                                                    'style', 'edit',...
+                                                    'string', sprintf('%1.2f', m{3}(i)),...
+                                                    'position', [95 155-i*23-10 45 20],...
+                                                    'callback', @ui.set_bounds_cb,...
+                                                    'BackgroundColor', [1 1 1]);
+
+                ui.h.st{i} = uicontrol(ui.h.bounds, 'units', 'pixels',...
+                                                    'style', 'edit',...
+                                                    'string', sprintf('%1.2f', ui.gstart(i)),...
+                                                    'position', [150 155-i*23-10 45 20],...
+                                                    'callback', @ui.set_gstart_cb,...
+                                                    'BackgroundColor', [1 1 1]);
+                                                
+                ui.h.fix{i} = uicontrol(ui.h.bounds, 'units', 'pixels',...
+                                                     'style', 'checkbox',...
+                                                     'value', ismember(m{4}(i), ui.fix),...
+                                                     'position', [198 155-i*23-10 40 20],...
+                                                     'callback', @ui.set_param_fix_cb);
+                                                 
+                ui.h.gst{i} = uicontrol(ui.h.bounds, 'units', 'pixels',...
+                                                     'style', 'checkbox',...
+                                                     'value', ui.use_gstart(i),...
+                                                     'position', [215 155-i*23-10 40 20],...
+                                                     'callback', @ui.set_param_glob_cb);
+            end
+        end
+
+        function generate_mean(ui)
+            s = size(ui.fit_params);
+            sel = find(ui.overlays{ui.current_ov});
+            for i = 1:s(end)
+                if ui.fitted && ui.disp_fit_params
+                    fp = squeeze(ui.fit_params(:, :, :, :, i));
+                else
+                    fp = squeeze(ui.est_params(:, :, :, :, i));
+                end
+                ui.selection_props.mean(i) = mean(fp(sel));
+                ui.selection_props.var(i) = std(fp(sel));
+            end
+            ui.generate_sel_vals();
+        end
+        
+        function calculate_legend(ui)
+            tmp = ui.models(ui.model);
+            for i = 1:length(tmp{2})
+                if ui.disp_fit_params
+                    ui.l_max(i) = squeeze(max(max(max(max(ui.fit_params(:,:,:,:,i))))))+10*eps;
+                    ui.l_min(i) = squeeze(min(min(min(min(ui.fit_params(:,:,:,:,i))))))-10*eps;
+                else
+                    ui.l_max(i) = squeeze(max(max(max(max(ui.est_params(:,:,:,:,i))))))+10*eps;
+                    ui.l_min(i) = squeeze(min(min(min(min(ui.est_params(:,:,:,:,i))))))-10*eps;
+                end
+            end
+            if ui.disp_fit_params
+                ui.l_min(end) = squeeze(min(min(min(min(ui.fit_chisq)))))-10*eps;
+                ui.l_max(end) = squeeze(max(max(max(max(ui.fit_chisq)))))+10*eps;
+            else
+                ui.l_min(end) = squeeze(min(min(min(min(ui.data_sum)))))-10*eps;
+                ui.l_max(end) = squeeze(max(max(max(max(ui.data_sum)))))+10*eps;
+            end
+        end
+    end
+
+    methods (Access = private)
+        function resize(ui, varargin)
+            % resize elements in figure to match window size
+            if isfield(ui.h, 'f') % workaround for error when a loading a file
+                fP = get(ui.h.f, 'Position');
+                pP = get(ui.h.plotpanel, 'Position');
+                pP(3:4) = [(fP(3)-pP(1))-10 (fP(4)-pP(2))-10];
+                set(ui.h.plotpanel, 'Position', pP);
+
+                aP = get(ui.h.axes, 'Position');
+                aP(3:4) = [(pP(3)-aP(1))-80 (pP(4)-aP(2))-50];
+                set(ui.h.axes, 'Position', aP);
+
+                tmp = get(ui.h.d2_select, 'Position');
+                tmp(2) = aP(2) + aP(4)/2;
+                set(ui.h.d2_select, 'Position', tmp);
+                
+                tmp = get(ui.h.d1_select, 'Position');
+                tmp(1) = aP(1) + aP(3)/2;
+                set(ui.h.d1_select, 'Position', tmp);
+                
+                tmp = get(ui.h.d3_select, 'Position');
+                tmp(1) = aP(1) + aP(3) + 5;
+                tmp(2) = aP(2) + aP(4) - 16;
+                set(ui.h.d3_select, 'Position', tmp);
+                
+                tmp(1) = aP(1) + aP(3) + 40;
+                set(ui.h.d4_select, 'Position', tmp);
+                
+                tmp = get(ui.h.legend, 'position');
+                tmp(3) = aP(3);
+                set(ui.h.legend, 'position', tmp);
+
+                tmp = get(ui.h.tick_max, 'position');
+                tmp(1) = aP(3) + aP(1) - tmp(3);
+                set(ui.h.tick_max, 'position', tmp);
+
+                tmp = get(ui.h.plttxt, 'position');
+                tmp(2) = aP(2)+aP(4)+2;
+                set(ui.h.plttxt, 'position', tmp);
+
+                tmp = get(ui.h.param, 'position');
+                tmp(2) = aP(2)+aP(4)+6;
+                set(ui.h.param, 'position', tmp);
+
+                tmp = get(ui.h.fit_est, 'position');
+                tmp(2) = aP(2)+aP(4) + 6;
+                set(ui.h.fit_est, 'position', tmp);
+
+                tmp = get(ui.h.zslider, 'position');
+                tmp(1) = aP(1) + aP(3) + 15;
+                tmp(4) = aP(4) - 50;
+                set(ui.h.zslider, 'position', tmp);
+                
+                tmp(1) = tmp(1) + 25;
+                set(ui.h.saslider, 'position', tmp);
+                
+                tmp = get(ui.h.zbox, 'position');
+                tmp(1) = aP(1) + aP(3) + 15;
+                tmp(2) = aP(1) + 20;
+                set(ui.h.zbox, 'position', tmp);
+                
+                tmp(1) = tmp(1) + 25;
+                set(ui.h.sabox, 'position', tmp);
+
+                bP = get(ui.h.bottombar, 'Position');
+                bP(3) = fP(3)+3;
+                set(ui.h.bottombar, 'Position', bP);
+
+                bP = get(ui.h.info, 'Position');
+                bP(3) = fP(3);
+                set(ui.h.info, 'Position', bP);
+
+                tP = get(ui.h.tabs, 'Position');
+                tP(4) = pP(4);
+                set(ui.h.tabs, 'Position', tP);
+
+                tmp = get(ui.h.ov_controls, 'Position');
+                tmp(2) = tP(4) - tmp(4) - 40;
+                set(ui.h.ov_controls, 'Position', tmp);
+                set(ui.h.sel_controls, 'Position', tmp);
+                
+            end
+        end
+
         %% Callbacks:
         function save_global_state_cb(ui, varargin)
             [name, path] = uiputfile('*.state', 'State speichern', [ui.savepath ui.genericname '.state']);
@@ -1510,7 +1573,7 @@ classdef UI < handle
             
             ui_new = ui;
             save([path name], 'ui_new');
-        end
+        end % save global state as .mat
 
         function aplot_click_cb(ui, varargin)
             cp = get(ui.h.axes, 'CurrentPoint');
@@ -1549,8 +1612,10 @@ classdef UI < handle
                     end
                     ui.plot_array();
             end
-        end % mousclick on plot
+        end % mouseclick on plot
         
+        % callback for opening a new file
+        % destroys current figure and creates a new one
         function open_file_cb(ui, varargin)
             ui.loadini();
             % get path of file from user
@@ -1572,23 +1637,7 @@ classdef UI < handle
         end
                 
         function change_overlay_cond_cb(ui, varargin)
-            val = str2double(get(ui.h.ov_val, 'string'));
-            par = get(ui.h.ov_drpd, 'value');
-            no_pars = size(ui.est_params, 5);
-            switch get(ui.h.ov_rel, 'value')
-                case 1
-                    if par <= no_pars
-                        ui.overlays{1} = ui.est_params(:, :, :, :, par) < val;
-                    else
-                        ui.overlays{1} = ui.data_sum < val;
-                    end
-                case 2
-                    if par <= no_pars
-                        ui.overlays{1} = ui.est_params(:, :, :, :, par) > val;
-                    else
-                        ui.overlays{1} = ui.data_sum > val;
-                    end
-            end
+            ui.compute_ov();
             ui.plot_array();
         end
         
@@ -1624,8 +1673,7 @@ classdef UI < handle
         end
         
         function disp_ov_cb(ui, varargin)
-            ui.disp_ov = varargin{1}.Value;
-            ui.plot_array();
+            ui.set_disp_ov(varargin{1}.Value);
         end
         
         function set_current_ov_cb(ui, varargin)
@@ -1640,7 +1688,6 @@ classdef UI < handle
         
         function change_par_source_cb(ui, varargin)
             t = ui.models(ui.model);  
-            
             ov = get(varargin{2}.OldValue, 'String');
             nv = get(varargin{2}.NewValue, 'String');
             if ~strcmp(ov, nv)
@@ -1655,6 +1702,7 @@ classdef UI < handle
                                 'string', params);
                 
                 ui.generate_mean();
+                ui.compute_ov();
                 ui.plot_array();
             end
         end
@@ -1811,12 +1859,16 @@ classdef UI < handle
             ui.plot_array();
         end
         
+        % upper and lower bound of legend
         function set_tick_cb(ui, varargin)
             switch varargin{1}
                 case ui.h.tick_min
                     new_l_min = str2double(get(ui.h.tick_min, 'string'));
                     if new_l_min < ui.l_max(ui.current_param)
                         ui.l_min(ui.current_param) = new_l_min;
+                        ui.use_user_legend = true;
+                    elseif isempty(get(ui.h.tick_min, 'string'))
+                        ui.use_user_legend = false;
                     else
                         set(ui.h.tick_min, 'string', ui.l_min(ui.current_param));
                     end
@@ -1824,6 +1876,9 @@ classdef UI < handle
                     new_l_max = str2double(get(ui.h.tick_max, 'string'));
                     if new_l_max > ui.l_min(ui.current_param)
                         ui.l_max(ui.current_param) = new_l_max;
+                        ui.use_user_legend = true;
+                    elseif isempty(get(ui.h.tick_max, 'string'))
+                        ui.use_user_legend = false;
                     else
                         set(ui.h.tick_max, 'string', ui.l_max(ui.current_param));
                     end
@@ -1931,6 +1986,7 @@ classdef UI < handle
     end
 end
 
+% Plots `data` as an overlay over the current axis.
 function plot_overlay(data)
     [m, n] = size(data);
     image = ones(m, n, 3);
@@ -1943,6 +1999,9 @@ function plot_overlay(data)
             'AlphaData', image(:,:,1)*.4);
 end
 
+% Creates a heat map in the curren axis. Colormap is given by cmap, grid
+% can be either true or false and determines whether a grid is plotted or
+% not.
 function hmap(data, grid, cmap)
     if nargin < 3
         cmap = 'summer';
@@ -1966,6 +2025,8 @@ function hmap(data, grid, cmap)
     end
 end
 
+% Uses calls to the underlying java-window-object to limit the size of
+% figure `fig` to `minSize` (vector with two entries, min_x and min_y).
 function unsafe_limit_size(fig, minSize)
     drawnow;
     jFrame = get(handle(fig), 'JavaFrame');
@@ -1974,6 +2035,8 @@ function unsafe_limit_size(fig, minSize)
     jWindow.setMinimumSize(tmp);
 end
 
+% Get the dir from which this file is run. If deployed, get the location of
+% the compiled *.exe.
 function p = get_executable_dir()
     if isdeployed
         [~, result] = system('path');
