@@ -1335,55 +1335,49 @@ classdef UI < handle
             set(ui.h.hold, 'visible', 'on');
             
             s = num2cell(size(ui.est_params));
-            
-            ui.fit_params = nan(s{:});
-            ui.fit_params_err = nan(s{:});
-            n = 0;
-            %  needs to be linear index!
-            for i = start(1):ui.fileinfo.size(1)
-                for j = start(2):ui.fileinfo.size(2)
-                    for k = start(3):ui.fileinfo.size(3)
-                        for l = start(4):ui.fileinfo.size(4)
-                            if ui.overlays{ui.current_ov}(i, j, k, l) || ~ui.disp_ov
-                                n = n + 1;
-                                y = squeeze(ui.data(i, j, k, l, (ui.t_offset+ui.t_zero):end));
-                                x = ui.x_data((ui.t_zero + ui.t_offset):end);
-                                w = sqrt(y);
-                                w(w == 0) = 1;
-                                if sum(ui.use_gstart) > 0
-                                    start = ui.est_params(i, j, k, l, :);
-                                    start(find(ui.use_gstart)) = ui.gstart(find(ui.use_gstart));
-                                    [p, p_err, chi] = fitdata(ui.models(ui.model),...
-                                        x, y, w, start, ui.fix);
-                                else
-                                    
-                                    [p, p_err, chi] = fitdata(ui.models(ui.model),...
-                                        x, y, w, ui.est_params(i, j, k, l, :), ui.fix); 
-                                end
-                                ui.fit_params(i, j, k, l, :) = p;
-                                ui.fit_params_err(i, j, k, l, :) = p_err;
-                                ui.fit_chisq(i, j, k, l) = chi;
-                                ui.update_infos(['   |   Fitte ' num2str(n) '/' num2str(ma) '.'])
-                                ui.last_fitted = [i, j, k, l];
-                            end
-                            if n == 1
-                                set(ui.h.fit_par, 'visible', 'on');
-                            end
-                            if ui.disp_fit_params
-                                ui.plot_array();
-                            end
-                            if ui.hold_f
-                                ui.hold_f = false;
-                                set(ui.h.hold, 'string', 'Fortsetzen',...
-                                               'callback', @ui.resume_fit_cb);
-                                return
-                            end
-                            if ui.cancel_f
-                                ui.cancel_f = false;
-                                return
-                            end
-                        end
+            if start == 1
+                ui.fit_params = nan(s{:});
+                ui.fit_params_err = nan(s{:});
+            end
+           
+            for n = start:ma
+                [i,j,k,l] = ind2sub(ui.fileinfo.size, n);               
+                if ui.overlays{ui.current_ov}(i, j, k, l) || ~ui.disp_ov
+                    y = squeeze(ui.data(i, j, k, l, (ui.t_offset+ui.t_zero):end));
+                    x = ui.x_data((ui.t_zero + ui.t_offset):end);
+                    w = sqrt(y);
+                    w(w == 0) = 1;
+                    if sum(ui.use_gstart) > 0
+                        start = ui.est_params(i, j, k, l, :);
+                        start(find(ui.use_gstart)) = ui.gstart(find(ui.use_gstart));
+                        [p, p_err, chi] = fitdata(ui.models(ui.model),...
+                            x, y, w, start, ui.fix);
+                    else
+
+                        [p, p_err, chi] = fitdata(ui.models(ui.model),...
+                            x, y, w, ui.est_params(i, j, k, l, :), ui.fix); 
                     end
+                    ui.fit_params(i, j, k, l, :) = p;
+                    ui.fit_params_err(i, j, k, l, :) = p_err;
+                    ui.fit_chisq(i, j, k, l) = chi;
+                    ui.update_infos(['   |   Fitte ' num2str(n) '/' num2str(ma) '.'])
+                    ui.last_fitted = n;
+                end
+                if n == 1
+                    set(ui.h.fit_par, 'visible', 'on');
+                end
+                if ui.disp_fit_params
+                    ui.plot_array();
+                end
+                if ui.hold_f
+                    ui.hold_f = false;
+                    set(ui.h.hold, 'string', 'Fortsetzen',...
+                                   'callback', @ui.resume_fit_cb);
+                    return
+                end
+                if ui.cancel_f
+                    ui.cancel_f = false;
+                    return
                 end
             end
             
@@ -1701,11 +1695,6 @@ classdef UI < handle
             ui.set_current_ov(str2double(dat.NewValue.Tag));
         end
         
-        function cancel_fit_cb(ui, varargin)
-            ui.cancel_f = true;
-            set(ui.h.fit, 'string', 'Fit', 'callback', @ui.fit_all);
-        end
-        
         function change_par_source_cb(ui, varargin)
             t = ui.models(ui.model);  
             ov = get(varargin{2}.OldValue, 'String');
@@ -1884,12 +1873,17 @@ classdef UI < handle
         end
         
         function fit_all_cb(ui, varargin)
-            ui.fit_all([1,1,1,1]);
+            ui.fit_all(1);
         end
         
         function resume_fit_cb(ui, varargin)
             set(ui.h.hold, 'string', 'Fit anhalten', 'callback', @ui.hold_fit_cb);
             ui.fit_all(ui.last_fitted);
+        end
+        
+        function cancel_fit_cb(ui, varargin)
+            ui.cancel_f = true;
+            set(ui.h.fit, 'string', 'global Fitten', 'callback', @ui.fit_all_cb);
         end
         
         % upper and lower bound of legend
