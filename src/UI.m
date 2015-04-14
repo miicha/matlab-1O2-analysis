@@ -1251,25 +1251,25 @@ classdef UI < handle
                 
     % functions that actually compute something
         function compute_ov(ui)
-%              if ui.disp_fit_params
-%                 val = str2double(get(ui.h.ov_val, 'string'));
-%                 par = get(ui.h.ov_drpd, 'value');
-%                 no_pars = size(ui.fit_params, 5);
-%                 switch get(ui.h.ov_rel, 'value')
-%                     case 1
-%                         if par <= no_pars
-%                             ui.overlays{1} = ui.fit_params(:, :, :, :, par) < val;
-%                         else
-%                             ui.overlays{1} = ui.fit_chisq < val;
-%                         end
-%                     case 2
-%                         if par <= no_pars
-%                             ui.overlays{1} = ui.fit_params(:, :, :, :, par) > val;
-%                         else
-%                             ui.overlays{1} = ui.fit_chisq > val;
-%                         end
-%                 end
-%             else
+             if ui.disp_fit_params
+                val = str2double(get(ui.h.ov_val, 'string'));
+                par = get(ui.h.ov_drpd, 'value');
+                no_pars = size(ui.fit_params, 5);
+                switch get(ui.h.ov_rel, 'value')
+                    case 1
+                        if par <= no_pars
+                            ui.overlays{1} = ui.fit_params(:, :, :, :, par) < val;
+                        else
+                            ui.overlays{1} = ui.fit_chisq < val;
+                        end
+                    case 2
+                        if par <= no_pars
+                            ui.overlays{1} = ui.fit_params(:, :, :, :, par) > val;
+                        else
+                            ui.overlays{1} = ui.fit_chisq > val;
+                        end
+                end
+            else
                 val = str2double(get(ui.h.ov_val, 'string'));
                 par = get(ui.h.ov_drpd, 'value');
                 no_pars = size(ui.est_params, 5);
@@ -1286,7 +1286,7 @@ classdef UI < handle
                         else
                             ui.overlays{1} = ui.data_sum > val;
                         end
-%                 end
+                end
             end
         end
     
