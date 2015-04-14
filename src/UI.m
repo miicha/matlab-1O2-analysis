@@ -21,6 +21,7 @@ classdef UI < handle
         fit_params_err;
         fit_chisq;
         est_params;     % estimated parameters
+        last_fitted;    % last fitted point
         
         overlays = {};  % 1 is always the automatically generated overlay,
                         % additional overlays can be added
@@ -30,6 +31,7 @@ classdef UI < handle
         selection_props;
         
         cancel_f = false;
+        hold_f = false;
         model = '1. A*(exp(-t/t1)-exp(-t/t2))+offset';      % fit model, should be global  
         
         channel_width = 20/1000;   % needs UI element
@@ -127,6 +129,7 @@ classdef UI < handle
                             ui.h.fix_text = uicontrol(ui.h.bounds);
                             ui.h.glob_text = uicontrol(ui.h.bounds);
                     ui.h.fit = uicontrol(ui.h.fit_tab);
+                    ui.h.hold = uicontrol(ui.h.fit_tab);
                     ui.h.ov_controls = uipanel(ui.h.fit_tab);
                         ui.h.ov_disp = uicontrol(ui.h.ov_controls);
                         ui.h.ov_buttongroup = uibuttongroup(ui.h.ov_controls);
@@ -359,7 +362,15 @@ classdef UI < handle
                            'position', [2 2 80 28],...
                            'string', 'global Fitten',...
                            'BackgroundColor', [.8 .8 .8],...
-                           'callback', @ui.fit_all);
+                           'callback', @ui.fit_all_cb);
+                       
+            set(ui.h.hold, 'units', 'pixels',...
+                           'style', 'push',...
+                           'position', [84 2 80 28],...
+                           'string', 'Fit anhalten',...
+                           'BackgroundColor', [.8 .8 .8],...
+                           'visible', 'off',...
+                           'callback', @ui.hold_fit_cb);
                        
             %% overlay control
             set(ui.h.ov_controls, 'units', 'pixels',...
@@ -485,7 +496,7 @@ classdef UI < handle
                              'style', 'push',...
                              'position', [15 50 50 20],...
                              'string', 'Plotten',...
-                             'callback', @ui.plot_selection);
+                             'callback', @ui.plot_group);
 
             % info about the selected data
             set(ui.h.sel_values, 'units', 'pixels',...
@@ -1313,25 +1324,26 @@ classdef UI < handle
             set(ui.h.ov_val, 'string', mean(mean(mean(mean(squeeze(ui.est_params(:, :, :, :, 1)))))));
         end
 
-        function fit_all(ui, varargin)
+        function fit_all(ui, start)
             if ui.disp_ov
                 ma = length(find(ui.overlays{ui.current_ov}));
             else
                 ma = prod(ui.fileinfo.size);
             end
-                        
             % set cancel button:
             set(ui.h.fit, 'string', 'Abbrechen', 'callback', @ui.cancel_fit_cb);
-
+            set(ui.h.hold, 'visible', 'on');
+            
             s = num2cell(size(ui.est_params));
             
             ui.fit_params = nan(s{:});
             ui.fit_params_err = nan(s{:});
             n = 0;
-            for i = 1:ui.fileinfo.size(1)
-                for j = 1:ui.fileinfo.size(2)
-                    for k = 1:ui.fileinfo.size(3)
-                        for l = 1:ui.fileinfo.size(4)
+            %  needs to be linear index!
+            for i = start(1):ui.fileinfo.size(1)
+                for j = start(2):ui.fileinfo.size(2)
+                    for k = start(3):ui.fileinfo.size(3)
+                        for l = start(4):ui.fileinfo.size(4)
                             if ui.overlays{ui.current_ov}(i, j, k, l) || ~ui.disp_ov
                                 n = n + 1;
                                 y = squeeze(ui.data(i, j, k, l, (ui.t_offset+ui.t_zero):end));
@@ -1352,12 +1364,19 @@ classdef UI < handle
                                 ui.fit_params_err(i, j, k, l, :) = p_err;
                                 ui.fit_chisq(i, j, k, l) = chi;
                                 ui.update_infos(['   |   Fitte ' num2str(n) '/' num2str(ma) '.'])
+                                ui.last_fitted = [i, j, k, l];
                             end
                             if n == 1
                                 set(ui.h.fit_par, 'visible', 'on');
                             end
                             if ui.disp_fit_params
                                 ui.plot_array();
+                            end
+                            if ui.hold_f
+                                ui.hold_f = false;
+                                set(ui.h.hold, 'string', 'Fortsetzen',...
+                                               'callback', @ui.resume_fit_cb);
+                                return
                             end
                             if ui.cancel_f
                                 ui.cancel_f = false;
@@ -1368,7 +1387,8 @@ classdef UI < handle
                 end
             end
             
-            set(ui.h.fit, 'string', 'global Fitten', 'callback', @ui.fit_all);
+            set(ui.h.hold, 'visible', 'off');
+            set(ui.h.fit, 'string', 'global Fitten', 'callback', @ui.fit_all_cb);
             ui.fitted = true;
             ui.update_infos();
             ui.plot_array();
@@ -1641,7 +1661,7 @@ classdef UI < handle
             ui.plot_array();
         end
         
-        function plot_selection(ui, varargin)
+        function plot_group(ui, varargin)
             i = length(ui.gplt);
             ui.gplt{i+1} = UIGroupPlot(ui);
             ui.generate_sel_vals();
@@ -1857,6 +1877,19 @@ classdef UI < handle
         function set_param_cb(ui, varargin)
             ui.current_param = get(ui.h.param, 'value');
             ui.plot_array();
+        end
+        
+        function hold_fit_cb(ui, varargin)
+            ui.hold_f = true;
+        end
+        
+        function fit_all_cb(ui, varargin)
+            ui.fit_all([1,1,1,1]);
+        end
+        
+        function resume_fit_cb(ui, varargin)
+            set(ui.h.hold, 'string', 'Fit anhalten', 'callback', @ui.hold_fit_cb);
+            ui.fit_all(ui.last_fitted);
         end
         
         % upper and lower bound of legend
