@@ -39,7 +39,7 @@ classdef UIGroupPlot < handle
             
             
             gplt.h.f = figure(); 
-            
+            gplt.h.s = {};
             set(gplt.h.f, 'units', 'pixels',...
                           'position', [500 200 1000 710],...
                           'numbertitle', 'off',...
@@ -90,10 +90,13 @@ classdef UIGroupPlot < handle
                 end
                 fitdata = gplt.model_fun(p{:}, gplt.ui.x_data(gplt.ui.t_zero:end));
                 
-                subplot(gplt.y_size, gplt.x_size,sub2ind([gplt.x_size, gplt.y_size],...
+                gplt.h.s{i} = subplot(gplt.y_size, gplt.x_size,sub2ind([gplt.x_size, gplt.y_size],...
                         gplt.x_pos(i), 1+gplt.y_size-gplt.y_pos(i)));
                 plot(gplt.ui.x_data(gplt.ui.t_zero:end), squeeze(gplt.data(indx(i),...
                            indy(i), gplt.ui.t_zero:end)),'.');
+                       
+                set(gplt.h.s{i}, 'xtick', [], 'ytick', [], 'ButtonDownFcn', @gplt.click_cb, 'Tag', num2str(i));
+                
                 hold on
                 plot(gplt.ui.x_data(gplt.ui.t_zero:end), fitdata, 'r-');
                 hold off
@@ -107,6 +110,7 @@ classdef UIGroupPlot < handle
             if name == 0
                 return
             end
+            gplt.ui.set_savepath(path);
             path = fullfile(path, name);
             set(gplt.h.f, 'toolbar', 'none');
             tmp = get(gplt.h.f, 'position');
@@ -119,6 +123,27 @@ classdef UIGroupPlot < handle
             print(gplt.h.f, '-dpdf', '-r600', path);
             set(gplt.h.f, 'toolbar', 'figure');
         end
+        
+        function click_cb(gplt, varargin)
+            t = str2double(varargin{1}.Tag);
+            gplt.x_data(t);
+            
+            index{gplt.ui.curr_dims(1)} = gplt.x_data(t); % x ->
+            index{gplt.ui.curr_dims(2)} = gplt.y_data(t); % y ^
+            index{gplt.ui.curr_dims(3)} = gplt.ui.ind{gplt.ui.curr_dims(3)};
+            index{gplt.ui.curr_dims(4)} = gplt.ui.ind{gplt.ui.curr_dims(4)};
+
+            for i = 1:4
+                if index{i} > gplt.ui.fileinfo.size(i)
+                    index{i} = gplt.ui.fileinfo.size(i);
+                elseif index{i} <= 0
+                     index{i} = 1;
+                end
+            end
+            
+            i = length(gplt.ui.plt);
+            gplt.ui.plt{i+1} = UIPlot([index{:}], gplt.ui);
+        end % mouseclick on plot
     end
     
 end
