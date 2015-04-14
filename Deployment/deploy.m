@@ -13,7 +13,7 @@ newver = true;
 ov = urlread(version_url);
 online_version = str2double(strsplit(ov, '.'));
 
-if online_version >= local_version
+if online_version >= str2double(strsplit(local_version, '.'))
     newver = false;
     warning(['Local version (' local_version ') is NOT greater than '...
              'online version (' ov ').']);
