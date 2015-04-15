@@ -377,6 +377,10 @@ classdef UI < handle
                             'tooltipString', 'Dauert am Anfang ein bisschen. Keine Fortschrittsanzeige!',...
                             'position', [2 35 200 15]);
                         
+            if isdeployed()
+                set(ui.h.parallel, 'visible', 'off');
+            end
+                        
             %% overlay control
             set(ui.h.ov_controls, 'units', 'pixels',...
                                   'position', [2 260 243 200]);
@@ -693,6 +697,10 @@ classdef UI < handle
                 ui.fileinfo.finished = true;
                 ui.fileinfo.size = [dims{1} dims{2} dims{3}];
                 fin=tmp{end};
+                if strcmp(fin, 'CHECKPOINT')
+                    tmp = tmp(1:end-1);
+                    fin = tmp{end};
+                end
                 num_of_points = length(tmp);
             end
             
@@ -830,6 +838,7 @@ classdef UI < handle
             if s(ui.curr_dims(3)) > 1 
                 set(ui.h.zslider, 'min', 1, 'max', s(ui.curr_dims(3)),...
                                   'visible', 'on',...
+                                  'value', 1,...
                                   'SliderStep', [1 5]/(s(ui.curr_dims(3))-1));
                 set(ui.h.zbox, 'visible', 'on');
                 set(ui.h.d3_select, 'visible', 'on');
@@ -842,6 +851,7 @@ classdef UI < handle
             if s(ui.curr_dims(4)) > 1 
                 set(ui.h.saslider, 'min', 1, 'max', s(ui.curr_dims(4)),...
                                   'visible', 'on',...
+                                  'value', 1,...
                                   'SliderStep', [1 5]/(s(ui.curr_dims(4))-1));
                 set(ui.h.sabox, 'visible', 'on');
                 set(ui.h.d4_select, 'visible', 'on');
@@ -1397,6 +1407,7 @@ classdef UI < handle
         function fit_all_par(ui, start)
             ov_vec = find(ui.overlays{ui.current_ov});
             
+            setptr(gcf, 'watch');
             ui.update_infos('   |   Fitte parallel.')
             
             s = num2cell(size(ui.est_params));
@@ -1445,7 +1456,7 @@ classdef UI < handle
             ui.fit_params = reshape(f_pars, [ui.fileinfo.size size(f_pars, 2)]);
             ui.fit_params_err = reshape(f_pars_e, [ui.fileinfo.size size(f_pars, 2)]);
             ui.fit_chisq = reshape(f_chisq, ui.fileinfo.size);
-            
+            setptr(gcf, 'arrow');
             ui.plot_array();
         end
         
@@ -1936,7 +1947,6 @@ classdef UI < handle
         end
         
         function fit_all_cb(ui, varargin)
-            tic
             ui.hold_f = false;
             ui.cancel_f = false;
             if get(ui.h.parallel, 'value')
@@ -1944,7 +1954,6 @@ classdef UI < handle
             else
                 ui.fit_all(1);
             end
-            toc
         end
         
         function resume_fit_cb(ui, varargin)
@@ -2054,7 +2063,11 @@ classdef UI < handle
                     A = A-param(4);
                     t2 = find(abs(data <= round(A/2.7)));
                     t2 = t2(t2 > t1);
-                    param(2) = (t2(1) - t_zero)*cw;
+                    try
+                        param(2) = (t2(1) - t_zero)*cw;
+                    catch
+                        param(2) = 1;
+                    end
                 case {'2. A*(exp(-t/t1)-exp(-t/t2))+B*exp(-t/t2)+offset',...
                       '3. A*(exp(-t/t1)-exp(-t/t2))+B*exp(-t/t1)+offset'}
                     [A, t1] = max(data((t_zero + t_offset):end)); % Amplitude, first time
@@ -2067,7 +2080,11 @@ classdef UI < handle
                     A = A-param(5);
                     t2 = find(abs(data <= round(A/2.7)));
                     t2 = t2(t2 > t1);
-                    param(2) = (t2(1) - t_zero)*cw;
+                    try
+                        param(2) = (t2(1) - t_zero)*cw;
+                    catch
+                        param(2) = 1;
+                    end
                 case '4. A*(exp(-t/t1)+B*exp(-t/t2)+offset'
                     [A, i] = max(data((t_zero + t_offset):end));
                     B = A/4;
@@ -2138,7 +2155,7 @@ end
 % Get the dir from which this file is run. If deployed, get the location of
 % the compiled *.exe.
 function p = get_executable_dir()
-    if isdeployed
+    if isdeployed()
         [~, result] = system('path');
         p = char(regexpi(result, 'Path=(.*?);', 'tokens', 'once'));
     else
