@@ -7,7 +7,7 @@ classdef UI < handle
         
         reorder = [3 4 1 2];
         
-        version = '0.3.3';
+        version = '0.3.4';
         online_ver = 'http://www.daten.tk/webhook/tags.php?owner=sebastian.pfitzner&project=sisa-scan-auswertung';
         
         % fileinfo (dims, path, ...)
@@ -22,6 +22,7 @@ classdef UI < handle
         fit_chisq;
         est_params;     % estimated parameters
         last_fitted;    % last fitted point
+        par_size = 16;
         
         overlays = {};  % 1 is always the automatically generated overlay,
                         % additional overlays can be added
@@ -87,7 +88,7 @@ classdef UI < handle
     end
 
     methods
-        % create new instance with basic controls
+        % create nw instance with basic controls
         function ui = UI(path, name, pos)
             %% initialize all UI objects:
             ui.h.f = figure();
@@ -863,16 +864,18 @@ classdef UI < handle
         end
 
         function update_infos(ui, text)
-            pause(.0001);                    
+            pause(.0001);    
+            str = [[ui.fileinfo.path ui.fileinfo.name{1}] '  |   Dimensionen: ' num2str(ui.fileinfo.size)];
+
             if nargin < 2
                 text = '';
+                if ui.fitted
+                    str = [str '   |   Daten global gefittet.'];
+                elseif ui.data_read
+                    str = [str '   |    Daten eingelesen.'];
+                end
             end
-            str = [[ui.fileinfo.path ui.fileinfo.name{1}] '  |   Dimensionen: ' num2str(ui.fileinfo.size)];
-            if ui.fitted
-                str = [str '   |   Daten global gefittet.'];
-            elseif ui.data_read
-                str = [str '   |    Daten eingelesen.'];
-            end
+
             set(ui.h.info, 'string', [str text]);
             pause(.0001);
         end
@@ -1342,6 +1345,7 @@ classdef UI < handle
         end
 
         function fit_all(ui, start)
+            tic;
             if ui.disp_ov
                 ma = length(find(ui.overlays{ui.current_ov}));
             else
@@ -1377,7 +1381,7 @@ classdef UI < handle
                     ui.fit_params(i, j, k, l, :) = p;
                     ui.fit_params_err(i, j, k, l, :) = p_err;
                     ui.fit_chisq(i, j, k, l) = chi;
-                    ui.update_infos(['   |   Fitte ' num2str(m) '/' num2str(ma) '.'])
+                    ui.update_infos(['   |   Fitte ' num2str(m) '/' num2str(ma) ' (sequentiell).'])
                     m = m + 1;
                     ui.last_fitted = n;
                 end
@@ -1396,24 +1400,27 @@ classdef UI < handle
                     return
                 end
             end
-            
+            t = toc;
+            ui.update_infos(['   |   Daten global gefittet (' num2str(t) ' s).'])
             set(ui.h.hold, 'visible', 'off');
             set(ui.h.fit, 'string', 'global Fitten', 'callback', @ui.fit_all_cb);
             ui.fitted = true;
-            ui.update_infos();
             ui.plot_array();
         end
         
         function fit_all_par(ui, start)
-            ov_vec = find(ui.overlays{ui.current_ov});
-            
-            setptr(gcf, 'watch');
-            ui.update_infos('   |   Fitte parallel.')
+            tic;
+            ui.update_infos('   |   Starte Parallel-Pool.')
+            set(ui.h.fit_par, 'visible', 'on');
+            % set cancel button:
+            set(ui.h.fit, 'string', 'Abbrechen', 'callback', @ui.cancel_fit_cb);
+            set(ui.h.hold, 'visible', 'on');
             
             s = num2cell(size(ui.est_params));
             if start == 1
                 ui.fit_params = nan(s{:});
                 ui.fit_params_err = nan(s{:});
+                ui.fit_chisq = nan(s{1:end-1});
             end
             ov = reshape(ui.overlays{ui.current_ov}, numel(ui.overlays{ui.current_ov}), 1);
             d_ov = ui.disp_ov;
@@ -1424,39 +1431,64 @@ classdef UI < handle
             parcount = length(m{2});
             e_pars = reshape(ui.est_params, prod(ui.fileinfo.size), 1, parcount);
             f = ui.fix;
-            f_pars = nan(prod(ui.fileinfo.size), parcount);
-            f_pars_e = nan(prod(ui.fileinfo.size), parcount);
-            f_chisq = nan(prod(ui.fileinfo.size), 1);
+            f_pars = reshape(ui.fit_params, prod(ui.fileinfo.size), parcount);
+            f_pars_e = reshape(ui.fit_params_err, prod(ui.fileinfo.size), parcount);
+            f_chisq = reshape(ui.fit_chisq, prod(ui.fileinfo.size), 1);
+
             local_par = find(ui.use_gstart);
             global_start = ui.gstart;
-            
+
+            n_pixel = prod(ui.fileinfo.size);
+            rest = mod(n_pixel - start + 1, ui.par_size);
+            inner_upper = ui.par_size-1;
+
             x = ui.x_data((ui.t_offset+ui.t_zero):end);
-            parfor n = start:prod(ui.fileinfo.size)
-                if ov(n) || ~d_ov
-                    y = squeeze(d(n, :))';
-                    w = sqrt(y);
-                    w(w == 0) = 1;
-                    if ~isempty(local_par)
-                        tmp = e_pars(n, :);
-                        tmp(local_par) = global_start(local_par);
-                        [p, p_err, chi] = fitdata(m, x, y, w, tmp, f);
-                    else
-                        [p, p_err, chi] = fitdata(m, x, y, w, e_pars(n, :), f); 
+            for n = start:ui.par_size:n_pixel
+                ui.update_infos(['   |   Fitte ' num2str(n) '/' num2str(prod(ui.fileinfo.size)) ' (parallel).'])
+
+                if n == n_pixel - rest + 1
+                    inner_upper = rest - 2;
+                end
+                parfor i = 0:inner_upper
+                    if ov(n+i) || ~d_ov
+                        y = squeeze(d(n+i, :))';
+                        w = sqrt(y);
+                        w(w == 0) = 1;
+                        if ~isempty(local_par)
+                            tmp = e_pars(n+i, :);
+                            tmp(local_par) = global_start(local_par);
+                            [p, p_err, chi] = fitdata(m, x, y, w, tmp, f);
+                        else
+                            [p, p_err, chi] = fitdata(m, x, y, w, e_pars(n+i, :), f); 
+                        end
+                        f_pars(n+i, :) = p;
+                        f_pars_e(n+i, :) = p_err;
+                        f_chisq(n+i) = chi;
                     end
-                    f_pars(n, :) = p;
-                    f_pars_e(n, :) = p_err;
-                    f_chisq(n) = chi;
+                end
+                ui.last_fitted = n;
+                if ui.disp_fit_params
+                    ui.fit_params = reshape(f_pars, [ui.fileinfo.size size(f_pars, 2)]);
+                    ui.fit_params_err = reshape(f_pars_e, [ui.fileinfo.size size(f_pars, 2)]);
+                    ui.fit_chisq = reshape(f_chisq, ui.fileinfo.size);
+                    ui.plot_array();
+                end
+                if ui.hold_f
+                    set(ui.h.hold, 'string', 'Fortsetzen',...
+                                   'callback', @ui.resume_fit_cb);
+                    return
+                end
+                if ui.cancel_f
+                    return
                 end
             end
+            t = toc;
+            ui.update_infos(['   |   Daten global gefittet (' num2str(t) ' s).'])
+            set(ui.h.hold, 'visible', 'off');
+            set(ui.h.fit, 'string', 'global Fitten', 'callback', @ui.fit_all_cb);
             
-            set(ui.h.fit_par, 'visible', 'on');
             ui.fitted = true;
-            ui.update_infos();
-            
-            ui.fit_params = reshape(f_pars, [ui.fileinfo.size size(f_pars, 2)]);
-            ui.fit_params_err = reshape(f_pars_e, [ui.fileinfo.size size(f_pars, 2)]);
-            ui.fit_chisq = reshape(f_chisq, ui.fileinfo.size);
-            setptr(gcf, 'arrow');
+
             ui.plot_array();
         end
         
@@ -1959,7 +1991,11 @@ classdef UI < handle
         function resume_fit_cb(ui, varargin)
             ui.hold_f = false;
             set(ui.h.hold, 'string', 'Fit anhalten', 'callback', @ui.hold_fit_cb);
-            ui.fit_all(ui.last_fitted);
+            if get(ui.h.parallel, 'value')
+                ui.fit_all_par(ui.last_fitted + ui.par_size);
+            else
+                ui.fit_all(ui.last_fitted);
+            end
         end
         
         function cancel_fit_cb(ui, varargin)

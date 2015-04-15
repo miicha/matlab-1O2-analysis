@@ -1,5 +1,3 @@
-%% I SHOULD REALLY ADD A NEW TAG AND ONLY PUSH THE BINARY!
-
 %% config
 % change these four rows to suit your application
 prjct = 'sisa-scan-auswertung';
