@@ -2233,7 +2233,7 @@ end
 
 % takes a time in seconds and returns a nice string representation
 function s = format_time(number)
-    if number > 2*60 % more than five minutes
+    if number > 2*60 % more than two minutes
         s = sprintf('%.0f min %.0f s', floor(number/60), number-(60*floor(number/60)));
     elseif number > 2*60*60 % more than two hours
         s = sprintf('%.0f hours %.0f min', floor(number/(60*60)), number-(60*60*floor(number/(60*60))));

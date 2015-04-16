@@ -10,8 +10,8 @@ und auch generische `*.diff`s leicht auswerten und in ansprechendem Format visua
 Die Binary-Versionen sollten immer einigermaßen stabil sein, enthalten aber im 
 Allgemeinen nicht die neusten Features und Bugfixes.
 
-- Ist die MATLAB Compiler Runtime v8.4 (R2014b) nicht installiert,
-dann bitte den [64-bit Installer R2014b (8.4)](http://de.mathworks.com/products/compiler/mcr/index.html)
+- Ist die MATLAB Compiler Runtime v8.5 (R2015a) nicht installiert,
+dann bitte den [64-bit Installer R2015a (8.5)](http://de.mathworks.com/products/compiler/mcr/index.html)
 herunterladen und ausführen. Dann mit dem nächsten Schritt weiter machen.
 
 - Andernfalls reicht es, den Inhalt [diese exe](https://git.daten.tk/sebastian.pfitzner/sisa-scan-auswertung/raw/master/Deployment/SiSaScanAuswertung/standalone/SiSaScanAuswertung.exe)
