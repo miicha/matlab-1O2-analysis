@@ -1360,29 +1360,31 @@ classdef UI < handle
                 ui.fit_params = nan(s{:});
                 ui.fit_params_err = nan(s{:});
             end
+            
+            g_par = find(ui.use_gstart);
+            x = ui.x_data((ui.t_zero + ui.t_offset):end);
+            
             m = 1;
             for n = start:prod(ui.fileinfo.size)
                 [i,j,k,l] = ind2sub(ui.fileinfo.size, n);               
                 if ui.overlays{ui.current_ov}(i, j, k, l) || ~ui.disp_ov
                     y = squeeze(ui.data(i, j, k, l, (ui.t_offset+ui.t_zero):end));
-                    x = ui.x_data((ui.t_zero + ui.t_offset):end);
                     w = sqrt(y);
                     w(w == 0) = 1;
-                    if sum(ui.use_gstart) > 0
+                    if ~isempty(g_par)
                         start = ui.est_params(i, j, k, l, :);
-                        start(find(ui.use_gstart)) = ui.gstart(find(ui.use_gstart));
+                        start(g_par) = ui.gstart(g_par);
                         [p, p_err, chi] = fitdata(ui.models(ui.model),...
                             x, y, w, start, ui.fix);
                     else
-
                         [p, p_err, chi] = fitdata(ui.models(ui.model),...
                             x, y, w, ui.est_params(i, j, k, l, :), ui.fix); 
                     end
+                    ui.update_infos(['   |   Fitte ' num2str(m) '/' num2str(ma) ' (sequentiell).'])
+                    m = m + 1;
                     ui.fit_params(i, j, k, l, :) = p;
                     ui.fit_params_err(i, j, k, l, :) = p_err;
                     ui.fit_chisq(i, j, k, l) = chi;
-                    ui.update_infos(['   |   Fitte ' num2str(m) '/' num2str(ma) ' (sequentiell).'])
-                    m = m + 1;
                     ui.last_fitted = n;
                 end
                 if n == 1
@@ -1405,6 +1407,10 @@ classdef UI < handle
             set(ui.h.hold, 'visible', 'off');
             set(ui.h.fit, 'string', 'global Fitten', 'callback', @ui.fit_all_cb);
             ui.fitted = true;
+            
+            ui.fit_params(i, j, k, l, :) = p;
+            ui.fit_params_err(i, j, k, l, :) = p_err;
+            ui.fit_chisq(i, j, k, l) = chi;
             ui.plot_array();
         end
         
@@ -1435,7 +1441,7 @@ classdef UI < handle
             f_pars_e = reshape(ui.fit_params_err, prod(ui.fileinfo.size), parcount);
             f_chisq = reshape(ui.fit_chisq, prod(ui.fileinfo.size), 1);
 
-            local_par = find(ui.use_gstart);
+            g_par = find(ui.use_gstart);
             global_start = ui.gstart;
 
             n_pixel = prod(ui.fileinfo.size);
@@ -1444,8 +1450,6 @@ classdef UI < handle
 
             x = ui.x_data((ui.t_offset+ui.t_zero):end);
             for n = start:ui.par_size:n_pixel
-                ui.update_infos(['   |   Fitte ' num2str(n) '/' num2str(prod(ui.fileinfo.size)) ' (parallel).'])
-
                 if n == n_pixel - rest + 1
                     inner_upper = rest - 2;
                 end
@@ -1454,9 +1458,9 @@ classdef UI < handle
                         y = squeeze(d(n+i, :))';
                         w = sqrt(y);
                         w(w == 0) = 1;
-                        if ~isempty(local_par)
+                        if ~isempty(g_par)
                             tmp = e_pars(n+i, :);
-                            tmp(local_par) = global_start(local_par);
+                            tmp(g_par) = global_start(g_par);
                             [p, p_err, chi] = fitdata(m, x, y, w, tmp, f);
                         else
                             [p, p_err, chi] = fitdata(m, x, y, w, e_pars(n+i, :), f); 
@@ -1473,6 +1477,7 @@ classdef UI < handle
                     ui.fit_chisq = reshape(f_chisq, ui.fileinfo.size);
                     ui.plot_array();
                 end
+                ui.update_infos(['   |   Fitte ' num2str(n+inner_upper) '/' num2str(prod(ui.fileinfo.size)) ' (parallel).'])
                 if ui.hold_f
                     set(ui.h.hold, 'string', 'Fortsetzen',...
                                    'callback', @ui.resume_fit_cb);
@@ -1488,7 +1493,9 @@ classdef UI < handle
             set(ui.h.fit, 'string', 'global Fitten', 'callback', @ui.fit_all_cb);
             
             ui.fitted = true;
-
+            ui.fit_params = reshape(f_pars, [ui.fileinfo.size size(f_pars, 2)]);
+            ui.fit_params_err = reshape(f_pars_e, [ui.fileinfo.size size(f_pars, 2)]);
+            ui.fit_chisq = reshape(f_chisq, ui.fileinfo.size);
             ui.plot_array();
         end
         
