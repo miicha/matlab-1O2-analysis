@@ -1345,7 +1345,7 @@ classdef UI < handle
         end
 
         function fit_all(ui, start)
-            tic;
+            outertime = tic();
             if ui.disp_ov
                 ma = length(find(ui.overlays{ui.current_ov}));
             else
@@ -1364,10 +1364,15 @@ classdef UI < handle
             g_par = find(ui.use_gstart);
             x = ui.x_data((ui.t_zero + ui.t_offset):end);
             
+            lt = 0;
             m = 1;
-            for n = start:prod(ui.fileinfo.size)
+            n_pixel = prod(ui.fileinfo.size);
+            
+            for n = start:n_pixel
                 [i,j,k,l] = ind2sub(ui.fileinfo.size, n);               
                 if ui.overlays{ui.current_ov}(i, j, k, l) || ~ui.disp_ov
+                    innertime = tic();
+
                     y = squeeze(ui.data(i, j, k, l, (ui.t_offset+ui.t_zero):end));
                     w = sqrt(y);
                     w(w == 0) = 1;
@@ -1380,12 +1385,16 @@ classdef UI < handle
                         [p, p_err, chi] = fitdata(ui.models(ui.model),...
                             x, y, w, ui.est_params(i, j, k, l, :), ui.fix); 
                     end
-                    ui.update_infos(['   |   Fitte ' num2str(m) '/' num2str(ma) ' (sequentiell).'])
                     m = m + 1;
                     ui.fit_params(i, j, k, l, :) = p;
                     ui.fit_params_err(i, j, k, l, :) = p_err;
                     ui.fit_chisq(i, j, k, l) = chi;
                     ui.last_fitted = n;
+                    
+                    lt = lt + toc(innertime);
+                    
+                    ui.update_infos(['   |   Fitte ' num2str(m) '/' num2str(ma) ' (sequentiell): '...
+                                    format_time(lt/m*(ma-m)) ' verbleibend.'])
                 end
                 if n == 1
                     set(ui.h.fit_par, 'visible', 'on');
@@ -1399,11 +1408,12 @@ classdef UI < handle
                     return
                 end
                 if ui.cancel_f
+                    ui.update_infos();
                     return
                 end
             end
-            t = toc;
-            ui.update_infos(['   |   Daten global gefittet (' num2str(t) ' s).'])
+            t = toc(outertime);
+            ui.update_infos(['   |   Daten global gefittet (' format_time(t) ').'])
             set(ui.h.hold, 'visible', 'off');
             set(ui.h.fit, 'string', 'global Fitten', 'callback', @ui.fit_all_cb);
             ui.fitted = true;
@@ -1415,13 +1425,14 @@ classdef UI < handle
         end
         
         function fit_all_par(ui, start)
-            tic;
+            outertime = tic();
             ui.update_infos('   |   Starte Parallel-Pool.')
             set(ui.h.fit_par, 'visible', 'on');
             % set cancel button:
             set(ui.h.fit, 'string', 'Abbrechen', 'callback', @ui.cancel_fit_cb);
             set(ui.h.hold, 'visible', 'on');
             
+            n_pixel = prod(ui.fileinfo.size);
             s = num2cell(size(ui.est_params));
             if start == 1
                 ui.fit_params = nan(s{:});
@@ -1431,7 +1442,7 @@ classdef UI < handle
             ov = reshape(ui.overlays{ui.current_ov}, numel(ui.overlays{ui.current_ov}), 1);
             d_ov = ui.disp_ov;
             t_length = size(ui.data, 5) - (ui.t_offset + ui.t_zero) + 1;
-            d = reshape(ui.data(:, :, :, :, (ui.t_offset+ui.t_zero):end), prod(ui.fileinfo.size), 1, t_length);
+            d = reshape(ui.data(:, :, :, :, (ui.t_offset+ui.t_zero):end), n_pixel, 1, t_length);
            
             m = ui.models(ui.model);
             parcount = length(m{2});
@@ -1444,15 +1455,23 @@ classdef UI < handle
             g_par = find(ui.use_gstart);
             global_start = ui.gstart;
 
-            n_pixel = prod(ui.fileinfo.size);
+            
             rest = mod(n_pixel - start + 1, ui.par_size);
             inner_upper = ui.par_size-1;
 
+            lt = 0;
+            
             x = ui.x_data((ui.t_offset+ui.t_zero):end);
             for n = start:ui.par_size:n_pixel
+                gcp(); % get or start parallel pool
+                if n == start
+                    ui.update_infos(['   |   Fitte ' num2str(start) '/' num2str(prod(ui.fileinfo.size)) ' (parallel).'])
+                end
                 if n == n_pixel - rest + 1
                     inner_upper = rest - 2;
                 end
+                
+                innertime = tic();
                 parfor i = 0:inner_upper
                     if ov(n+i) || ~d_ov
                         y = squeeze(d(n+i, :))';
@@ -1470,6 +1489,11 @@ classdef UI < handle
                         f_chisq(n+i) = chi;
                     end
                 end
+                lt = lt + toc(innertime);
+                
+                ui.update_infos(['   |   Fitte ' num2str(n+inner_upper) '/' num2str(prod(ui.fileinfo.size)) ' (parallel): '...
+                   format_time(lt/(n+inner_upper-start)*(n_pixel-(n+inner_upper))) ' verbleibend.'])
+                
                 ui.last_fitted = n;
                 if ui.disp_fit_params
                     ui.fit_params = reshape(f_pars, [ui.fileinfo.size size(f_pars, 2)]);
@@ -1477,18 +1501,19 @@ classdef UI < handle
                     ui.fit_chisq = reshape(f_chisq, ui.fileinfo.size);
                     ui.plot_array();
                 end
-                ui.update_infos(['   |   Fitte ' num2str(n+inner_upper) '/' num2str(prod(ui.fileinfo.size)) ' (parallel).'])
+                
                 if ui.hold_f
                     set(ui.h.hold, 'string', 'Fortsetzen',...
                                    'callback', @ui.resume_fit_cb);
                     return
                 end
                 if ui.cancel_f
+                    ui.update_infos();
                     return
                 end
             end
-            t = toc;
-            ui.update_infos(['   |   Daten global gefittet (' num2str(t) ' s).'])
+            t = toc(outertime);
+            ui.update_infos(['   |   Daten global gefittet (' format_time(t) ').'])
             set(ui.h.hold, 'visible', 'off');
             set(ui.h.fit, 'string', 'global Fitten', 'callback', @ui.fit_all_cb);
             
@@ -2203,5 +2228,16 @@ function p = get_executable_dir()
         p = char(regexpi(result, 'Path=(.*?);', 'tokens', 'once'));
     else
         p = fileparts(mfilename('fullpath'));
+    end
+end
+
+% takes a time in seconds and returns a nice string representation
+function s = format_time(number)
+    if number > 2*60 % more than five minutes
+        s = sprintf('%.0f min %.0f s', floor(number/60), number-(60*floor(number/60)));
+    elseif number > 2*60*60 % more than two hours
+        s = sprintf('%.0f hours %.0f min', floor(number/(60*60)), number-(60*60*floor(number/(60*60))));
+    else % seconds
+        s = sprintf('%.1f s', number);
     end
 end
