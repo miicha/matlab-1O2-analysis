@@ -514,13 +514,16 @@ classdef UIPlot < handle
 
             m_names = {'A', '\tau_1', '\tau_2', 'B', 'o'};
             m_units = {'Counts', '$$\mu$$s', '$$\mu$$s', 'Counts', 'Counts'};
-            m_str = ['$$A\cdot \left[\exp \left(\frac{t}{\tau_1}\right) - '...
+            m_str = ['$$f(t) = A\cdot \left[\exp \left(\frac{t}{\tau_1}\right) - '...
                    '\exp \left(\frac{t}{\tau_2}\right) \right] + B \cdot \exp\left(\frac{t}{\tau_2}\right) + o$$'];
                
             str{1} = m_str;
                
             for i = 1:length(this.fit_params)
-                str{i+1} = ['$$ ' m_names{i} ' = (' num2str(this.fit_params(i)) '\pm' num2str(this.fit_params_err(i)) ')$$ ' m_units{i}];
+                err = roundsig(this.fit_params_err(i), 2);
+                par = roundsig(this.fit_params(i), floor(log10(this.fit_params(i)/this.fit_params_err(i))) + 1);
+                
+                str{i+1} = ['$$ ' m_names{i} ' = (' num2str(par) '\pm' num2str(err) ')$$ ' m_units{i}];
             end
             m = text(.92, .94, str, 'Interpreter', 'latex',...
                                     'units', 'normalized',...
