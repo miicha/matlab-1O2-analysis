@@ -15,7 +15,7 @@ classdef UI < handle
                           'name', '', 'np', 0); 
         data;       % source data from HDF5
         data_sum;
-        scale = [5 5];          % distance between to pixels in mm
+        scale = [5 5 5];          % distance between the centers of two pixels in mm
         x_data;         % time data
         fit_params;     % fit params, size(params) = [x y z length(fitparams)]
         fit_params_err;
@@ -367,7 +367,7 @@ classdef UI < handle
                        
             set(this.h.hold, 'units', 'pixels',...
                            'style', 'push',...
-                           'position', [84 2 80 28],...
+                           'position', [250-80-5 2 80 28],...
                            'string', 'Fit anhalten',...
                            'visible', 'off',...
                            'callback', @this.hold_fit_cb);
@@ -1103,7 +1103,8 @@ classdef UI < handle
             set(ax, 'xtick', x_tick, 'ytick', y_tick,...
                     'xticklabel', x_tick_label,...
                     'yticklabel', y_tick_label);
-            caxis([this.l_min this.l_max]);
+
+            caxis([this.l_min(this.current_param) this.l_max(this.current_param)]);
             colormap(this.cmap);
             c = colorbar();
             set(c, 'units', 'pixels');
@@ -1268,7 +1269,21 @@ classdef UI < handle
                 this.transpose = false;
             end
         end
-                
+        
+        function name = get_parname(this, index)
+            m = this.models(this.model);
+            fitpars = m{4};
+            if index > length(fitpars)
+                if this.disp_fit_params
+                    name = 'Chi';
+                else
+                    name = 'Summe';
+                end
+                return
+            end
+            name = fitpars{index};
+        end
+        
     % functions that actually compute something
         function compute_ov(this)
              if this.disp_fit_params
@@ -1309,7 +1324,7 @@ classdef UI < handle
                 end
             end
         end
-    
+
         function estimate_parameters(this)
             n = this.models(this.model);
             this.est_params = zeros(this.fileinfo.size(1), this.fileinfo.size(2),...
@@ -1723,8 +1738,9 @@ classdef UI < handle
                 
             end
         end
-
+        
         %% Callbacks:
+        % save global state as .mat
         function save_global_state_cb(this, varargin)
             [name, path] = uiputfile('*.state', 'State speichern', [this.savepath this.genericname '.state']);
             if name == 0
@@ -1734,8 +1750,9 @@ classdef UI < handle
             
             this_new = this;
             save([path name], 'this_new');
-        end % save global state as .mat
+        end 
 
+        % mouseclick on plot
         function aplot_click_cb(this, varargin)
             cp = get(this.h.axes, 'CurrentPoint');
             cp = round(cp(1, 1:2));
@@ -1773,7 +1790,7 @@ classdef UI < handle
                     end
                     this.plot_array();
             end
-        end % mouseclick on plot
+        end 
         
         % callback for opening a new file
         % destroys current figure and creates a new one
@@ -1809,7 +1826,14 @@ classdef UI < handle
         end
 
         function save_fig(this, varargin)
-            [file, path] = uiputfile([this.savepath filesep() this.genericname '.pdf']);
+            if this.disp_fit_params
+                tmp = 'gefittet';
+            else
+                tmp = 'geschaetzt';
+            end
+            [file, path] = uiputfile([this.savepath filesep() this.genericname...
+                                     '_par=' this.get_parname(this.current_param)...
+                                     '_' tmp '.pdf']);
             if ~ischar(file) || ~ischar(path) % no file selected
                 return
             end
@@ -1869,6 +1893,7 @@ classdef UI < handle
             this.generate_export_fig(this.h.axes, 'on');
         end
         
+        % change global start point
         function set_gstart_cb(this, varargin)
             m = this.models(this.model);
             tmp = zeros(size(m{2}));
@@ -1883,8 +1908,9 @@ classdef UI < handle
                 set(this.h.st{i}, 'string', tmp(i))
             end
             this.gstart = tmp;
-        end % change global start point
+        end 
                 
+        % fix parameter checkbox
         function set_param_fix_cb(this, varargin)
             m = this.models(this.model);
             n = length(m{4});
@@ -1906,8 +1932,9 @@ classdef UI < handle
                 end
             end
             this.set_gstart_cb();
-        end % fix parameter checkbox
+        end
         
+        % global SP checkbox
         function set_param_glob_cb(this, varargin)
             m = this.models(this.model);
             n = length(m{4});
@@ -1918,28 +1945,32 @@ classdef UI < handle
                 end
             end
             this.set_param_glob(g);
-        end % global SP checkbox
+        end
         
+        % scale of a pixel
         function set_scale_cb(this, varargin)
             if varargin{1} == this.h.scale_x
                 this.set_scale([str2double(get(this.h.scale_x, 'string')), this.scale(2)]);
             elseif varargin{1} == this.h.scale_y
                 this.set_scale([this.scale(1), str2double(get(this.h.scale_y, 'string'))]);
             end
-        end % scale of a pixel
+        end 
        
+        % fitmodel from dropdown
         function set_model_cb(this, varargin)
             t = keys(this.models);
             str = t{get(this.h.drpd, 'value')};
             this.set_model(str);
-        end % fitmodel from dropdown
+        end 
         
+        % colormap
         function set_cmap_cb(this, varargin)
             cmaps = get(this.h.colormap_drpd, 'string'); 
             this.cmap = cmaps{get(this.h.colormap_drpd, 'value')};
             this.plot_array();
-        end % colormap
+        end 
         
+        % update bounds
         function set_bounds_cb(this, varargin)
             m = this.models(this.model);
             for i = 1:length(m{4});
@@ -1947,7 +1978,7 @@ classdef UI < handle
                 m{3}(i) = str2double(get(this.h.ub{i}, 'string'));
             end
             this.models(this.model) = m;
-        end % update bounds
+        end 
         
         function set_dim_cb(this, varargin)
             t = str2double(get(varargin{1}, 'Tag'));
