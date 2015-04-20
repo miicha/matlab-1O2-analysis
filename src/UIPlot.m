@@ -305,6 +305,10 @@ classdef UIPlot < handle
                 return;
             end
             
+            tmp = this.ui.models(this.model_str);
+            this.model{2} = tmp{2};
+            this.model{3} = tmp{3};
+
             [p, p_err, chi] = fitdata(this.model, x, y, w, start, fix);
             
             this.fit_params = p;
