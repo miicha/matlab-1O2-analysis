@@ -579,6 +579,9 @@ classdef UI < handle
             %% limit size with java
             unsafe_limit_size(this.h.f, [900 660]);
             
+            %% get numbers of cores and set par_size accordingly
+            this.par_size = feature('numCores')*6;
+            
             %% init
             this.resize();
             this.set_model('1. A*(exp(-t/t1)-exp(-t/t2))+offset');
@@ -1445,6 +1448,8 @@ classdef UI < handle
                 this.fit_params_err = nan(s{:});
                 this.fit_chisq = nan(s{1:end-1});
             end
+            
+            % initialize the local, linearily indexed arrays
             ov = reshape(this.overlays{this.current_ov}, numel(this.overlays{this.current_ov}), 1);
             d_ov = this.disp_ov;
             t_length = size(this.data, 5) - (this.t_offset + this.t_zero) + 1;
@@ -1522,6 +1527,7 @@ classdef UI < handle
             set(this.h.hold, 'visible', 'off');
             set(this.h.fit, 'string', 'global Fitten', 'callback', @this.fit_all_cb);
             
+            % write back to the 'global' arrays
             this.fitted = true;
             this.fit_params = reshape(f_pars, [this.fileinfo.size size(f_pars, 2)]);
             this.fit_params_err = reshape(f_pars_e, [this.fileinfo.size size(f_pars, 2)]);
