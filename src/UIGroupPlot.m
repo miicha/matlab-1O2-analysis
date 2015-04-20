@@ -16,31 +16,31 @@ classdef UIGroupPlot < handle
     end
     
     methods
-        function gplt = UIGroupPlot(ui)
-            gplt.ui = ui;
-            [gplt.x_pos, gplt.y_pos] = find(ui.overlay_data); % size of the selection
+        function this = UIGroupPlot(ui)
+            this.ui = ui;
+            [this.x_pos, this.y_pos] = find(ui.overlay_data); % size of the selection
             if ui.curr_dims(1) < ui.curr_dims(2)
-                gplt.x_data = gplt.x_pos;
-                gplt.y_data = gplt.y_pos;
+                this.x_data = this.x_pos;
+                this.y_data = this.y_pos;
             else
-                gplt.y_data = gplt.x_pos;
-                gplt.x_data = gplt.y_pos;
+                this.y_data = this.x_pos;
+                this.x_data = this.y_pos;
             end
             
-            gplt.x_pos = gplt.x_pos - min(gplt.x_pos) + 1;
-            gplt.y_pos = gplt.y_pos - min(gplt.y_pos) + 1;
-            gplt.x_size = max(gplt.x_pos) - min(gplt.x_pos) + 1;
-            gplt.y_size = max(gplt.y_pos) - min(gplt.y_pos) + 1;
+            this.x_pos = this.x_pos - min(this.x_pos) + 1;
+            this.y_pos = this.y_pos - min(this.y_pos) + 1;
+            this.x_size = max(this.x_pos) - min(this.x_pos) + 1;
+            this.y_size = max(this.y_pos) - min(this.y_pos) + 1;
             
-            gplt.data = squeeze(ui.data(ui.ind{:}, :));
-            gplt.params = squeeze(ui.fit_params(ui.ind{:}, :));
-            tmp = gplt.ui.models(gplt.ui.model);
-            gplt.model_fun =  tmp{1};
+            this.data = squeeze(ui.data(ui.ind{:}, :));
+            this.params = squeeze(ui.fit_params(ui.ind{:}, :));
+            tmp = this.ui.models(this.ui.model);
+            this.model_fun =  tmp{1};
             
             
-            gplt.h.f = figure(); 
-            gplt.h.s = {};
-            set(gplt.h.f, 'units', 'pixels',...
+            this.h.f = figure(); 
+            this.h.s = {};
+            set(this.h.f, 'units', 'pixels',...
                           'position', [500 200 1000 710],...
                           'numbertitle', 'off',...
                           'menubar', 'none',...
@@ -48,9 +48,9 @@ classdef UIGroupPlot < handle
                           'resize', 'on',...
                           'name', 'Auswahl 1');
                       
-            toolbar_pushtools = findall(findall(gplt.h.f, 'Type', 'uitoolbar'),...
+            toolbar_pushtools = findall(findall(this.h.f, 'Type', 'uitoolbar'),...
                                                          'Type', 'uipushtool');
-            toolbar_toggletools = findall(findall(gplt.h.f, 'Type', 'uitoolbar'),...
+            toolbar_toggletools = findall(findall(this.h.f, 'Type', 'uitoolbar'),...
                                                     'Type', 'uitoggletool');
 
             set(findall(toolbar_pushtools, 'Tag', 'Plottools.PlottoolsOn'), 'visible', 'off');
@@ -60,7 +60,7 @@ classdef UIGroupPlot < handle
             set(findall(toolbar_pushtools, 'Tag', 'Standard.NewFigure'), 'visible', 'off');
             
             set(findall(toolbar_pushtools, 'Tag', 'Standard.SaveFigure'),...
-                                                  'clickedcallback', @gplt.save_fig_cb);
+                                                  'clickedcallback', @this.save_fig_cb);
             
             set(findall(toolbar_toggletools, 'Tag', 'Annotation.InsertLegend'), 'visible', 'off',...
                                                                           'Separator', 'off');
@@ -72,77 +72,77 @@ classdef UIGroupPlot < handle
             set(findall(toolbar_toggletools, 'Tag', 'Standard.EditPlot'), 'visible', 'off',...
                                                                           'Separator', 'off');
                       
-            gplt.plot_selection();
+            this.plot_selection();
         end
         
-        function plot_selection(gplt)
-            indx = gplt.x_data;
-            indy = gplt.y_data;
-%             size(gplt.data)
-            pltdata = gplt.data(indx, indy, :);
+        function plot_selection(this)
+            indx = this.x_data;
+            indy = this.y_data;
+%             size(this.data)
+            pltdata = this.data(indx, indy, :);
  
-            maxy = max(max(max(pltdata(:, :, (gplt.ui.t_zero+gplt.ui.t_offset):end))))*1.2;
+            maxy = max(max(max(pltdata(:, :, (this.ui.t_zero+this.ui.t_offset):end))))*1.2;
             for i = 1:length(indx)
-                if ndims(gplt.params)==3
-                    p = num2cell(squeeze(gplt.params(indx(i), indy(i), :)));
+                if ndims(this.params)==3
+                    p = num2cell(squeeze(this.params(indx(i), indy(i), :)));
                 else
-                    p = num2cell(squeeze(gplt.params(indx(i), :)));
+                    p = num2cell(squeeze(this.params(indx(i), :)));
                 end
-                fitdata = gplt.model_fun(p{:}, gplt.ui.x_data(gplt.ui.t_zero:end));
+                fitdata = this.model_fun(p{:}, this.ui.x_data(this.ui.t_zero:end));
                 
-                gplt.h.s{i} = subplot(gplt.y_size, gplt.x_size,sub2ind([gplt.x_size, gplt.y_size],...
-                        gplt.x_pos(i), 1+gplt.y_size-gplt.y_pos(i)));
-                plot(gplt.ui.x_data(gplt.ui.t_zero:end), squeeze(gplt.data(indx(i),...
-                           indy(i), gplt.ui.t_zero:end)),'.');
+                this.h.s{i} = subplot(this.y_size, this.x_size,sub2ind([this.x_size, this.y_size],...
+                        this.x_pos(i), 1+this.y_size-this.y_pos(i)));
+                plot(this.ui.x_data(this.ui.t_zero:end), squeeze(this.data(indx(i),...
+                           indy(i), this.ui.t_zero:end)),'.');
                        
-                set(gplt.h.s{i}, 'xtick', [], 'ytick', [], 'ButtonDownFcn', @gplt.click_cb, 'Tag', num2str(i));
+                set(this.h.s{i}, 'xtick', [], 'ytick', [], 'ButtonDownFcn', @this.click_cb, 'Tag', num2str(i));
                 
                 hold on
-                plot(gplt.ui.x_data(gplt.ui.t_zero:end), fitdata, 'r-');
+                plot(this.ui.x_data(this.ui.t_zero:end), fitdata, 'r-');
                 hold off
-                xlim([0 max(gplt.ui.x_data)])
+                xlim([0 max(this.ui.x_data)])
                 ylim([0 maxy])
             end
         end
         
-        function save_fig_cb(gplt, varargin)
-            [name, path] = uiputfile('*.pdf', 'Plot als PDF speichern', fullfile(gplt.ui.savepath, gplt.ui.genericname));
+        function save_fig_cb(this, varargin)
+            [name, path] = uiputfile('*.pdf', 'Plot als PDF speichern', fullfile(this.ui.savepath, this.ui.genericname));
             if name == 0
                 return
             end
-            gplt.ui.set_savepath(path);
+            this.ui.set_savepath(path);
             path = fullfile(path, name);
-            set(gplt.h.f, 'toolbar', 'none');
-            tmp = get(gplt.h.f, 'position');
+            set(this.h.f, 'toolbar', 'none');
+            tmp = get(this.h.f, 'position');
             x_pix = tmp(3);
             y_pix = tmp(4);
             
-            set(gplt.h.f, 'PaperUnits', 'points');
-            set(gplt.h.f, 'PaperSize', [x_pix+80 y_pix+80]/1.5);
-            set(gplt.h.f, 'PaperPosition', [0 0 x_pix+80 y_pix+80]/1.5);
-            print(gplt.h.f, '-dpdf', '-r600', path);
-            set(gplt.h.f, 'toolbar', 'figure');
+            set(this.h.f, 'PaperUnits', 'points');
+            set(this.h.f, 'PaperSize', [x_pix+80 y_pix+80]/1.5);
+            set(this.h.f, 'PaperPosition', [0 0 x_pix+80 y_pix+80]/1.5);
+            print(this.h.f, '-dpdf', '-r600', path);
+            set(this.h.f, 'toolbar', 'figure');
         end
         
-        function click_cb(gplt, varargin)
+        function click_cb(this, varargin)
             t = str2double(varargin{1}.Tag);
-            gplt.x_data(t);
+            this.x_data(t);
             
-            index{gplt.ui.curr_dims(1)} = gplt.x_data(t); % x ->
-            index{gplt.ui.curr_dims(2)} = gplt.y_data(t); % y ^
-            index{gplt.ui.curr_dims(3)} = gplt.ui.ind{gplt.ui.curr_dims(3)};
-            index{gplt.ui.curr_dims(4)} = gplt.ui.ind{gplt.ui.curr_dims(4)};
+            index{this.ui.curr_dims(1)} = this.x_data(t); % x ->
+            index{this.ui.curr_dims(2)} = this.y_data(t); % y ^
+            index{this.ui.curr_dims(3)} = this.ui.ind{this.ui.curr_dims(3)};
+            index{this.ui.curr_dims(4)} = this.ui.ind{this.ui.curr_dims(4)};
 
             for i = 1:4
-                if index{i} > gplt.ui.fileinfo.size(i)
-                    index{i} = gplt.ui.fileinfo.size(i);
+                if index{i} > this.ui.fileinfo.size(i)
+                    index{i} = this.ui.fileinfo.size(i);
                 elseif index{i} <= 0
                      index{i} = 1;
                 end
             end
             
-            i = length(gplt.ui.plt);
-            gplt.ui.plt{i+1} = UIPlot([index{:}], gplt.ui);
+            i = length(this.ui.plt);
+            this.ui.plt{i+1} = UIPlot([index{:}], this.ui);
         end % mouseclick on plot
     end
     
