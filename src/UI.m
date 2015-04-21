@@ -664,6 +664,8 @@ classdef UI < handle
                 y_step = h5readatt(filepath, '/PATH/DATA','Y Step Size mm');
                 z_step = h5readatt(filepath, '/PATH/DATA','Z Step Size mm');
                 this.scale = [x_step y_step z_step];
+            catch
+                % nothing. just an old file.
             end
             try
                 dims = h5readatt(filepath, '/PATH/DATA', 'GRID DIMENSIONS');
@@ -712,6 +714,8 @@ classdef UI < handle
             try
                 chanWidth=h5readatt(filepath, '/META/SISA', 'Channel Width (ns)');
                 this.channel_width=single(chanWidth)/1000;
+            catch
+                % nothing. just an old file.
             end
             
             % get max number of samples per point (should be at /0/0/0/sisa)
@@ -752,7 +756,7 @@ classdef UI < handle
             fid = H5F.open(filepath);
 
             for i = 1:this.fileinfo.np
-                ind = this.points(k{i});
+                index = this.points(k{i});
                 % every point should have exactly as many samples
                 % as the first point, except for the last one
 %                 if i == this.fileinfo.np % get number of samples for last point
@@ -766,7 +770,7 @@ classdef UI < handle
                     dset_id = H5D.open(gid,sprintf('%d',j));
                     d = H5D.read(dset_id);
                     H5D.close(dset_id);
-                    this.data(ind(1), ind(2), ind(3), j, :) = d;
+                    this.data(index(1), index(2), index(3), j, :) = d;
                     [~, t] = max(d(1:end));
                     time_zero = (time_zero + t)/2;
                 end
@@ -1197,6 +1201,8 @@ classdef UI < handle
                     wh.Position = [pos(1) pos(2) pos(3)+20 pos(4)];
                     wh.Children(3).Children.FontSize = 9;
                 end
+            catch
+                 % no internet connection.
             end
         end
         
@@ -1230,8 +1236,16 @@ classdef UI < handle
         end
         
         function destroy(this, children_only)
-            try
-                this.saveini();
+            for i = 1:10
+                try
+                    this.saveini();
+                catch
+                    % some problem with the file system?!
+                    % doesn't matter all that much, actually; just try
+                    % again.
+                    continue;
+                end
+                break;
             end
             
             if ~isempty(this.plt)
@@ -1498,8 +1512,11 @@ classdef UI < handle
                 
                 innertime = tic();
                 parfor i = 0:inner_upper
-                    if ov(n+i) || ~d_ov
+                    if (ov(n+i) || ~d_ov)
                         y = squeeze(d(n+i, :))';
+                        if isnan(y(1))
+                            continue;
+                        end
                         w = sqrt(y);
                         w(w == 0) = 1;
                         if ~isempty(g_par)
@@ -1637,19 +1654,19 @@ classdef UI < handle
             tmp = this.models(this.model);
             for i = 1:length(tmp{2})
                 if this.disp_fit_params
-                    this.l_max(i) = squeeze(max(max(max(max(this.fit_params(:,:,:,:,i))))))+10*eps;
+                    this.l_max(i) = squeeze(max(max(max(max(this.fit_params(:,:,:,:,i))))));
                     this.l_min(i) = squeeze(min(min(min(min(this.fit_params(:,:,:,:,i))))))-10*eps;
                 else
-                    this.l_max(i) = squeeze(max(max(max(max(this.est_params(:,:,:,:,i))))))+10*eps;
+                    this.l_max(i) = squeeze(max(max(max(max(this.est_params(:,:,:,:,i))))));
                     this.l_min(i) = squeeze(min(min(min(min(this.est_params(:,:,:,:,i))))))-10*eps;
                 end
             end
             if this.disp_fit_params
                 this.l_min(end) = squeeze(min(min(min(min(this.fit_chisq)))))-10*eps;
-                this.l_max(end) = squeeze(max(max(max(max(this.fit_chisq)))))+10*eps;
+                this.l_max(end) = squeeze(max(max(max(max(this.fit_chisq)))));
             else
                 this.l_min(end) = squeeze(min(min(min(min(this.data_sum)))))-10*eps;
-                this.l_max(end) = squeeze(max(max(max(max(this.data_sum)))))+10*eps;
+                this.l_max(end) = squeeze(max(max(max(max(this.data_sum)))));
             end
         end
     end
@@ -1914,21 +1931,21 @@ classdef UI < handle
         function set_param_fix_cb(this, varargin)
             m = this.models(this.model);
             n = length(m{4});
-            ind = 0;
+            index = 0;
             this.fix = {};
             for i = 1:n
                 if get(this.h.fix{i}, 'value') == 1
-                    ind = ind + 1;
+                    index = index + 1;
                     if this.use_gstart(i) ~= 1
                         set(this.h.gst{i}, 'value', 1);
                         this.use_gstart(i) = 1;
                     end
-                    if ind == n
+                    if index == n
                         msgbox('Kann ohne freie Parameter nicht fitten.', 'Fehler', 'modal');
                         set(this.h.fix{i}, 'value', 0);
                         return;
                     end
-                    this.fix{ind} = m{4}{i};
+                    this.fix{index} = m{4}{i};
                 end
             end
             this.set_gstart_cb();
@@ -2275,9 +2292,9 @@ end
 
 % takes a time in seconds and returns a nice string representation
 function s = format_time(number)
-    if number > 2*60 % more than two minutes
+    if number > 1.5*60 % more than one and a half minutes
         s = sprintf('%.0f min %.0f s', floor(number/60), number-(60*floor(number/60)));
-    elseif number > 2*60*60 % more than two hours
+    elseif number > 1.5*60*60 % more than one and a half hours
         s = sprintf('%.0f hours %.0f min', floor(number/(60*60)), number-(60*60*floor(number/(60*60))));
     else % seconds
         s = sprintf('%.1f s', number);
