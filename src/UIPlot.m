@@ -515,14 +515,11 @@ classdef UIPlot < handle
         function generate_fit_info_ov(this)
             ax = this.h.plot_pre.Children(2);
             axes(ax);
-
-            m_names = {'A', '\tau_1', '\tau_2', 'B', 'o'};
-            m_units = {'Counts', '$$\mu$$s', '$$\mu$$s', 'Counts', 'Counts'};
-            m_str = ['$$f(t) = A\cdot \left[\exp \left(\frac{t}{\tau_1}\right) - '...
-                   '\exp \left(\frac{t}{\tau_2}\right) \right] + B \cdot \exp\left(\frac{t}{\tau_2}\right) + o$$'];
-               
-            str{1} = m_str;
-               
+            latex_model = this.ui.models_latex(this.model_str);
+            m_names = latex_model{2};
+            m_units = latex_model{3};
+            func = latex_model{1};
+            str{1} = func;
             for i = 1:length(this.fit_params)
                 err = roundsig(this.fit_params_err(i), 2);
                 par = roundsig(this.fit_params(i), floor(log10(this.fit_params(i)/this.fit_params_err(i))) + 1);
