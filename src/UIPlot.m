@@ -524,8 +524,9 @@ classdef UIPlot < handle
                 err = roundsig(this.fit_params_err(i), 2);
                 par = roundsig(this.fit_params(i), floor(log10(this.fit_params(i)/this.fit_params_err(i))) + 1);
                 
-                str{i+1} = ['$$ ' m_names{i} ' = (' num2str(par) '\pm' num2str(err) ')$$ ' m_units{i}];
+                str{i+2} = ['$$ ' m_names{i} ' = (' num2str(par) '\pm' num2str(err) ')$$ ' m_units{i}];
             end
+            str{end+2} = ['$$ \chi^2 =$$ ' num2str(roundsig(this.chisq, 4))];
             m = text(.92, .94, str, 'Interpreter', 'latex',...
                                     'units', 'normalized',...
                                     'HorizontalAlignment', 'right',...

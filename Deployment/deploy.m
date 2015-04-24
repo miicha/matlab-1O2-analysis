@@ -6,13 +6,13 @@ local_version = get_local_version(path_to_prjct);
 version_url = 'http://www.daten.tk/webhook/tags.php?owner=sebastian.pfitzner&project=sisa-scan-auswertung';
 
 %% read new version from source file and check against latest online version
+addpath(path_to_prjct);
 build = true;
 newver = true;
 ov = urlread(version_url);
-online_version = str2double(strsplit(ov, '.'));
 
 %%
-if online_version >= str2double(strsplit(local_version, '.'))
+if UI.compare_versions(local_version, ov);
     newver = false;
     warning(['Local version (' local_version ') is NOT greater than '...
              'online version (' ov ').']);
@@ -47,3 +47,4 @@ if newver
         fprintf('\n ----- \n\n');
     end
 end
+rmpath(path_to_prjct);

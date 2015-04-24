@@ -1,8 +1,6 @@
 function [ version ] = get_local_version(path_to_prjct)
-    addpath(path_to_prjct);
-    strct = readini(fullfile(path_to_prjct, 'config.ini'));
-    version = strct.version;
-    version = regexprep(version, '0{2,}$', ''); % strip zeroes at the end
-    rmpath(path_to_prjct);
+    str = fileread(fullfile(path_to_prjct, 'UI.m'));
+    match = regexp(str, 'version\s?\=\s?''(?<ver>\d+\.\d+.\d+)'';', 'names');
+    version = match.ver;
 end
 

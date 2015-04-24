@@ -1201,10 +1201,8 @@ classdef UI < handle
         function check_version(this)
             try
                 nv_str = urlread(this.online_ver);
-                nv = str2double(strsplit(nv_str, '.'));
-                v = str2double(strsplit(this.version, '.'));
-
-                if sum(nv > v) > 0
+                
+                if UI.compare_versions(this.version, nv_str)
                     wh = warndlg({['Es ist eine neue Version der Software verfügbar ('...
                                    num2str(nv_str) ').'], ['Aktuelle Version: '...
                                    num2str(this.version) '.'],... 
@@ -1220,7 +1218,7 @@ classdef UI < handle
         
         function loadini(this)
             p = get_executable_dir();
-            if exist([p filesep() 'config.ini'], 'file')
+            if exist(fullfile(p, 'config.ini'), 'file')
                 conf = readini('config.ini');
                 if isfield(conf, 'openpath')
                     this.openpath = conf.openpath;
@@ -1229,6 +1227,16 @@ classdef UI < handle
                 end
                 if isfield(conf, 'savepath')
                     this.savepath = conf.savepath;
+                else
+                    this.savepath = [p filesep()];
+                end
+                if isfield(conf, 'version')
+                    if UI.compare_versions(conf.version, this.version)
+                        % this version is newer than the one that was run
+                        % last time
+                        
+                        % should do something with this...
+                    end
                 else
                     this.savepath = [p filesep()];
                 end
@@ -2237,6 +2245,27 @@ classdef UI < handle
                     param(4) = B;
                 otherwise
                     param = 50*ones(5, 1);
+            end
+        end
+        
+        function ver2isnewer = compare_versions(ver1, ver2)
+            ver1_parts = str2double(strsplit(ver1, '.'));
+            ver2_parts = str2double(strsplit(ver2, '.'));
+            l1 = length(ver2_parts);
+            l2 = length(ver1_parts);
+            max_length = l1;
+            if l1 < l2
+                ver1_parts = padarray(ver1_parts, l2-l1, 0, 'post');
+                max_length = l2;
+            elseif l2 > l1
+                ver2_parts = padarray(ver2_parts, l1-l2, 0, 'post');
+            end
+            
+            ver2isnewer = false;
+            for i = 1:max_length
+                if ver1_parts(i) < ver2_parts(i)
+                    ver2isnewer = true;
+                end
             end
         end
     end
