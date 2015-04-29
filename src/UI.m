@@ -108,68 +108,76 @@ classdef UI < handle
             this.h.menu = uimenu(this.h.f);
             this.h.helpmenu = uimenu(this.h.f);
             
-            this.h.plotpanel = uipanel();
-                this.h.axes = axes('parent', this.h.plotpanel);
-                this.h.legend = axes('parent', this.h.plotpanel);
-                this.h.tick_min = uicontrol(this.h.plotpanel);
-                this.h.tick_max = uicontrol(this.h.plotpanel);
-                this.h.plttxt = uicontrol(this.h.plotpanel);
-                this.h.zslider = uicontrol(this.h.plotpanel);
-                this.h.zbox = uicontrol(this.h.plotpanel);
-                this.h.saslider = uicontrol(this.h.plotpanel);
-                this.h.sabox = uicontrol(this.h.plotpanel);
-                this.h.param = uicontrol(this.h.plotpanel);
-                this.h.fit_est = uibuttongroup(this.h.plotpanel);
-                    this.h.fit_par = uicontrol();
-                    this.h.est_par = uicontrol();
-                this.h.d1_select = uicontrol(this.h.plotpanel);
-                this.h.d2_select = uicontrol(this.h.plotpanel);
-                this.h.d3_select = uicontrol(this.h.plotpanel);
-                this.h.d4_select = uicontrol(this.h.plotpanel);
-                
             this.h.bottombar = uipanel();
                 this.h.info = uicontrol(this.h.bottombar);
-                       
-            this.h.tabs = uitabgroup();
-                this.h.fit_tab = uitab(this.h.tabs);
-                    this.h.fitpanel = uipanel(this.h.fit_tab);
-                        this.h.fittxt = uicontrol(this.h.fitpanel);
-                        this.h.drpd = uicontrol(this.h.fitpanel);
-                        this.h.bounds = uipanel(this.h.fitpanel);
-                            this.h.bounds_txt1 = uicontrol(this.h.bounds);
-                            this.h.bounds_txt2 = uicontrol(this.h.bounds);
-                            this.h.gstart_text = uicontrol(this.h.bounds);
-                            this.h.fix_text = uicontrol(this.h.bounds);
-                            this.h.glob_text = uicontrol(this.h.bounds);
-                    this.h.parallel = uicontrol(this.h.fit_tab);
-                    this.h.fit = uicontrol(this.h.fit_tab);
-                    this.h.hold = uicontrol(this.h.fit_tab);
-                    this.h.ov_controls = uipanel(this.h.fit_tab);
-                        this.h.ov_disp = uicontrol(this.h.ov_controls);
-                        this.h.ov_buttongroup = uibuttongroup(this.h.ov_controls);
-                            this.h.ov_radiobtns = {uicontrol(this.h.ov_buttongroup)};
-                            this.h.ov_drpd = uicontrol(this.h.ov_controls);
-                            this.h.ov_rel = uicontrol(this.h.ov_controls);
-                            this.h.ov_val = uicontrol(this.h.ov_controls);
-                            this.h.ov_add_from_auto = uicontrol(this.h.ov_controls);
-                            this.h.add_overlay = {};
-                    
-                this.h.sel_tab = uitab(this.h.tabs);
-                    this.h.sel_controls = uipanel(this.h.sel_tab);
-                        this.h.sel_btn_plot = uicontrol(this.h.sel_controls);
+            
+            this.h.modepanel = uitabgroup();
+                this.h.sisamode = uitab(this.h.modepanel);
 
-                    this.h.sel_values = uipanel(this.h.sel_tab);
-                        
-                this.h.pres_tab = uitab(this.h.tabs);
-                    this.h.savefig = uicontrol(this.h.pres_tab);
-                    this.h.prevfig = uicontrol(this.h.pres_tab);
-                    this.h.pres_controls = uipanel(this.h.pres_tab);
-                        this.h.colormap_drpd_text = uicontrol(this.h.pres_controls);
-                        this.h.colormap_drpd = uicontrol(this.h.pres_controls);
-                        this.h.scale_x_text = uicontrol(this.h.pres_controls);
-                        this.h.scale_x = uicontrol(this.h.pres_controls);
-                        this.h.scale_y_text = uicontrol(this.h.pres_controls);
-                        this.h.scale_y = uicontrol(this.h.pres_controls);
+                    this.h.plotpanel = uipanel(this.h.sisamode);
+                        this.h.axes = axes('parent', this.h.plotpanel);
+                        this.h.legend = axes('parent', this.h.plotpanel);
+                        this.h.tick_min = uicontrol(this.h.plotpanel);
+                        this.h.tick_max = uicontrol(this.h.plotpanel);
+                        this.h.plttxt = uicontrol(this.h.plotpanel);
+                        this.h.zslider = uicontrol(this.h.plotpanel);
+                        this.h.zbox = uicontrol(this.h.plotpanel);
+                        this.h.saslider = uicontrol(this.h.plotpanel);
+                        this.h.sabox = uicontrol(this.h.plotpanel);
+                        this.h.param = uicontrol(this.h.plotpanel);
+                        this.h.fit_est = uibuttongroup(this.h.plotpanel);
+                            this.h.fit_par = uicontrol();
+                            this.h.est_par = uicontrol();
+                        this.h.d1_select = uicontrol(this.h.plotpanel);
+                        this.h.d2_select = uicontrol(this.h.plotpanel);
+                        this.h.d3_select = uicontrol(this.h.plotpanel);
+                        this.h.d4_select = uicontrol(this.h.plotpanel);
+
+                    this.h.tabs = uitabgroup(this.h.sisamode);
+                        this.h.fit_tab = uitab(this.h.tabs);
+                            this.h.fitpanel = uipanel(this.h.fit_tab);
+                                this.h.fittxt = uicontrol(this.h.fitpanel);
+                                this.h.drpd = uicontrol(this.h.fitpanel);
+                                this.h.bounds = uipanel(this.h.fitpanel);
+                                    this.h.bounds_txt1 = uicontrol(this.h.bounds);
+                                    this.h.bounds_txt2 = uicontrol(this.h.bounds);
+                                    this.h.gstart_text = uicontrol(this.h.bounds);
+                                    this.h.fix_text = uicontrol(this.h.bounds);
+                                    this.h.glob_text = uicontrol(this.h.bounds);
+                            this.h.parallel = uicontrol(this.h.fit_tab);
+                            this.h.fit = uicontrol(this.h.fit_tab);
+                            this.h.hold = uicontrol(this.h.fit_tab);
+                            this.h.ov_controls = uipanel(this.h.fit_tab);
+                                this.h.ov_disp = uicontrol(this.h.ov_controls);
+                                this.h.ov_buttongroup = uibuttongroup(this.h.ov_controls);
+                                    this.h.ov_radiobtns = {uicontrol(this.h.ov_buttongroup)};
+                                    this.h.ov_drpd = uicontrol(this.h.ov_controls);
+                                    this.h.ov_rel = uicontrol(this.h.ov_controls);
+                                    this.h.ov_val = uicontrol(this.h.ov_controls);
+                                    this.h.ov_add_from_auto = uicontrol(this.h.ov_controls);
+                                    this.h.add_overlay = {};
+
+                        this.h.sel_tab = uitab(this.h.tabs);
+                            this.h.sel_controls = uipanel(this.h.sel_tab);
+                                this.h.sel_btn_plot = uicontrol(this.h.sel_controls);
+
+                            this.h.sel_values = uipanel(this.h.sel_tab);
+
+                        this.h.pres_tab = uitab(this.h.tabs);
+                            this.h.savefig = uicontrol(this.h.pres_tab);
+                            this.h.prevfig = uicontrol(this.h.pres_tab);
+                            this.h.pres_controls = uipanel(this.h.pres_tab);
+                                this.h.colormap_drpd_text = uicontrol(this.h.pres_controls);
+                                this.h.colormap_drpd = uicontrol(this.h.pres_controls);
+                                this.h.scale_x_text = uicontrol(this.h.pres_controls);
+                                this.h.scale_x = uicontrol(this.h.pres_controls);
+                                this.h.scale_y_text = uicontrol(this.h.pres_controls);
+                                this.h.scale_y = uicontrol(this.h.pres_controls);
+                                
+                this.h.fluomode = uitab(this.h.modepanel);
+                
+                this.h.tempmode = uitab(this.h.modepanel);
+
                 
             %% Figure, menu, bottombar
             set(this.h.f, 'units', 'pixels',...
@@ -194,9 +202,8 @@ classdef UI < handle
                                   'Callback', @this.open_versioninfo_cb);
             
             set(this.h.bottombar, 'units', 'pixels',...
-                                'position', [-1 0 1000 18],...
-                                'bordertype', 'line',...
-                                'highlightcolor', [.7 .7 .7]);
+                                'position', [2 3 1000 18],...
+                                'bordertype', 'none');
                             
             set(this.h.info, 'units', 'pixels',...
                            'style', 'text',...
@@ -207,9 +214,15 @@ classdef UI < handle
                            'FontSize', 9,...
                            'position', [0 0 1000 15]);
             
+            set(this.h.modepanel, 'units', 'pixels',...
+                                  'position', [0 18 1000 680]);
+                             
+         %%%%%% SISA!
+            set(this.h.sisamode, 'title', 'SiSa');
+                       
             %% Plot
             set(this.h.plotpanel, 'units', 'pixels',...
-                                'position', [270 28 500 500],...
+                                'position', [270 5 500 500],...
                                 'bordertype', 'line',...
                                 'highlightcolor', [.7 .7 .7],...
                                 'BackgroundColor', [.85 .85 .85]);
@@ -368,7 +381,7 @@ classdef UI < handle
                             
             %% tabs for switching selection modes
             set(this.h.tabs, 'units', 'pixels',...
-                             'position', [10 28 250 550],...
+                             'position', [10 5 250 550],...
                              'visible', 'off');
                            
             %% Fitten
@@ -595,13 +608,19 @@ classdef UI < handle
             set(this.h.scale_y, 'units', 'pixels',...
                               'style', 'edit',...
                               'callback', @this.set_scale_cb,...
-                              'position', [70, 90, 80, 20]);                             
+                              'position', [70, 90, 80, 20]);      
+                          
+        %%%%%% FLUO!
+            set(this.h.fluomode, 'title', 'Fluoreszenz');
+            
+        %%%%%% temp!
+            set(this.h.tempmode, 'title', 'Temperatur');
            
             %% check version (only if called as a binary)
             this.check_version();
                                  
             %% limit size with java
-            unsafe_limit_size(this.h.f, [900 660]);
+            unsafe_limit_size(this.h.f, [900 680]);
             
             %% get numbers of cores and set par_size accordingly
             this.par_size = feature('numCores')*6;
@@ -858,7 +877,7 @@ classdef UI < handle
                 
             end
             this_new.destroy(true);
-            unsafe_limit_size(this_new.h.f, [865 600]);
+            unsafe_limit_size(this_new.h.f, [900 680]);
             close(this.h.f);
             delete(this);
         end
@@ -1709,8 +1728,16 @@ classdef UI < handle
             % resize elements in figure to match window size
             if isfield(this.h, 'f') % workaround for error when a loading a file
                 fP = get(this.h.f, 'Position');
+                
+                tmp = get(this.h.modepanel, 'Position');
+                tmp(3) = fP(3)+2;
+                tmp(4) = fP(4)-20;
+                mP = tmp;
+                set(this.h.modepanel, 'Position', tmp);
+                
+                mP(4) = mP(4)-25;
                 pP = get(this.h.plotpanel, 'Position');
-                pP(3:4) = [(fP(3)-pP(1))-10 (fP(4)-pP(2))-10];
+                pP(3:4) = [(mP(3)-pP(1))-10 (mP(4)-pP(2))-10];
                 set(this.h.plotpanel, 'Position', pP);
 
                 aP = get(this.h.axes, 'Position');
@@ -1770,11 +1797,11 @@ classdef UI < handle
                 set(this.h.sabox, 'position', tmp);
 
                 bP = get(this.h.bottombar, 'Position');
-                bP(3) = fP(3)+3;
+                bP(3) = mP(3)+3;
                 set(this.h.bottombar, 'Position', bP);
 
                 bP = get(this.h.info, 'Position');
-                bP(3) = fP(3);
+                bP(3) = mP(3);
                 set(this.h.info, 'Position', bP);
 
                 tP = get(this.h.tabs, 'Position');
