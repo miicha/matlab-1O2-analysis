@@ -154,6 +154,7 @@ classdef SiSaMode < handle
                                 
                                 
             set(this.h.sisamode, 'title', 'SiSa',...
+                                 'tag', '1',...
                                  'SizeChangedFcn', @this.resize);
                 %% Plot
             set(this.h.plotpanel, 'units', 'pixels',...
@@ -713,6 +714,20 @@ classdef SiSaMode < handle
             end
         end
                
+        function name = get_parname(this, index)
+            m = this.models(this.model);
+            fitpars = m{4};
+            if index > length(fitpars)
+                if this.disp_fit_params
+                    name = 'Chi';
+                else
+                    name = 'Summe';
+                end
+                return
+            end
+            name = fitpars{index};
+        end
+
         function generate_sel_vals(this)
             m = this.models(this.model);
             n = length(m{4});
@@ -844,11 +859,7 @@ classdef SiSaMode < handle
             this.plot_array();
             this.h.ov_radiobtns{pos}.Value = true;
         end
-        
-        function set_savepath(this, path)
-            this.savepath = path; 
-        end
-        
+                
         function generate_overlay(this)
             ov_number = length(this.overlays);
             pos_act_r = [15 135 115 20];
@@ -1330,6 +1341,30 @@ classdef SiSaMode < handle
                 this.l_max(end) = squeeze(max(max(max(max(this.data_sum)))));
             end
         end
+        
+        function save_fig(this, varargin)
+            if this.disp_fit_params
+                tmp = 'gefittet';
+            else
+                tmp = 'geschaetzt';
+            end
+            [file, path] = uiputfile([this.p.savepath filesep() this.p.genericname...
+                                     '_par=' this.get_parname(this.current_param)...
+                                     '_' tmp '.pdf']);
+            if ~ischar(file) || ~ischar(path) % no file selected
+                return
+            end
+            this.p.set_savepath(path);
+            this.generate_export_fig(this.h.axes, 'off');
+            tmp = get(this.h.plot_pre, 'position');
+
+            % save the plot and close the figure
+            set(this.h.plot_pre, 'PaperUnits', 'points');
+            set(this.h.plot_pre, 'PaperSize', [tmp(3) tmp(4)]*.8);
+            set(this.h.plot_pre, 'PaperPosition', [0 0 tmp(3) tmp(4)]*.8);
+            print(this.h.plot_pre, '-dpdf', '-r600', fullfile(path, file));
+            close(this.h.plot_pre);
+        end
     end
     
     methods (Access = private)
@@ -1457,30 +1492,6 @@ classdef SiSaMode < handle
             i = length(this.gplt);
             this.gplt{i+1} = SiSaGroupPlot(this);
             this.generate_sel_vals();
-        end
-
-        function save_fig(this, varargin)
-            if this.disp_fit_params
-                tmp = 'gefittet';
-            else
-                tmp = 'geschaetzt';
-            end
-            [file, path] = uiputfile([this.savepath filesep() this.genericname...
-                                     '_par=' this.get_parname(this.current_param)...
-                                     '_' tmp '.pdf']);
-            if ~ischar(file) || ~ischar(path) % no file selected
-                return
-            end
-            this.set_savepath(path);
-            this.generate_export_fig(this.h.axes, 'off');
-            tmp = get(this.h.plot_pre, 'position');
-
-            % save the plot and close the figure
-            set(this.h.plot_pre, 'PaperUnits', 'points');
-            set(this.h.plot_pre, 'PaperSize', [tmp(3) tmp(4)]*.8);
-            set(this.h.plot_pre, 'PaperPosition', [0 0 tmp(3) tmp(4)]*.8);
-            print(this.h.plot_pre, '-dpdf', '-r600', fullfile(path, file));
-            close(this.h.plot_pre);
         end
         
         function add_ov_cb(this, varargin)
@@ -1738,7 +1749,6 @@ classdef SiSaMode < handle
             end
             this.plot_array();
         end
-        
     end
     
     methods (Static = true)

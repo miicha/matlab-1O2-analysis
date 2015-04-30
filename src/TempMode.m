@@ -18,10 +18,16 @@ classdef TempMode
             
             this.h.tempmode = uitab(this.h.parent);
             
-            set(this.h.tempmode, 'title', 'Temperatur');
+            set(this.h.tempmode, 'title', 'Temperatur',...
+                                 'tag', '3');
         end
         
         function destroy(this, children_only)
+            % needs to be implemented
+        end
+        
+        function save_fig(this)
+            % needs to be implemented
         end
     end
     

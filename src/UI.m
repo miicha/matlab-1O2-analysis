@@ -1,29 +1,26 @@
 classdef UI < handle
     %UI 
-
-    properties        
+    properties (Access = private)
         modes; % started modes
+        current_mode = 1;
         modes_in_file; % modes contained in file
-        
-        version = '0.3.5';
         online_ver = 'http://www.daten.tk/webhook/tags.php?owner=sebastian.pfitzner&project=sisa-scan-auswertung';
-        
+    end
+    
+    properties        
+        version = '0.3.5';
         fileinfo = struct('path', '', 'size', [0 0 0 0],...
                           'name', '', 'np', 0); 
         scale = [5 5 5];          % distance between the centers of two pixels in mm
-
         par_size = 16;  % when doing parallel processing: how many "tasks" should be sent to all threads?
-
         file_opened = 0;
-        
         dimnames = {'x', 'y', 'z', 's'};
-        
+        data_read = false;
+        points;
+
         genericname;
         openpath; % persistent, in ini
         savepath; % persistent, in ini
-
-        points;
-        data_read = false;
 
         h = struct();        % handles
     end
@@ -57,7 +54,7 @@ classdef UI < handle
             uimenu(this.h.menu, 'label', 'Datei öffnen...',...
                               'callback', @this.open_file_cb);
             uimenu(this.h.menu, 'label', 'Plot speichern',...
-                              'callback', @this.save_fig);
+                              'callback', @this.save_fig_cb);
             uimenu(this.h.menu, 'label', 'State speichern (experimentell!)',...
                               'callback', @this.save_global_state_cb);
             set(this.h.helpmenu, 'Label', '?');
@@ -78,7 +75,8 @@ classdef UI < handle
                            'position', [0 0 1000 15]);
             
             set(this.h.modepanel, 'units', 'pixels',...
-                                  'position', [0 18 1000 680]);
+                                  'position', [0 18 1000 680],...
+                                  'SelectionChangedFcn', @this.mode_change_cb);
                              
             %% check version (only if called as a binary)
             this.check_version();
@@ -314,6 +312,10 @@ classdef UI < handle
             this.modes{1} = SiSaMode(this, double(data));
         end
         
+        function set_savepath(this, path)
+            this.savepath = path; 
+        end
+
         function load_global_state(this, file)
             load(file, '-mat');
             v = str2double(strsplit(this.version));
@@ -433,20 +435,6 @@ classdef UI < handle
                 delete(this);
             end
         end
-
-        function name = get_parname(this, index)
-            m = this.models(this.model);
-            fitpars = m{4};
-            if index > length(fitpars)
-                if this.disp_fit_params
-                    name = 'Chi';
-                else
-                    name = 'Summe';
-                end
-                return
-            end
-            name = fitpars{index};
-        end
     end
 
     methods (Access = private)
@@ -492,6 +480,15 @@ classdef UI < handle
             end
             close(this.h.f);
             delete(this);
+        end
+        
+        % punt to current mode to handle everything
+        function save_fig_cb(this, varargin)
+            this.modes{this.current_mode}.save_fig();
+        end
+        
+        function mode_change_cb(this, varargin)
+            this.current_mode = str2double(varargin{2}.NewValue.Tag);
         end
                     
         function save_global_state_cb(this, varargin)

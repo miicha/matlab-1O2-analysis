@@ -17,12 +17,18 @@ classdef FluoMode
             
             this.h.fluomode = uitab(this.h.parent);
             
-            set(this.h.fluomode, 'title', 'Fluoreszenz');
+            set(this.h.fluomode, 'title', 'Fluoreszenz',...
+                                 'tag', '2');
             
             
         end
         
         function destroy(this, children_only)
+            % needs to be implemented
+        end
+        
+        function save_fig(this)
+            % needs to be implemented
         end
     end
 end
