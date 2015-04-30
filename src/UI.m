@@ -2,7 +2,8 @@ classdef UI < handle
     %UI 
 
     properties        
-        modes;
+        modes; % started modes
+        modes_in_file; % modes contained in file
         
         version = '0.3.5';
         online_ver = 'http://www.daten.tk/webhook/tags.php?owner=sebastian.pfitzner&project=sisa-scan-auswertung';
@@ -138,7 +139,7 @@ classdef UI < handle
         end
         
         function openHDF5(this)
-            filepath = [this.fileinfo.path this.fileinfo.name{1}];
+            filepath = fullfile(this.fileinfo.path, this.fileinfo.name{1});
             % get dimensions of scan, determine if scan finished
             try
                 x_step = h5readatt(filepath, '/PATH/DATA','X Step Size mm');
@@ -178,7 +179,7 @@ classdef UI < handle
                     num_of_points = length(tmp);
                 end
             catch exception
-                % really ugly... and doesn't really work.
+                % really ugly... and doesn't work.
                 display(exception);
                 offset=1;
                 [tmp,dims]=estimate_path(filepath);
@@ -190,14 +191,6 @@ classdef UI < handle
                     fin = tmp{end};
                 end
                 num_of_points = length(tmp);
-            end
-            
-            % read Channel Width
-            try
-                chanWidth=h5readatt(filepath, '/META/SISA', 'Channel Width (ns)');
-                this.channel_width=single(chanWidth)/1000;
-            catch
-                % nothing. just an old file.
             end
             
             % get max number of samples per point (should be at /0/0/0/sisa)
@@ -228,15 +221,15 @@ classdef UI < handle
             % UI stuff
             set(this.h.f, 'name', ['SISA Scan - ' this.fileinfo.name{1}]);
             
+            info = h5info(filepath, '/0/0/0');
+            info = {info.Groups.Name};
+            for i = 1:length(info)
+                this.modes_in_file{i} = regexprep(info{i}, '/0/0/0/', '');
+            end
             this.readHDF5();
         end
 
-        function readHDF5(this, varargin)
-            % inti
-            sisadata = zeros([this.fileinfo.size 4095]);
-            fluodata = zeros(3);
-            tempdata = zeros(3);
-            
+        function readHDF5(this, varargin)            
             filepath = [this.fileinfo.path this.fileinfo.name{1}];
             k = keys(this.points);
             fid = H5F.open(filepath);
@@ -245,56 +238,68 @@ classdef UI < handle
                 index = this.points(k{i});
                 % every point should have exactly as many samples
                 % as the first point, except for the last one
-%                 if i == this.fileinfo.np % get number of samples for last point
-                    dataset_group= sprintf('/%s/sisa',k{i});
+                for m = 1:length(this.modes_in_file)
+                    mode = this.modes_in_file{m};
+                    dataset_group= sprintf('/%s/%s',k{i}, mode);
                     gid = H5G.open(fid,dataset_group);
                     info = H5G.get_info(gid);
-%                 else % take number of samples of first point
-%                     samples = this.fileinfo.size(4);
-%                 end
-                for j = 1:info.nlinks % iterate over all samples
-                    dset_id = H5D.open(gid,sprintf('%d',j));
-                    d = H5D.read(dset_id);
-                    H5D.close(dset_id);
-                    sisadata(index(1), index(2), index(3), j, :) = d;
+                    for j = 1:info.nlinks % iterate over all samples
+                        if ~strcmp(mode, 'sisa')
+                            dset_id = H5D.open(gid,sprintf('%d', j-1));
+                        else
+                            dset_id = H5D.open(gid,sprintf('%d', j));
+                        end
+                        d = H5D.read(dset_id);
+                        H5D.close(dset_id);
+                        if strcmp(mode, 'sisa')
+                            sisadata(index(1), index(2), index(3), j, :) = d;
+                        elseif strcmp(mode, 'spec')
+                            fluodata(index(1), index(2), index(3), j, :) = d;
+                        elseif strcmp(mode, 'Temperature')
+                            tempdata(index(1), index(2), index(3), j, :) = d;
+                        end
+                    end
+                    H5G.close(gid);
                 end
-                H5G.close(gid);
                 if mod(i, 15) == 0
                     this.update_infos(['   |   Daten einlesen ' num2str(i) '/' num2str(this.fileinfo.np) '.']);
                 end
             end
             H5F.close(fid);
             
-            %% open a SiSa tab
-            this.modes{1} = SiSaMode(this, double(sisadata));
+            %% update filesize
+            tmp = size(sisadata);
+            this.fileinfo.size = tmp(1:4);
             
-            %% open a fluorescence tab
-            this.modes{2} = FluoMode(this, double(fluodata));
-            
-            %% open a temperature tab
-            this.modes{3} = TempMode(this, double(tempdata));
+            if find(ismember(this.modes_in_file, 'sisa'))
+                % open a SiSa tab
+                this.modes{1} = SiSaMode(this, double(sisadata));
+            end
+            if find(ismember(this.modes_in_file, 'spec'))
+                % open a fluorescence tab
+                this.modes{2} = FluoMode(this, double(fluodata));
+            end
+            if find(ismember(this.modes_in_file, 'Temperature'))
+                % open a temperature tab
+                this.modes{3} = TempMode(this, double(tempdata));
+            end
             
             this.data_read = true;
         end
         
         function openDIFF(this)
-            time_zero = 0;
             name = this.fileinfo.name;
             if iscell(name)
                 for i = 1:length(name)
                     this.fileinfo.size = [length(name), 1, 1];
                     d = dlmread([this.fileinfo.path name{i}]);
-                    [~, t] = max(d(1:end));
-                    time_zero = (time_zero + t)/2;
-                    this.data(i, 1, 1, 1,:) = d;
+                    data(i, 1, 1, 1,:) = d;
                 end
                 this.fileinfo.np = length(name);
             end
-            this.t_zero = round(time_zero);
-            this.x_data = ((1:length(this.data(1, 1, 1, 1, :)))-this.t_zero)'*this.channel_width;
             this.data_read = true;
             
-            tmp = size(this.data);
+            tmp = size(data);
             this.fileinfo.size = tmp(1:4);
             
             this.points = containers.Map;
@@ -305,6 +310,8 @@ classdef UI < handle
                     this.update_infos(['   |   Metadaten einlesen ' num2str(i) '.']);
                 end
             end
+            
+            this.modes{1} = SiSaMode(this, double(data));
         end
         
         function load_global_state(this, file)

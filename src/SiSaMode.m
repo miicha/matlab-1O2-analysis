@@ -5,9 +5,8 @@ classdef SiSaMode < handle
         gplt = {};
         plt = {};
         
-        p             % parent, generic UI object
+        p;            % parent, generic UI object
         h = struct(); % GUI handles
-        
         
         data;       % source data from HDF5
         data_sum;
@@ -85,10 +84,11 @@ classdef SiSaMode < handle
     methods
         function this = SiSaMode(parent, data)
             this.p = parent;
-            
             this.data = data;
-            
             this.h.parent = parent.h.modepanel;
+            
+            this.read_channel_width();
+            
             
             this.h.sisamode = uitab(this.h.parent);
             
@@ -662,6 +662,16 @@ classdef SiSaMode < handle
             set(this.h.d2_select, 'visible', 'on');
         end
         
+        function read_channel_width(this)
+            % read Channel Width
+            try
+                chanWidth=h5readatt(fullfile(this.p.fileinfo.path, this.p.fileinfo.name{1}), '/META/SISA', 'Channel Width (ns)');
+                this.channel_width=single(chanWidth)/1000;
+            catch
+                % nothing. just an old file.
+            end
+        end
+        
         function set_model(this, str)
             t = keys(this.models);
             set(this.h.drpd, 'value', find(strcmp(t, str))); % set the model in the drpd
@@ -986,7 +996,7 @@ classdef SiSaMode < handle
         function estimate_parameters(this)
             % find mean of t_0
             [~, I] = max(this.data, [], 5);
-            this.t_zero = mean(mean(mean(mean(I))));
+            this.t_zero = round(mean(mean(mean(mean(I)))));
             
             this.x_data = ((1:length(this.data(1, 1, 1, 1, :)))-this.t_zero)'*this.channel_width;
             
