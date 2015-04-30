@@ -544,9 +544,8 @@ classdef SiSaMode < handle
             set(this.h.scale_y, 'units', 'pixels',...
                               'style', 'edit',...
                               'callback', @this.set_scale_cb,...
-                              'position', [70, 90, 80, 20]);      
+                              'position', [70, 90, 80, 20]);          
             
-                          
             % UI stuff
             t = keys(this.models);
             t = this.models(t{get(this.h.drpd, 'value')});
@@ -569,6 +568,11 @@ classdef SiSaMode < handle
             % initialise here, so we can check whether a point is fitted or not
             s = num2cell(size(this.est_params));
             this.fit_chisq = nan(s{1:4});
+            
+            tmp = size(this.data);
+            
+            this.overlays{1} = ones(tmp(1), tmp(2), tmp(3), tmp(4));
+            this.overlays{2} = zeros(tmp(1), tmp(2), tmp(3), tmp(4));
         end
         
         function plot_array(this, varargin)

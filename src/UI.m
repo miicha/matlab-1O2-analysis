@@ -175,35 +175,8 @@ classdef UI < handle
             
 %             tmp = size(this.data);
 %             this.fileinfo.size = tmp(1:4);
-%             
-%             this.overlays{1} = ones(tmp(1), tmp(2), tmp(3), tmp(4));
-%             this.overlays{2} = zeros(tmp(1), tmp(2), tmp(3), tmp(4));
-            
+
             this.saveini();
-            
-            
-%             % UI stuff
-%             t = keys(this.models);
-%             t = this.models(t{get(this.h.drpd, 'value')});
-%              
-%             set(this.h.plttxt, 'visible', 'on');
-%             set(this.h.fit_est, 'visible', 'on');
-%             set(this.h.param, 'visible', 'on', 'string', [t{4}, 'Summe']);
-%             set(this.h.ov_drpd, 'string', [t{4}, 'Summe']);
-%             set(this.h.tabs, 'visible', 'on');
-%             
-%             this.update_infos();
-%             this.set_model('1. A*(exp(-t/t1)-exp(-t/t2))+offset');
-%             this.change_overlay_cond_cb();
-%             this.update_sliders();
-%             this.plot_array();
-%             
-%             this.set_scale(this.scale);
-%             this.generate_overlay();
-%             
-%             % initialise here, so we can check whether a point is fitted or not
-%             s = num2cell(size(this.est_params));
-%             this.fit_chisq = nan(s{1:4});
         end
         
         function openHDF5(this)
@@ -301,6 +274,11 @@ classdef UI < handle
         end
 
         function readHDF5(this, varargin)
+            % inti
+            sisadata = zeros([this.fileinfo.size 4095]);
+            fluodata = zeros(3);
+            tempdata = zeros(3);
+            
             filepath = [this.fileinfo.path this.fileinfo.name{1}];
             k = keys(this.points);
             fid = H5F.open(filepath);
@@ -320,7 +298,7 @@ classdef UI < handle
                     dset_id = H5D.open(gid,sprintf('%d',j));
                     d = H5D.read(dset_id);
                     H5D.close(dset_id);
-                    data(index(1), index(2), index(3), j, :) = d;
+                    sisadata(index(1), index(2), index(3), j, :) = d;
                 end
                 H5G.close(gid);
                 if mod(i, 15) == 0
@@ -329,8 +307,14 @@ classdef UI < handle
             end
             H5F.close(fid);
             
-            %% open a SiSa-tab
-            SiSaMode(this, double(data));
+            %% open a SiSa tab
+            SiSaMode(this, double(sisadata));
+            
+            %% open a fluorescence tab
+            FluoMode(this, double(fluodata));
+            
+            %% open a temperature tab
+            TempMode(this, double(tempdata));
             
             this.data_read = true;
         end
