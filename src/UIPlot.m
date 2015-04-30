@@ -2,7 +2,7 @@ classdef UIPlot < handle
     %UIPLOT
     
     properties
-        ui;
+        smode;
         cp;                     % current point
         data;
         x_data;
@@ -26,29 +26,29 @@ classdef UIPlot < handle
     end
     
     methods
-        function this = UIPlot(point, ui)
+        function this = UIPlot(point, smode)
             %% get data from main UI
-            this.ui = ui;                % keep refs to the memory in which
+            this.smode = smode;                % keep refs to the memory in which
                                         % the UI object is saved
-            this.models = ui.models;
-            if ui.model
-                this.model = this.models(ui.model);
+            this.models = smode.models;
+            if smode.model
+                this.model = this.models(smode.model);
             end
             this.cp = point;
-            if ~isnan(ui.fit_chisq(this.cp(1), this.cp(2), this.cp(3), this.cp(4)))
+            if ~isnan(smode.fit_chisq(this.cp(1), this.cp(2), this.cp(3), this.cp(4)))
                 this.fitted = true;
             end
-            this.getdata(ui);
-            tmp = ui.models(ui.model);
+            this.getdata(smode);
+            tmp = smode.models(smode.model);
             this.n_param = length(tmp{2});
-            this.t_offset = ui.t_offset;
-            this.t_zero = ui.t_zero;
+            this.t_offset = smode.t_offset;
+            this.t_zero = smode.t_zero;
 
-            this.channel_width = ui.channel_width;
+            this.channel_width = smode.channel_width;
             
-            this.est_params = squeeze(ui.est_params(this.cp(1), this.cp(2), this.cp(3), this.cp(4), :));
+            this.est_params = squeeze(smode.est_params(this.cp(1), this.cp(2), this.cp(3), this.cp(4), :));
 
-            this.model_str = ui.model;
+            this.model_str = smode.model;
             
             %% initialize UI objects
             
@@ -73,10 +73,10 @@ classdef UIPlot < handle
                 this.h.save_fig = uicontrol(this.h.exp_tab);
 
             %% figure
-            if length(ui.fileinfo.name) > 1
-                name = ui.fileinfo.name{this.cp(1)};
+            if length(smode.p.fileinfo.name) > 1
+                name = smode.p.fileinfo.name{this.cp(1)};
             else
-                name = [ui.fileinfo.name{1} ' - ' num2str(this.cp)];
+                name = [smode.p.fileinfo.name{1} ' - ' num2str(this.cp)];
             end
             
             set(this.h.f, 'units', 'pixels',...
@@ -192,19 +192,19 @@ classdef UIPlot < handle
             this.plotdata();
         end
         
-        function getdata(this, ui)
+        function getdata(this, smode)
             this.chisq = 0;
-            if ~ui.data_read
+            if ~smode.p.data_read
                 dataset = ['/' num2str(this.cp(1)-1) '/' num2str(this.cp(2)-1)...
                            '/' num2str(this.cp(3)-1) '/sisa/' num2str(this.cp(4)-1)];
-                this.data(1, :) = h5read(ui.fileinfo.path, dataset);
+                this.data(1, :) = h5read(smode.p.fileinfo.path, dataset);
             else
-                this.data = squeeze(ui.data(this.cp(1), this.cp(2), this.cp(3), this.cp(4), :));
-                this.x_data = ui.x_data;
+                this.data = squeeze(smode.data(this.cp(1), this.cp(2), this.cp(3), this.cp(4), :));
+                this.x_data = smode.x_data;
                 if this.fitted
-                    this.chisq =  squeeze(ui.fit_chisq(this.cp(1), this.cp(2), this.cp(3), this.cp(4), :));
-                    this.fit_params = squeeze(ui.fit_params(this.cp(1), this.cp(2), this.cp(3), this.cp(4), :));
-                    this.fit_params_err = squeeze(ui.fit_params_err(this.cp(1), this.cp(2), this.cp(3), this.cp(4), :));
+                    this.chisq =  squeeze(smode.fit_chisq(this.cp(1), this.cp(2), this.cp(3), this.cp(4), :));
+                    this.fit_params = squeeze(smode.fit_params(this.cp(1), this.cp(2), this.cp(3), this.cp(4), :));
+                    this.fit_params_err = squeeze(smode.fit_params_err(this.cp(1), this.cp(2), this.cp(3), this.cp(4), :));
                 end
             end
         end
@@ -305,7 +305,7 @@ classdef UIPlot < handle
                 return;
             end
             
-            tmp = this.ui.models(this.model_str);
+            tmp = this.smode.models(this.model_str);
             this.model{2} = tmp{2};
             this.model{3} = tmp{3};
 
@@ -327,7 +327,7 @@ classdef UIPlot < handle
             this.n_param = length(tmp{2});
             this.model = this.models(n);
             this.model_str = n;
-            this.est_params = UI.estimate_parameters_p(this.data, n, this.t_zero, this.t_offset, this.channel_width);
+            this.est_params = SiSaMode.estimate_parameters_p(this.data, n, this.t_zero, this.t_offset, this.channel_width);
             this.generate_param();
         end
         
@@ -426,16 +426,16 @@ classdef UIPlot < handle
         end
         
         function globalize(this, varargin)
-            this.ui.t_offset = this.t_offset;
-            this.ui.t_zero = this.t_zero;
-            this.ui.x_data = this.x_data;
-            this.ui.set_model(this.model_str);
+            this.smode.t_offset = this.t_offset;
+            this.smode.t_zero = this.t_zero;
+            this.smode.x_data = this.x_data;
+            this.smode.set_model(this.model_str);
             if this.fitted
                 par = this.fit_params;
             else
                 par = this.est_params;
             end
-            this.ui.set_gstart(par);
+            this.smode.set_gstart(par);
         end
         
         function save_fig_selloc_cb(this, varargin)
@@ -452,8 +452,8 @@ classdef UIPlot < handle
         
         function path = generate_filepath(this)
             point = regexprep(num2str(this.cp), '\s+', '_');
-            name = [this.ui.genericname '_p_' point];
-            path = fullfile(this.ui.savepath, name);
+            name = [this.smode.genericname '_p_' point];
+            path = fullfile(this.smode.savepath, name);
         end
         
         function save_fig(this, path)
@@ -515,7 +515,7 @@ classdef UIPlot < handle
         function generate_fit_info_ov(this)
             ax = this.h.plot_pre.Children(2);
             axes(ax);
-            latex_model = this.ui.models_latex(this.model_str);
+            latex_model = this.smode.models_latex(this.model_str);
             m_names = latex_model{2};
             m_units = latex_model{3};
             func = latex_model{1};

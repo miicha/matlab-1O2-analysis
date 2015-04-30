@@ -2,7 +2,7 @@ classdef UIGroupPlot < handle
     %UIGROUPPLOT
     
     properties
-        ui
+        smode
         x_pos
         y_pos
         x_data
@@ -16,10 +16,10 @@ classdef UIGroupPlot < handle
     end
     
     methods
-        function this = UIGroupPlot(ui)
-            this.ui = ui;
-            [this.x_pos, this.y_pos] = find(ui.overlay_data); % size of the selection
-            if ui.curr_dims(1) < ui.curr_dims(2)
+        function this = UIGroupPlot(smode)
+            this.smode = smode;
+            [this.x_pos, this.y_pos] = find(smode.overlay_data); % size of the selection
+            if smode.curr_dims(1) < smode.curr_dims(2)
                 this.x_data = this.x_pos;
                 this.y_data = this.y_pos;
             else
@@ -32,9 +32,9 @@ classdef UIGroupPlot < handle
             this.x_size = max(this.x_pos) - min(this.x_pos) + 1;
             this.y_size = max(this.y_pos) - min(this.y_pos) + 1;
             
-            this.data = squeeze(ui.data(ui.ind{:}, :));
-            this.params = squeeze(ui.fit_params(ui.ind{:}, :));
-            tmp = this.ui.models(this.ui.model);
+            this.data = squeeze(smode.data(smode.ind{:}, :));
+            this.params = squeeze(smode.fit_params(smode.ind{:}, :));
+            tmp = this.smode.models(this.smode.model);
             this.model_fun =  tmp{1};
             
             
@@ -81,36 +81,36 @@ classdef UIGroupPlot < handle
 %             size(this.data)
             pltdata = this.data(indx, indy, :);
  
-            maxy = max(max(max(pltdata(:, :, (this.ui.t_zero+this.ui.t_offset):end))))*1.2;
+            maxy = max(max(max(pltdata(:, :, (this.smode.t_zero+this.smode.t_offset):end))))*1.2;
             for i = 1:length(indx)
                 if ndims(this.params)==3
                     p = num2cell(squeeze(this.params(indx(i), indy(i), :)));
                 else
                     p = num2cell(squeeze(this.params(indx(i), :)));
                 end
-                fitdata = this.model_fun(p{:}, this.ui.x_data(this.ui.t_zero:end));
+                fitdata = this.model_fun(p{:}, this.smode.x_data(this.smode.t_zero:end));
                 
                 this.h.s{i} = subplot(this.y_size, this.x_size,sub2ind([this.x_size, this.y_size],...
                         this.x_pos(i), 1+this.y_size-this.y_pos(i)));
-                plot(this.ui.x_data(this.ui.t_zero:end), squeeze(this.data(indx(i),...
-                           indy(i), this.ui.t_zero:end)),'.');
+                plot(this.smode.x_data(this.smode.t_zero:end), squeeze(this.data(indx(i),...
+                           indy(i), this.smode.t_zero:end)),'.');
                        
                 set(this.h.s{i}, 'xtick', [], 'ytick', [], 'ButtonDownFcn', @this.click_cb, 'Tag', num2str(i));
                 
                 hold on
-                plot(this.ui.x_data(this.ui.t_zero:end), fitdata, 'r-');
+                plot(this.smode.x_data(this.smode.t_zero:end), fitdata, 'r-');
                 hold off
-                xlim([0 max(this.ui.x_data)])
+                xlim([0 max(this.smode.x_data)])
                 ylim([0 maxy])
             end
         end
         
         function save_fig_cb(this, varargin)
-            [name, path] = uiputfile('*.pdf', 'Plot als PDF speichern', fullfile(this.ui.savepath, this.ui.genericname));
+            [name, path] = uiputfile('*.pdf', 'Plot als PDF speichern', fullfile(this.smode.savepath, this.smode.genericname));
             if name == 0
                 return
             end
-            this.ui.set_savepath(path);
+            this.smode.set_savepath(path);
             path = fullfile(path, name);
             set(this.h.f, 'toolbar', 'none');
             tmp = get(this.h.f, 'position');
@@ -128,21 +128,21 @@ classdef UIGroupPlot < handle
             t = str2double(varargin{1}.Tag);
             this.x_data(t);
             
-            index{this.ui.curr_dims(1)} = this.x_data(t); % x ->
-            index{this.ui.curr_dims(2)} = this.y_data(t); % y ^
-            index{this.ui.curr_dims(3)} = this.ui.ind{this.ui.curr_dims(3)};
-            index{this.ui.curr_dims(4)} = this.ui.ind{this.ui.curr_dims(4)};
+            index{this.smode.curr_dims(1)} = this.x_data(t); % x ->
+            index{this.smode.curr_dims(2)} = this.y_data(t); % y ^
+            index{this.smode.curr_dims(3)} = this.smode.ind{this.smode.curr_dims(3)};
+            index{this.smode.curr_dims(4)} = this.smode.ind{this.smode.curr_dims(4)};
 
             for i = 1:4
-                if index{i} > this.ui.fileinfo.size(i)
-                    index{i} = this.ui.fileinfo.size(i);
+                if index{i} > this.smode.p.fileinfo.size(i)
+                    index{i} = this.smode.p.fileinfo.size(i);
                 elseif index{i} <= 0
                      index{i} = 1;
                 end
             end
             
-            i = length(this.ui.plt);
-            this.ui.plt{i+1} = UIPlot([index{:}], this.ui);
+            i = length(this.smode.p.plt);
+            this.smode.p.plt{i+1} = UIPlot([index{:}], this.smode);
         end % mouseclick on plot
     end
     
