@@ -1,5 +1,5 @@
-classdef UIGroupPlot < handle
-    %UIGROUPPLOT
+classdef SiSaGroupPlot < handle
+    %SiSaGroupPlot
     
     properties
         smode
@@ -16,7 +16,7 @@ classdef UIGroupPlot < handle
     end
     
     methods
-        function this = UIGroupPlot(smode)
+        function this = SiSaGroupPlot(smode)
             this.smode = smode;
             [this.x_pos, this.y_pos] = find(smode.overlay_data); % size of the selection
             if smode.curr_dims(1) < smode.curr_dims(2)
@@ -142,9 +142,8 @@ classdef UIGroupPlot < handle
             end
             
             i = length(this.smode.plt);
-            this.smode.plt{i+1} = UIPlot([index{:}], this.smode);
+            this.smode.plt{i+1} = SiSaPlot([index{:}], this.smode);
         end % mouseclick on plot
     end
-    
 end
 

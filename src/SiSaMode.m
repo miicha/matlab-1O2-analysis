@@ -1,6 +1,5 @@
 classdef SiSaMode < handle
-    %SISAMODE Summary of this class goes here
-    %   Detailed explanation goes here
+    %SISAMODE
     
     properties
         gplt = {};
@@ -923,7 +922,7 @@ classdef SiSaMode < handle
         function destroy(this, children_only)
             if ~isempty(this.plt)
                 for i = 1:length(this.plt)
-                    if isvalid(this.plt{i}) && isa(this.plt{i}, 'UIPlot')
+                    if isvalid(this.plt{i}) && isa(this.plt{i}, 'SiSaPlot')
                         delete(this.plt{i}.h.f);
                         delete(this.plt{i});
                     end
@@ -931,7 +930,7 @@ classdef SiSaMode < handle
             end
             if ~isempty(this.gplt)
                 for i = 1:length(this.gplt)
-                    if isvalid(this.gplt{i}) && isa(this.gplt{i}, 'UIGroupPlot')
+                    if isvalid(this.gplt{i}) && isa(this.gplt{i}, 'SiSaGroupPlot')
                         delete(this.gplt{i}.h.f);
                         delete(this.gplt{i});
                     end
@@ -1422,7 +1421,7 @@ classdef SiSaMode < handle
                     if ~strcmp(this.p.fileinfo.path, '')
                         if sum(this.data(index{:}, :))
                             i = length(this.plt);
-                            this.plt{i+1} = UIPlot([index{:}], this);
+                            this.plt{i+1} = SiSaPlot([index{:}], this);
                         end
                     end
                 case 'alt'
@@ -1446,7 +1445,7 @@ classdef SiSaMode < handle
         
         function plot_group(this, varargin)
             i = length(this.gplt);
-            this.gplt{i+1} = UIGroupPlot(this);
+            this.gplt{i+1} = SiSaGroupPlot(this);
             this.generate_sel_vals();
         end
 

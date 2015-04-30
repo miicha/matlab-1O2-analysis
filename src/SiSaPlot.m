@@ -1,5 +1,5 @@
-classdef UIPlot < handle
-    %UIPLOT
+classdef SiSaPlot < handle
+    %SiSaPlot
     
     properties
         smode;
@@ -26,7 +26,7 @@ classdef UIPlot < handle
     end
     
     methods
-        function this = UIPlot(point, smode)
+        function this = SiSaPlot(point, smode)
             %% get data from main UI
             this.smode = smode;                % keep refs to the memory in which
                                         % the UI object is saved
@@ -558,5 +558,4 @@ classdef UIPlot < handle
             end
         end
     end
-    
 end
