@@ -21,7 +21,9 @@ classdef FluoMode
             
             
         end
+        
+        function destroy(this, children_only)
+        end
     end
-    
 end
 

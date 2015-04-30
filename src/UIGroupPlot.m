@@ -141,8 +141,8 @@ classdef UIGroupPlot < handle
                 end
             end
             
-            i = length(this.smode.p.plt);
-            this.smode.p.plt{i+1} = UIPlot([index{:}], this.smode);
+            i = length(this.smode.plt);
+            this.smode.plt{i+1} = UIPlot([index{:}], this.smode);
         end % mouseclick on plot
     end
     

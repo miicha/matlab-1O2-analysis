@@ -1,18 +1,14 @@
 classdef UI < handle
     %UI 
 
-    properties
-        gplt = {};
-        plt = {};
-        
-        reorder = [3 4 1 2];
+    properties        
+        modes;
         
         version = '0.3.5';
         online_ver = 'http://www.daten.tk/webhook/tags.php?owner=sebastian.pfitzner&project=sisa-scan-auswertung';
         
         fileinfo = struct('path', '', 'size', [0 0 0 0],...
                           'name', '', 'np', 0); 
-
         scale = [5 5 5];          % distance between the centers of two pixels in mm
 
         par_size = 16;  % when doing parallel processing: how many "tasks" should be sent to all threads?
@@ -20,13 +16,6 @@ classdef UI < handle
         file_opened = 0;
         
         dimnames = {'x', 'y', 'z', 's'};
-
-        disp_fit_params = 0;
-        l_min; % maximum of the current parameter over all data points
-        l_max; % minimum of the current parameter over all data points
-        use_user_legend = false;
-        user_l_min;
-        user_l_max;
         
         genericname;
         openpath; % persistent, in ini
@@ -34,38 +23,7 @@ classdef UI < handle
 
         points;
         data_read = false;
-        fitted = false;
-        cmap = 'summer';
-        
-        fix = {};
-        gstart = [0 0 0 0];
-        use_gstart = [0 0 0 0]';
-        models = containers.Map(...
-                 {'1. A*(exp(-t/t1)-exp(-t/t2))+offset'...
-                  '2. A*(exp(-t/t1)-exp(-t/t2))+B*exp(-t/t2)+offset'...
-                  '3. A*(exp(-t/t1)-exp(-t/t2))+B*exp(-t/t1)+offset'...
-                  '4. A*(exp(-t/t1)+B*exp(-t/t2)+offset'...
-                 },...
-                 {...
-                    % function, lower bounds, upper bounds, names of arguments
-                    {@(A, t1, t2, offset, t) A*(exp(-t/t1)-exp(-t/t2))+offset, [0 0 0 0], [inf inf inf inf], {'A', 't1', 't2', 'offset'} }...
-                    {@(A, t1, t2, B, offset, t) A*(exp(-t/t1)-exp(-t/t2))+B*exp(-t/t2)+offset, [0 0 0 0 0], [inf inf inf inf inf], {'A', 't1', 't2', 'B', 'offset'} }...
-                    {@(A, t1, t2, B, offset, t) A*(exp(-t/t1)-exp(-t/t2))+B*exp(-t/t1)+offset, [0 0 0 0 0], [inf inf inf inf inf], {'A', 't1', 't2', 'B', 'offset'} }...
-                    {@(A, t1, t2, B, offset, t) A*exp(-t/t1)+B*exp(-t/t2)+offset, [0 0 0 0 0], [inf inf inf inf inf], {'A', 't1', 't2', 'B', 'offset'} }...
-                  })
-                    
-        models_latex = containers.Map(...
-                 {'1. A*(exp(-t/t1)-exp(-t/t2))+offset'...
-                  '2. A*(exp(-t/t1)-exp(-t/t2))+B*exp(-t/t2)+offset'...
-                  '3. A*(exp(-t/t1)-exp(-t/t2))+B*exp(-t/t1)+offset'...
-                  '4. A*(exp(-t/t1)+B*exp(-t/t2)+offset'...
-                 },...
-                 {...
-                 { '$$f(t) = A\cdot \left[\exp \left(\frac{t}{\tau_1}\right) - \exp \left(\frac{t}{\tau_2}\right) \right] + o$$', {'A', '\tau_1', '\tau_2', 'o'}, {'Counts', '$$\mu$$s', '$$\mu$$s', 'Counts'} }...
-                 { '$$f(t) = A\cdot \left[\exp \left(\frac{t}{\tau_1}\right) - \exp \left(\frac{t}{\tau_2}\right) \right] + B \cdot \exp\left(\frac{t}{\tau_2}\right) + o$$', {'A', '\tau_1', '\tau_2', 'B', 'o'}, {'Counts', '$$\mu$$s', '$$\mu$$s', 'Counts', 'Counts'} }...
-                 { '$$f(t) = A\cdot \left[\exp \left(\frac{t}{\tau_1}\right) - \exp \left(\frac{t}{\tau_2}\right) \right] + B \cdot \exp\left(\frac{t}{\tau_1}\right) + o$$', {'A', '\tau_1', '\tau_2', 'B', 'o'}, {'Counts', '$$\mu$$s', '$$\mu$$s', 'Counts', 'Counts'} }...
-                 { '$$f(t) = A\cdot \exp \left(\frac{t}{\tau_1}\right) + B\cdot \exp \left(\frac{t}{\tau_2}\right) + o$$', {'A', '\tau_1', '\tau_2', 'B', 'o'}, {'Counts', '$$\mu$$s', '$$\mu$$s', 'Counts', 'Counts'} }...
-                 })
+
         h = struct();        % handles
     end
 
@@ -308,13 +266,13 @@ classdef UI < handle
             H5F.close(fid);
             
             %% open a SiSa tab
-            SiSaMode(this, double(sisadata));
+            this.modes{1} = SiSaMode(this, double(sisadata));
             
             %% open a fluorescence tab
-            FluoMode(this, double(fluodata));
+            this.modes{2} = FluoMode(this, double(fluodata));
             
             %% open a temperature tab
-            TempMode(this, double(tempdata));
+            this.modes{3} = TempMode(this, double(tempdata));
             
             this.data_read = true;
         end
@@ -377,9 +335,7 @@ classdef UI < handle
 
             if nargin < 2
                 text = '';
-                if this.fitted
-                    str = [str '   |   Daten global gefittet.'];
-                elseif this.data_read
+                if this.data_read
                     str = [str '   |    Daten eingelesen.'];
                 end
             end
@@ -461,23 +417,10 @@ classdef UI < handle
                 end
                 break;
             end
+            for i = 1:length(this.modes)
+                this.modes{i}.destroy(children_only);
+            end
             
-            if ~isempty(this.plt)
-                for i = 1:length(this.plt)
-                    if isvalid(this.plt{i}) && isa(this.plt{i}, 'UIPlot')
-                        delete(this.plt{i}.h.f);
-                        delete(this.plt{i});
-                    end
-                end
-            end
-            if ~isempty(this.gplt)
-                for i = 1:length(this.gplt)
-                    if isvalid(this.gplt{i}) && isa(this.gplt{i}, 'UIGroupPlot')
-                        delete(this.gplt{i}.h.f);
-                        delete(this.gplt{i});
-                    end
-                end
-            end
             if ~children_only
                 delete(this.h.f);
                 delete(this);

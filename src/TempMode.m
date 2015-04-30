@@ -20,6 +20,9 @@ classdef TempMode
             
             set(this.h.tempmode, 'title', 'Temperatur');
         end
+        
+        function destroy(this, children_only)
+        end
     end
     
 end

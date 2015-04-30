@@ -3,6 +3,9 @@ classdef SiSaMode < handle
     %   Detailed explanation goes here
     
     properties
+        gplt = {};
+        plt = {};
+        
         p             % parent, generic UI object
         h = struct(); % GUI handles
         
@@ -546,6 +549,12 @@ classdef SiSaMode < handle
                               'callback', @this.set_scale_cb,...
                               'position', [70, 90, 80, 20]);          
             
+            % init
+            tmp = size(this.data);
+            
+            this.overlays{1} = ones(tmp(1), tmp(2), tmp(3), tmp(4));
+            this.overlays{2} = zeros(tmp(1), tmp(2), tmp(3), tmp(4));
+                          
             % UI stuff
             t = keys(this.models);
             t = this.models(t{get(this.h.drpd, 'value')});
@@ -568,11 +577,6 @@ classdef SiSaMode < handle
             % initialise here, so we can check whether a point is fitted or not
             s = num2cell(size(this.est_params));
             this.fit_chisq = nan(s{1:4});
-            
-            tmp = size(this.data);
-            
-            this.overlays{1} = ones(tmp(1), tmp(2), tmp(3), tmp(4));
-            this.overlays{2} = zeros(tmp(1), tmp(2), tmp(3), tmp(4));
         end
         
         function plot_array(this, varargin)
@@ -916,6 +920,29 @@ classdef SiSaMode < handle
             end
         end
         
+        function destroy(this, children_only)
+            if ~isempty(this.plt)
+                for i = 1:length(this.plt)
+                    if isvalid(this.plt{i}) && isa(this.plt{i}, 'UIPlot')
+                        delete(this.plt{i}.h.f);
+                        delete(this.plt{i});
+                    end
+                end
+            end
+            if ~isempty(this.gplt)
+                for i = 1:length(this.gplt)
+                    if isvalid(this.gplt{i}) && isa(this.gplt{i}, 'UIGroupPlot')
+                        delete(this.gplt{i}.h.f);
+                        delete(this.gplt{i});
+                    end
+                end
+            end
+            
+            if ~children_only
+                delete(this);
+            end
+        end
+        
     % functions that actually compute something
         function compute_ov(this)
              if this.disp_fit_params
@@ -1121,13 +1148,13 @@ classdef SiSaMode < handle
             global_start = this.gstart;
 
             
-            rest = mod(n_pixel - start + 1, this.par_size);
-            inner_upper = this.par_size-1;
+            rest = mod(n_pixel - start + 1, this.p.par_size);
+            inner_upper = this.p.par_size-1;
 
             lt = 0;
             
             x = this.x_data((this.t_offset+this.t_zero):end);
-            for n = start:this.par_size:n_pixel
+            for n = start:this.p.par_size:n_pixel
                 if n == start
                     this.p.update_infos(['   |   Fitte ' num2str(start) '/' num2str(prod(this.p.fileinfo.size)) ' (parallel).'])
                 end
@@ -1147,11 +1174,11 @@ classdef SiSaMode < handle
                         if ~isempty(g_par)
                             tmp = e_pars(n+i, :);
                             tmp(g_par) = global_start(g_par);
-                            [p, p_err, chi] = fitdata(m, x, y, w, tmp, f);
+                            [par, p_err, chi] = fitdata(m, x, y, w, tmp, f);
                         else
-                            [p, p_err, chi] = fitdata(m, x, y, w, e_pars(n+i, :), f); 
+                            [par, p_err, chi] = fitdata(m, x, y, w, e_pars(n+i, :), f); 
                         end
-                        f_pars(n+i, :) = p;
+                        f_pars(n+i, :) = par;
                         f_pars_e(n+i, :) = p_err;
                         f_chisq(n+i) = chi;
                     end
@@ -1394,8 +1421,8 @@ classdef SiSaMode < handle
                 case 'normal'
                     if ~strcmp(this.p.fileinfo.path, '')
                         if sum(this.data(index{:}, :))
-                            i = length(this.p.plt);
-                            this.p.plt{i+1} = UIPlot([index{:}], this);
+                            i = length(this.plt);
+                            this.plt{i+1} = UIPlot([index{:}], this);
                         end
                     end
                 case 'alt'
@@ -1418,8 +1445,8 @@ classdef SiSaMode < handle
         end
         
         function plot_group(this, varargin)
-            i = length(this.p.gplt);
-            this.p.gplt{i+1} = UIGroupPlot(this);
+            i = length(this.gplt);
+            this.gplt{i+1} = UIGroupPlot(this);
             this.generate_sel_vals();
         end
 
@@ -1664,7 +1691,7 @@ classdef SiSaMode < handle
             this.hold_f = false;
             set(this.h.hold, 'string', 'Fit anhalten', 'callback', @this.hold_fit_cb);
             if get(this.h.parallel, 'value')
-                this.fit_all_par(this.last_fitted + this.par_size);
+                this.fit_all_par(this.last_fitted + this.p.par_size);
             else
                 this.fit_all(this.last_fitted);
             end
