@@ -8,7 +8,7 @@ classdef UI < handle
     end
     
     properties        
-        version = '0.3.5';
+        version = '0.4.0';
         fileinfo = struct('path', '', 'size', [0 0 0 0],...
                           'name', '', 'np', 0); 
         scale = [5 5 5];          % distance between the centers of two pixels in mm
@@ -574,6 +574,10 @@ classdef UI < handle
             for i = 1:max_length
                 if ver1_parts(i) < ver2_parts(i)
                     ver2isnewer = true;
+                    break
+                elseif ver1_parts(i) > ver2_parts(i)
+                    ver2isnewer = false;
+                    break
                 end
             end
         end
