@@ -18,6 +18,11 @@ classdef UI < handle
         data_read = false;
         points;
 
+        % slices to be displayed
+        curr_dims = [1, 2, 3, 4];
+        ind = {':', ':', 1, 1};
+        transpose = false;
+        
         genericname;
         openpath; % persistent, in ini
         savepath; % persistent, in ini

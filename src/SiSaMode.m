@@ -44,8 +44,6 @@ classdef SiSaMode < handle
         l_min; % maximum of the current parameter over all data points
         l_max; % minimum of the current parameter over all data points
         use_user_legend = false;
-        user_l_min;
-        user_l_max;
         
         fitted = false;
         cmap = 'summer';
