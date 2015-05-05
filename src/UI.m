@@ -492,7 +492,9 @@ classdef UI < handle
         
         % punt to current mode to handle everything
         function save_fig_cb(this, varargin)
-            this.modes{this.current_mode}.save_fig();
+            if ~isempty(this.modes)
+                this.modes{this.current_mode}.save_fig();
+            end
         end
         
         function mode_change_cb(this, varargin)

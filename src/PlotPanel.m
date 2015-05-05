@@ -240,6 +240,82 @@ classdef PlotPanel < handle
             set(this.h.d1_select, 'visible', 'on');
             set(this.h.d2_select, 'visible', 'on');
         end
+        
+        function fighandle = generate_export_fig(this, vis)
+            x = size(this.p.data, this.curr_dims(1));
+            y = size(this.p.data, this.curr_dims(2));
+
+            if x > y
+                d = x;
+            else
+                d = y;
+            end
+
+            scale_pix = 800/d;  % max width or height of the axes
+            scl = this.p.p.scale./max(this.p.p.scale);
+            
+            x_pix = x*scale_pix*scl(1);
+            y_pix = y*scale_pix*scl(2);
+            
+            tmp = get(this.h.axes, 'position');
+
+            if isfield(this.h, 'plot_pre') && ishandle(this.h.plot_pre)
+                figure(this.h.plot_pre);
+                clf();
+            else
+                this.h.plot_pre = figure('visible', vis);
+            end
+            screensize = get(0, 'ScreenSize');
+            windowpos = [screensize(3)-(x_pix+150) screensize(4)-(y_pix+150)  x_pix+100 y_pix+100];
+            set(this.h.plot_pre, 'units', 'pixels',...
+                   'position', windowpos,...
+                   'numbertitle', 'off',...
+                   'name', 'SISA Scan Vorschau',...
+                   'menubar', 'none',...
+                   'resize', 'off',...
+                   'Color', [.95, .95, .95]);
+
+            ax = copyobj(this.h.axes, this.h.plot_pre);
+            set(ax, 'position', [tmp(1)+22 tmp(2) x_pix y_pix],...
+                    'XColor', 'black',...
+                    'YColor', 'black');
+            xlabel([this.dimnames{this.curr_dims(1)} ' [mm]'])
+            ylabel([this.dimnames{this.curr_dims(2)} ' [mm]'])
+            
+            x_label_res = 1;
+            x_tick = 1:x_label_res:x;
+            while length(x_tick) > 10
+                x_label_res = x_label_res + 1;
+                x_tick = 1:x_label_res:x;
+            end
+            
+            y_label_res = 1;
+            y_tick = 1:y_label_res:y;
+            while length(y_tick) > 10
+                y_label_res = y_label_res + 1;
+                y_tick = 1:y_label_res:y;
+            end
+            
+            x_tick_label = num2cell((0:x_label_res:x-1)*this.p.p.scale(1));
+            y_tick_label = num2cell((0:y_label_res:y-1)*this.p.p.scale(2));
+            
+            set(ax, 'xtick', x_tick, 'ytick', y_tick,...
+                    'xticklabel', x_tick_label,...
+                    'yticklabel', y_tick_label);
+
+            caxis([this.l_min this.l_max]);
+            colormap(this.cmap);
+            c = colorbar();
+            set(c, 'units', 'pixels');
+            tmp2 = get(c, 'position');
+            tmp2(1) = tmp(1)+x_pix+35;
+            set(c, 'position', tmp2);
+            if tmp2(1) + tmp2(3) > windowpos(3)
+                windowpos(3) = windowpos(3) + tmp2(3) + 20;
+                set(this.h.plot_pre, 'position', windowpos);
+            end
+            fighandle = this.h.plot_pre;
+        end
     end
     
     methods (Access = private)
@@ -252,10 +328,6 @@ classdef PlotPanel < handle
             syn = sn(2);
             transp = (sxn ~= sx || syn ~= sy) ||...
                      (sx > 1 && sy > 1 && this.curr_dims(1) > this.curr_dims(2));
-        end
-        
-        function fighandle = generate_export_fig(this, visible)
-            
         end
         
         function update_plot(this)

@@ -130,7 +130,7 @@ classdef SiSaMode < GenericMode
                         this.h.scale_y = uicontrol(this.h.pres_controls);
                                 
                                 
-            set(this.h.sisamode, 'title', 'Singulett-Sauerstoff-Lumineszenz',...
+            set(this.h.sisamode, 'title', 'SiSa-Lumineszenz',...
                                  'tag', '1',...
                                  'SizeChangedFcn', @this.resize);
                 %% Plot
@@ -570,80 +570,6 @@ classdef SiSaMode < GenericMode
                                                     'position', [15 155-i*23-14 40 20]);
             end
         end % mean, std, etc.
-
-        function generate_export_fig(this, ax_in, vis)
-            x = size(this.data, this.curr_dims(1));
-            y = size(this.data, this.curr_dims(2));
-
-            if x > y
-                d = x;
-            else
-                d = y;
-            end
-
-            scale_pix = 800/d;  % max width or height of the axes
-            scl = this.p.scale./max(this.p.scale);
-            
-            x_pix = x*scale_pix*scl(1);
-            y_pix = y*scale_pix*scl(2);
-            
-            tmp = get(ax_in, 'position');
-            if isfield(this.h, 'plot_pre') && ishandle(this.h.plot_pre)
-                figure(this.h.plot_pre);
-                clf();
-            else
-                this.h.plot_pre = figure('visible', vis);
-            end
-            screensize = get(0, 'ScreenSize');
-            windowpos = [screensize(3)-(x_pix+150) screensize(4)-(y_pix+150)  x_pix+80 y_pix+100];
-            set(this.h.plot_pre, 'units', 'pixels',...
-                   'position', windowpos,...
-                   'numbertitle', 'off',...
-                   'name', 'SISA Scan Vorschau',...
-                   'menubar', 'none',...
-                   'resize', 'off',...
-                   'Color', [.95, .95, .95]);
-
-            ax = copyobj(ax_in, this.h.plot_pre);
-            set(ax, 'position', [tmp(1) tmp(2) x_pix y_pix],...
-                    'XColor', 'black',...
-                    'YColor', 'black');
-            xlabel([this.p.dimnames{this.curr_dims(1)} ' [mm]'])
-            ylabel([this.p.dimnames{this.curr_dims(2)} ' [mm]'])
-            
-            x_label_res = 1;
-            x_tick = 1:x_label_res:x;
-            while length(x_tick) > 10
-                x_label_res = x_label_res + 1;
-                x_tick = 1:x_label_res:x;
-            end
-            
-            y_label_res = 1;
-            y_tick = 1:y_label_res:y;
-            while length(y_tick) > 10
-                y_label_res = y_label_res + 1;
-                y_tick = 1:y_label_res:y;
-            end
-            
-            x_tick_label = num2cell((0:x_label_res:x-1)*this.p.scale(1));
-            y_tick_label = num2cell((0:y_label_res:y-1)*this.p.scale(2));
-            
-            set(ax, 'xtick', x_tick, 'ytick', y_tick,...
-                    'xticklabel', x_tick_label,...
-                    'yticklabel', y_tick_label);
-
-            caxis([this.l_min(this.current_param) this.l_max(this.current_param)]);
-            colormap(this.cmap);
-            c = colorbar();
-            set(c, 'units', 'pixels');
-            tmp2 = get(c, 'position');
-            tmp2(1) = tmp(1)+x_pix+15;
-            set(c, 'position', tmp2);
-            if tmp2(1) + tmp2(3) > windowpos(3)
-                windowpos(3) = windowpos(3) + tmp2(3) + 20;
-                set(this.h.plot_pre, 'position', windowpos);
-            end
-        end
 
         function add_ov(this, init)
             new_ov_number = length(this.overlays)+1;
@@ -1101,21 +1027,21 @@ classdef SiSaMode < GenericMode
                 tmp = 'geschaetzt';
             end
             [file, path] = uiputfile([this.p.savepath filesep() this.p.genericname...
-                                     '_par=' this.get_parname(this.current_param)...
+                                     '_SiSa_par=' this.get_parname(this.current_param)...
                                      '_' tmp '.pdf']);
             if ~ischar(file) || ~ischar(path) % no file selected
                 return
             end
             this.p.set_savepath(path);
-            this.generate_export_fig(this.h.axes, 'off');
-            tmp = get(this.h.plot_pre, 'position');
+            f = this.plotpanel.generate_export_fig('off');
+            tmp = get(f, 'position');
 
             % save the plot and close the figure
-            set(this.h.plot_pre, 'PaperUnits', 'points');
-            set(this.h.plot_pre, 'PaperSize', [tmp(3) tmp(4)]*.8);
-            set(this.h.plot_pre, 'PaperPosition', [0 0 tmp(3) tmp(4)]*.8);
-            print(this.h.plot_pre, '-dpdf', '-r600', fullfile(path, file));
-            close(this.h.plot_pre);
+            set(f, 'PaperUnits', 'points');
+            set(f, 'PaperSize', [tmp(3) tmp(4)]*.8);
+            set(f, 'PaperPosition', [0 0 tmp(3) tmp(4)]*.8);
+            print(f, '-dpdf', '-r600', fullfile(path, file));
+            close(f);
         end
         
         % mouseclicks
@@ -1226,7 +1152,7 @@ classdef SiSaMode < GenericMode
         end
         
         function generate_export_fig_cb(this, varargin)
-            this.generate_export_fig(this.h.axes, 'on');
+            this.plotpanel.generate_export_fig('on');
         end
         
         % change global start point
