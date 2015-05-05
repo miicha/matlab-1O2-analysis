@@ -44,8 +44,6 @@ classdef SiSaMode < handle
         l_min; % maximum of the current parameter over all data points
         l_max; % minimum of the current parameter over all data points
         use_user_legend = false;
-        user_l_min;
-        user_l_max;
         
         fitted = false;
         cmap = 'summer';
@@ -89,68 +87,55 @@ classdef SiSaMode < handle
             
             this.read_channel_width();
             
-            
             this.h.sisamode = uitab(this.h.parent);
             
             this.h.plotpanel = uipanel(this.h.sisamode);
-                        this.h.axes = axes('parent', this.h.plotpanel);
-                        this.h.legend = axes('parent', this.h.plotpanel);
-                        this.h.tick_min = uicontrol(this.h.plotpanel);
-                        this.h.tick_max = uicontrol(this.h.plotpanel);
-                        this.h.plttxt = uicontrol(this.h.plotpanel);
-                        this.h.zslider = uicontrol(this.h.plotpanel);
-                        this.h.zbox = uicontrol(this.h.plotpanel);
-                        this.h.saslider = uicontrol(this.h.plotpanel);
-                        this.h.sabox = uicontrol(this.h.plotpanel);
-                        this.h.param = uicontrol(this.h.plotpanel);
-                        this.h.fit_est = uibuttongroup(this.h.plotpanel);
-                            this.h.fit_par = uicontrol();
-                            this.h.est_par = uicontrol();
-                        this.h.d1_select = uicontrol(this.h.plotpanel);
-                        this.h.d2_select = uicontrol(this.h.plotpanel);
-                        this.h.d3_select = uicontrol(this.h.plotpanel);
-                        this.h.d4_select = uicontrol(this.h.plotpanel);
+                this.h.plttxt = uicontrol(this.h.plotpanel);
+                this.h.param = uicontrol(this.h.plotpanel);
+                this.h.fit_est = uibuttongroup(this.h.plotpanel);
+                    this.h.fit_par = uicontrol();
+                    this.h.est_par = uicontrol();
 
-                    this.h.tabs = uitabgroup(this.h.sisamode);
-                        this.h.fit_tab = uitab(this.h.tabs);
-                            this.h.fitpanel = uipanel(this.h.fit_tab);
-                                this.h.fittxt = uicontrol(this.h.fitpanel);
-                                this.h.drpd = uicontrol(this.h.fitpanel);
-                                this.h.bounds = uipanel(this.h.fitpanel);
-                                    this.h.bounds_txt1 = uicontrol(this.h.bounds);
-                                    this.h.bounds_txt2 = uicontrol(this.h.bounds);
-                                    this.h.gstart_text = uicontrol(this.h.bounds);
-                                    this.h.fix_text = uicontrol(this.h.bounds);
-                                    this.h.glob_text = uicontrol(this.h.bounds);
-                            this.h.parallel = uicontrol(this.h.fit_tab);
-                            this.h.fit = uicontrol(this.h.fit_tab);
-                            this.h.hold = uicontrol(this.h.fit_tab);
-                            this.h.ov_controls = uipanel(this.h.fit_tab);
-                                this.h.ov_disp = uicontrol(this.h.ov_controls);
-                                this.h.ov_buttongroup = uibuttongroup(this.h.ov_controls);
-                                    this.h.ov_radiobtns = {uicontrol(this.h.ov_buttongroup)};
-                                    this.h.ov_drpd = uicontrol(this.h.ov_controls);
-                                    this.h.ov_rel = uicontrol(this.h.ov_controls);
-                                    this.h.ov_val = uicontrol(this.h.ov_controls);
-                                    this.h.ov_add_from_auto = uicontrol(this.h.ov_controls);
-                                    this.h.add_overlay = {};
+            this.h.tabs = uitabgroup(this.h.sisamode);
+                this.h.fit_tab = uitab(this.h.tabs);
+                    this.h.fitpanel = uipanel(this.h.fit_tab);
+                        this.h.fittxt = uicontrol(this.h.fitpanel);
+                        this.h.drpd = uicontrol(this.h.fitpanel);
+                        this.h.bounds = uipanel(this.h.fitpanel);
+                            this.h.bounds_txt1 = uicontrol(this.h.bounds);
+                            this.h.bounds_txt2 = uicontrol(this.h.bounds);
+                            this.h.gstart_text = uicontrol(this.h.bounds);
+                            this.h.fix_text = uicontrol(this.h.bounds);
+                            this.h.glob_text = uicontrol(this.h.bounds);
+                    this.h.parallel = uicontrol(this.h.fit_tab);
+                    this.h.fit = uicontrol(this.h.fit_tab);
+                    this.h.hold = uicontrol(this.h.fit_tab);
+                    this.h.ov_controls = uipanel(this.h.fit_tab);
+                        this.h.ov_disp = uicontrol(this.h.ov_controls);
+                        this.h.ov_buttongroup = uibuttongroup(this.h.ov_controls);
+                            this.h.ov_radiobtns = {uicontrol(this.h.ov_buttongroup)};
+                            this.h.ov_drpd = uicontrol(this.h.ov_controls);
+                            this.h.ov_rel = uicontrol(this.h.ov_controls);
+                            this.h.ov_val = uicontrol(this.h.ov_controls);
+                            this.h.ov_add_from_auto = uicontrol(this.h.ov_controls);
+                            this.h.add_overlay = {};
 
-                        this.h.sel_tab = uitab(this.h.tabs);
-                            this.h.sel_controls = uipanel(this.h.sel_tab);
-                                this.h.sel_btn_plot = uicontrol(this.h.sel_controls);
+                this.h.sel_tab = uitab(this.h.tabs);
+                    this.h.sel_controls = uipanel(this.h.sel_tab);
+                        this.h.sel_btn_plot = uicontrol(this.h.sel_controls);
 
-                            this.h.sel_values = uipanel(this.h.sel_tab);
+                    this.h.sel_values = uipanel(this.h.sel_tab);
 
-                        this.h.pres_tab = uitab(this.h.tabs);
-                            this.h.savefig = uicontrol(this.h.pres_tab);
-                            this.h.prevfig = uicontrol(this.h.pres_tab);
-                            this.h.pres_controls = uipanel(this.h.pres_tab);
-                                this.h.colormap_drpd_text = uicontrol(this.h.pres_controls);
-                                this.h.colormap_drpd = uicontrol(this.h.pres_controls);
-                                this.h.scale_x_text = uicontrol(this.h.pres_controls);
-                                this.h.scale_x = uicontrol(this.h.pres_controls);
-                                this.h.scale_y_text = uicontrol(this.h.pres_controls);
-                                this.h.scale_y = uicontrol(this.h.pres_controls);
+                this.h.pres_tab = uitab(this.h.tabs);
+                    this.h.savefig = uicontrol(this.h.pres_tab);
+                    this.h.prevfig = uicontrol(this.h.pres_tab);
+                    this.h.pres_controls = uipanel(this.h.pres_tab);
+                        this.h.colormap_drpd_text = uicontrol(this.h.pres_controls);
+                        this.h.colormap_drpd = uicontrol(this.h.pres_controls);
+                        this.h.scale_x_text = uicontrol(this.h.pres_controls);
+                        this.h.scale_x = uicontrol(this.h.pres_controls);
+                        this.h.scale_y_text = uicontrol(this.h.pres_controls);
+                        this.h.scale_y = uicontrol(this.h.pres_controls);
                                 
                                 
             set(this.h.sisamode, 'title', 'SiSa',...
@@ -162,22 +147,7 @@ classdef SiSaMode < handle
                                 'bordertype', 'line',...
                                 'highlightcolor', [.7 .7 .7],...
                                 'BackgroundColor', [.85 .85 .85]);
-            
-            set(this.h.axes, 'units', 'pixels',...
-                           'position', [40 60 380 390],...
-                           'Color', get(this.h.plotpanel, 'BackgroundColor'),...
-                           'xtick', [], 'ytick', [],...
-                           'XColor', get(this.h.plotpanel, 'BackgroundColor'),...
-                           'YColor', get(this.h.plotpanel, 'BackgroundColor'),...
-                           'ButtonDownFcn', @this.aplot_click_cb);
-                       
-            set(this.h.legend, 'units', 'pixels',...
-                             'position', [40 12 400 20],...
-                             'xtick', [], 'ytick', [],...
-                             'XColor', get(this.h.plotpanel, 'BackgroundColor'),...
-                             'YColor', get(this.h.plotpanel, 'BackgroundColor'),...
-                             'visible', 'off');
-                                     
+                                   
             set(this.h.plttxt, 'units', 'pixels',...
                              'style', 'text',...
                              'string', 'Parameter:',...
@@ -186,39 +156,6 @@ classdef SiSaMode < handle
                              'BackgroundColor', get(this.h.plotpanel, 'BackgroundColor'),...
                              'FontSize', 9,...
                              'visible', 'off');
-                                                       
-            set(this.h.zslider, 'units', 'pixels',...
-                              'style', 'slider',...
-                              'position', [460 85 20 340],...
-                              'value', 1,...
-                              'visible', 'off',...
-                              'callback', @this.set_d3_cb,...
-                              'BackgroundColor', [1 1 1]);
-                           
-            set(this.h.zbox, 'units', 'pixels',...
-                           'style', 'edit',...
-                           'string', '1',...
-                           'position', [460 430 20, 20],...
-                           'callback', @this.set_d3_cb,...
-                           'visible', 'off',...
-                           'BackgroundColor', [1 1 1]);
-            
-            set(this.h.saslider, 'units', 'pixels',...
-                               'style', 'slider',...
-                               'position', [490 85 20 340],... 
-                               'value', 1,...
-                               'visible', 'off',...
-                               'BackgroundColor', [1 1 1],...
-                               'ForegroundColor', [0 0 0],...
-                               'callback', @this.set_d4_cb);
-
-            set(this.h.sabox, 'units', 'pixels',...
-                            'style', 'edit',...
-                            'string', '1',...
-                            'position', [490 460 20 20],...
-                            'callback', @this.set_d4_cb,...
-                            'visible', 'off',...
-                            'BackgroundColor', [1 1 1]);
 
             set(this.h.param, 'units', 'pixels',...
                             'style', 'popupmenu',...
@@ -228,25 +165,7 @@ classdef SiSaMode < handle
                             'visible', 'off',...
                             'callback', @this.set_param_cb,...
                             'BackgroundColor', [1 1 1]);
-                        
-            set(this.h.tick_min, 'units', 'pixels',...
-                               'style', 'edit',...
-                               'visible', 'off',...
-                               'FontSize', 9,...
-                               'string', '1',...
-                               'horizontalAlignment', 'left',...
-                               'callback', @this.set_tick_cb,...
-                               'position', [40 34 65 17]);
-                           
-            set(this.h.tick_max, 'units', 'pixels',...
-                               'style', 'edit',...
-                               'visible', 'off',...
-                               'FontSize', 9,...
-                               'string', '100',...
-                               'horizontalAlignment', 'right',...
-                               'callback', @this.set_tick_cb,...
-                               'position', [405 34 65 17]);  
-                           
+                            
             set(this.h.est_par, 'units', 'pixels',...
                               'style', 'radiobutton',...
                               'visible', 'on',...
@@ -256,7 +175,7 @@ classdef SiSaMode < handle
                               'horizontalAlignment', 'left',...
                               'position', [10 1 100 17],...
                               'parent', this.h.fit_est);
-                           
+                            
             set(this.h.fit_par, 'units', 'pixels',...
                               'style', 'radiobutton',...
                               'visible', 'on',...
@@ -274,50 +193,9 @@ classdef SiSaMode < handle
                               'SelectionChangeFcn', @this.change_par_source_cb,...
                               'position', [220 445 200 21],...
                               'visible', 'off');          
-                          
-            set(this.h.d1_select, 'units', 'pixels',...
-                                'style', 'popupmenu',...
-                                'string', this.p.dimnames,...
-                                'value', 1,...
-                                'tag', '1',...
-                                'visible', 'off',...
-                                'callback', @this.set_dim_cb,...
-                                'position', [385 40 30 17],...
-                                'BackgroundColor', [1 1 1]);
                             
-            set(this.h.d2_select, 'units', 'pixels',...
-                                'style', 'popupmenu',...
-                                'string', this.p.dimnames,...
-                                'value', 2,...
-                                'visible', 'off',...
-                                'tag', '2',...
-                                'callback', @this.set_dim_cb,...
-                                'position', [5 300 30 17],...
-                                'BackgroundColor', [1 1 1]);
-
-
-            set(this.h.d3_select, 'units', 'pixels',...
-                                'style', 'popupmenu',...
-                                'string', this.p.dimnames,...
-                                'value', 3,...
-                                'visible', 'off',...
-                                'tag', '3',...
-                                'callback', @this.set_dim_cb,...
-                                'position', [465 520 30 17],...
-                                'BackgroundColor', [1 1 1]);
-
-                            
-            set(this.h.d4_select, 'units', 'pixels',...
-                                'style', 'popupmenu',...
-                                'string', this.p.dimnames,...
-                                'value', 4,...
-                                'visible', 'off',...
-                                'tag', '4',...
-                                'callback', @this.set_dim_cb,...
-                                'position', [505 520 30 17],...
-                                'BackgroundColor', [1 1 1]);
-
-                            
+            this.h.pp = PlotPanel(this);
+            
             %% tabs for switching selection modes
             set(this.h.tabs, 'units', 'pixels',...
                              'position', [10 5 250 550],...
@@ -569,7 +447,6 @@ classdef SiSaMode < handle
             this.set_model('1. A*(exp(-t/t1)-exp(-t/t2))+offset');
             this.estimate_parameters();
             this.change_overlay_cond_cb();
-            this.update_sliders();
             this.plot_array();
             
             this.generate_overlay();
@@ -599,68 +476,11 @@ classdef SiSaMode < handle
                 end
             end
             
-            this.set_transpose();
-            
-            sx = size(plot_data, this.curr_dims(1));
-            sy = size(plot_data, this.curr_dims(2));
-            
-            plot_data = squeeze(plot_data(this.ind{:}));
-            
-            % squeeze does strange things: (1x3x1)-array -> (3x1)-array
-            
-            [sxn, syn] = size(plot_data);
-           
-            if (sxn ~= sx || syn ~= sy) % breaks for sx == sy...
-                this.transpose = ~this.transpose;
-                plot_data = plot_data';
-                ov_data = squeeze(this.overlays{this.current_ov}(this.ind{:}))';
-            elseif sx > 1 && sy > 1 && this.transpose
-                plot_data = plot_data';
-                ov_data = squeeze(this.overlays{this.current_ov}(this.ind{:}))';
-            else
-                ov_data = squeeze(this.overlays{this.current_ov}(this.ind{:}));
+            if this.disp_ov
+                this.h.pp.plot_array(plot_data, this.overlays{this.current_ov});
+            else 
+                this.h.pp.plot_array(plot_data);
             end
-            
-            this.overlay_data = ov_data;
-            
-            % for legend minimum and maximum
-            if ~this.use_user_legend
-                this.calculate_legend();
-            end
-            tickmax = this.l_max(param);
-            tickmin = this.l_min(param);
-            % plotting:
-            % Memo to self: Don't try using HeatMaps... seriously.
-            if gcf == this.p.h.f || this.fitted % don't plot when figure is in background
-                set(this.p.h.f, 'CurrentAxes', this.h.axes); 
-                cla
-                hold on
-                hmap(plot_data', false, this.cmap);
-                if this.disp_ov
-                    plot_overlay(ov_data');
-                end
-                hold off
-                s = size(plot_data');
-                xlim([.5 s(2)+.5])
-                ylim([.5 s(1)+.5])
-
-                if tickmin < tickmax
-                    caxis([tickmin tickmax])
-                    
-                    set(this.p.h.f, 'CurrentAxes', this.h.legend);
-                    l_data = tickmin:(tickmax-tickmin)/20:tickmax;
-                    cla
-                    hold on
-                    hmap(l_data, false, this.cmap);
-                    hold off
-                    xlim([.5 length(l_data)+.5])
-                    set(this.h.legend, 'visible', 'on');
-                    set(this.h.tick_min, 'visible', 'on', 'string', num2str(l_data(1),4));
-                    set(this.h.tick_max, 'visible', 'on', 'string', num2str(l_data(end),4));
-                end
-            end
-            set(this.h.d1_select, 'visible', 'on');
-            set(this.h.d2_select, 'visible', 'on');
         end
         
         function read_channel_width(this)
@@ -898,38 +718,6 @@ classdef SiSaMode < handle
             this.disp_ov = val;
             set(this.h.ov_disp, 'Value', val);
             this.plot_array();
-        end
-        
-        function update_sliders(this)
-            [s1, s2, s3, s4, ~] = size(this.est_params);
-            s = [s1 s2 s3 s4];
-
-            % handle z-scans
-            if s(this.curr_dims(3)) > 1 
-                set(this.h.zslider, 'min', 1, 'max', s(this.curr_dims(3)),...
-                                  'visible', 'on',...
-                                  'value', 1,...
-                                  'SliderStep', [1 5]/(s(this.curr_dims(3))-1));
-                set(this.h.zbox, 'visible', 'on');
-                set(this.h.d3_select, 'visible', 'on');
-            else 
-                set(this.h.zbox, 'visible', 'off');
-                set(this.h.zslider, 'visible', 'off');
-                set(this.h.d3_select, 'visible', 'off');
-            end
-            % handle multiple samples
-            if s(this.curr_dims(4)) > 1 
-                set(this.h.saslider, 'min', 1, 'max', s(this.curr_dims(4)),...
-                                  'visible', 'on',...
-                                  'value', 1,...
-                                  'SliderStep', [1 5]/(s(this.curr_dims(4))-1));
-                set(this.h.sabox, 'visible', 'on');
-                set(this.h.d4_select, 'visible', 'on');
-            else 
-                set(this.h.sabox, 'visible', 'off');
-                set(this.h.saslider, 'visible', 'off');
-                set(this.h.d4_select, 'visible', 'off');
-            end
         end
         
         function set_transpose(this)
@@ -1321,27 +1109,7 @@ classdef SiSaMode < handle
             end
             this.generate_sel_vals();
         end
-        
-        function calculate_legend(this)
-            tmp = this.models(this.model);
-            for i = 1:length(tmp{2})
-                if this.disp_fit_params
-                    this.l_max(i) = squeeze(max(max(max(max(this.fit_params(:,:,:,:,i))))));
-                    this.l_min(i) = squeeze(min(min(min(min(this.fit_params(:,:,:,:,i))))))-10*eps;
-                else
-                    this.l_max(i) = squeeze(max(max(max(max(this.est_params(:,:,:,:,i))))));
-                    this.l_min(i) = squeeze(min(min(min(min(this.est_params(:,:,:,:,i))))))-10*eps;
-                end
-            end
-            if this.disp_fit_params
-                this.l_min(end) = squeeze(min(min(min(min(this.fit_chisq)))))-10*eps;
-                this.l_max(end) = squeeze(max(max(max(max(this.fit_chisq)))));
-            else
-                this.l_min(end) = squeeze(min(min(min(min(this.data_sum)))))-10*eps;
-                this.l_max(end) = squeeze(max(max(max(max(this.data_sum)))));
-            end
-        end
-        
+                
         function save_fig(this, varargin)
             if this.disp_fit_params
                 tmp = 'gefittet';
@@ -1365,6 +1133,33 @@ classdef SiSaMode < handle
             print(this.h.plot_pre, '-dpdf', '-r600', fullfile(path, file));
             close(this.h.plot_pre);
         end
+        
+        % mouseclicks
+        function left_click_on_axes(this, index)
+            if ~this.disp_ov
+                this.set_disp_ov(true);
+            end
+            if ~strcmp(this.p.fileinfo.path, '')
+                if sum(this.data(index{:}, :))
+                    this.overlays{this.current_ov}(index{:}) = ...
+                    ~this.overlays{this.current_ov}(index{:});
+                end
+            end
+            this.plot_array();
+        end
+        
+        function right_click_on_axes(this, index)
+            if ~this.disp_ov
+                this.set_disp_ov(true);
+            end
+            if ~strcmp(this.p.fileinfo.path, '')
+                if sum(this.data(index{:}, :))
+                    this.overlays{this.current_ov}(index{:}) = ...
+                    ~this.overlays{this.current_ov}(index{:});
+                end
+            end
+            this.plot_array();
+        end
     end
     
     methods (Access = private)
@@ -1376,61 +1171,17 @@ classdef SiSaMode < handle
             pP(3:4) = [(mP(3)-pP(1))-10 (mP(4)-pP(2))-10];
             set(this.h.plotpanel, 'Position', pP);
 
-            aP = get(this.h.axes, 'Position');
-            aP(3:4) = [(pP(3)-aP(1))-80 (pP(4)-aP(2))-50];
-            set(this.h.axes, 'Position', aP);
-
-            tmp = get(this.h.d2_select, 'Position');
-            tmp(2) = aP(2) + aP(4)/2;
-            set(this.h.d2_select, 'Position', tmp);
-
-            tmp = get(this.h.d1_select, 'Position');
-            tmp(1) = aP(1) + aP(3)/2;
-            set(this.h.d1_select, 'Position', tmp);
-
-            tmp = get(this.h.d3_select, 'Position');
-            tmp(1) = aP(1) + aP(3) + 5;
-            tmp(2) = aP(2) + aP(4) - 16;
-            set(this.h.d3_select, 'Position', tmp);
-
-            tmp(1) = aP(1) + aP(3) + 40;
-            set(this.h.d4_select, 'Position', tmp);
-
-            tmp = get(this.h.legend, 'position');
-            tmp(3) = aP(3);
-            set(this.h.legend, 'position', tmp);
-
-            tmp = get(this.h.tick_max, 'position');
-            tmp(1) = aP(3) + aP(1) - tmp(3);
-            set(this.h.tick_max, 'position', tmp);
-
             tmp = get(this.h.plttxt, 'position');
-            tmp(2) = aP(2)+aP(4)+2;
+            tmp(2) = pP(4)-10-tmp(4)-5;
             set(this.h.plttxt, 'position', tmp);
 
             tmp = get(this.h.param, 'position');
-            tmp(2) = aP(2)+aP(4)+6;
+            tmp(2) = pP(4)-10-tmp(4);
             set(this.h.param, 'position', tmp);
 
             tmp = get(this.h.fit_est, 'position');
-            tmp(2) = aP(2)+aP(4) + 6;
+            tmp(2) = pP(4)-10-tmp(4);
             set(this.h.fit_est, 'position', tmp);
-
-            tmp = get(this.h.zslider, 'position');
-            tmp(1) = aP(1) + aP(3) + 15;
-            tmp(4) = aP(4) - 50;
-            set(this.h.zslider, 'position', tmp);
-
-            tmp(1) = tmp(1) + 25;
-            set(this.h.saslider, 'position', tmp);
-
-            tmp = get(this.h.zbox, 'position');
-            tmp(1) = aP(1) + aP(3) + 15;
-            tmp(2) = aP(1) + 20;
-            set(this.h.zbox, 'position', tmp);
-
-            tmp(1) = tmp(1) + 25;
-            set(this.h.sabox, 'position', tmp);
 
             tP = get(this.h.tabs, 'Position');
             tP(4) = pP(4);
@@ -1443,46 +1194,6 @@ classdef SiSaMode < handle
         end
         
         %% Callbacks:
-        % mouseclick on plot
-        function aplot_click_cb(this, varargin)
-            cp = get(this.h.axes, 'CurrentPoint');
-            cp = round(cp(1, 1:2));
-            cp(cp == 0) = 1;
-
-            index{this.curr_dims(1)} = cp(1); % x ->
-            index{this.curr_dims(2)} = cp(2); % y ^
-            index{this.curr_dims(3)} = this.ind{this.curr_dims(3)};
-            index{this.curr_dims(4)} = this.ind{this.curr_dims(4)};
-
-            for i = 1:4
-                if index{i} > this.p.fileinfo.size(i)
-                    index{i} = this.p.fileinfo.size(i);
-                elseif index{i} <= 0
-                     index{i} = 1;
-                end
-            end
-            switch get(this.p.h.f, 'SelectionType')
-                case 'normal'
-                    if ~strcmp(this.p.fileinfo.path, '')
-                        if sum(this.data(index{:}, :))
-                            i = length(this.plt);
-                            this.plt{i+1} = SiSaPlot([index{:}], this);
-                        end
-                    end
-                case 'alt'
-                    if ~this.disp_ov
-                        this.set_disp_ov(true);
-                    end
-                    if ~strcmp(this.p.fileinfo.path, '')
-                        if sum(this.data(index{:}, :))
-                            this.overlays{this.current_ov}(index{:}) = ...
-                            ~this.overlays{this.current_ov}(index{:});
-                        end
-                    end
-                    this.plot_array();
-            end
-        end 
-        
         function change_overlay_cond_cb(this, varargin)
             this.compute_ov();
             this.plot_array();
