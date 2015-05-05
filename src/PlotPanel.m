@@ -1,6 +1,10 @@
 classdef PlotPanel < handle
-    %PLOTPANEL Summary of this class goes here
-    %   Detailed explanation goes here
+    %PLOTPANEL
+    % parent class _must_ implement 
+    %  - plot_array()
+    %  - left_click_on_axes()
+    %  - right_click_on_axes()
+    %  - get_figure()
     
     properties
         p;     % parent
@@ -9,10 +13,13 @@ classdef PlotPanel < handle
         dims;
         curr_dims = [1, 2, 3, 4];
         ind = {':', ':', 1, 1};
+        dimnames = {'x', 'y', 'z', 's'};
         
         l_min; % maximum of the current parameter over all data points
         l_max; % minimum of the current parameter over all data points
         use_user_legend = false;
+        
+        first_call = true;
         
         h = struct();
     end
@@ -23,7 +30,6 @@ classdef PlotPanel < handle
             this.h.parent = parent.h.plotpanel;
             
             this.dims = parent.p.fileinfo.size;
-            this.curr_dims = parent.curr_dims;
             
             this.h.plotpanel = uipanel(this.h.parent);
                 this.h.axes = axes('parent', this.h.plotpanel);
@@ -125,7 +131,7 @@ classdef PlotPanel < handle
                           
             set(this.h.d1_select, 'units', 'pixels',...
                                 'style', 'popupmenu',...
-                                'string', this.p.p.dimnames,...
+                                'string', this.dimnames,...
                                 'value', 1,...
                                 'tag', '1',...
                                 'visible', 'off',...
@@ -135,7 +141,7 @@ classdef PlotPanel < handle
                             
             set(this.h.d2_select, 'units', 'pixels',...
                                 'style', 'popupmenu',...
-                                'string', this.p.p.dimnames,...
+                                'string', this.dimnames,...
                                 'value', 2,...
                                 'visible', 'off',...
                                 'tag', '2',...
@@ -146,7 +152,7 @@ classdef PlotPanel < handle
 
             set(this.h.d3_select, 'units', 'pixels',...
                                 'style', 'popupmenu',...
-                                'string', this.p.p.dimnames,...
+                                'string', this.dimnames,...
                                 'value', 3,...
                                 'visible', 'off',...
                                 'tag', '3',...
@@ -157,7 +163,7 @@ classdef PlotPanel < handle
                             
             set(this.h.d4_select, 'units', 'pixels',...
                                 'style', 'popupmenu',...
-                                'string', this.p.p.dimnames,...
+                                'string', this.dimnames,...
                                 'value', 4,...
                                 'visible', 'off',...
                                 'tag', '4',...
@@ -167,15 +173,18 @@ classdef PlotPanel < handle
         end
         
         function plot_array(this, data, ov_data)
-            if nargin < 3
+            if nargin < 3 || isempty(ov_data)
                 disp_ov = false;
             else
                 disp_ov  = true;
             end
-            
-            this.update_dims(size(data));
-            
+                       
             plot_data = squeeze(data(this.ind{:}));
+            
+            if this.first_call
+                this.update_dims(size(data));
+                this.first_call = false;
+            end
             
             transpose = this.get_transpose(size(data, this.curr_dims(1)),...
                                            size(data, this.curr_dims(2)),...
@@ -200,8 +209,8 @@ classdef PlotPanel < handle
             
             % plotting:
             % Memo to self: Don't try using HeatMaps... seriously.
-            if gcf == this.p.p.h.f  % don't plot when figure is in background
-                set(this.p.p.h.f, 'CurrentAxes', this.h.axes); 
+            if gcf == this.p.get_figure()  % don't plot when figure is in background
+                set(this.p.get_figure(), 'CurrentAxes', this.h.axes); 
                 cla
                 hold on
                 hmap(plot_data', false, this.cmap);
@@ -216,7 +225,7 @@ classdef PlotPanel < handle
                 if tickmin < tickmax
                     caxis([tickmin tickmax])
                     
-                    set(this.p.p.h.f, 'CurrentAxes', this.h.legend);
+                    set(this.p.get_figure(), 'CurrentAxes', this.h.legend);
                     l_data = tickmin:(tickmax-tickmin)/20:tickmax;
                     cla
                     hold on
@@ -264,13 +273,13 @@ classdef PlotPanel < handle
             index{this.curr_dims(4)} = this.ind{this.curr_dims(4)};
 
             for i = 1:4
-                if index{i} > this.p.p.fileinfo.size(i)
-                    index{i} = this.p.p.fileinfo.size(i);
+                if index{i} > this.dims(i)
+                    index{i} = this.dims(i);
                 elseif index{i} <= 0
                      index{i} = 1;
                 end
             end
-            switch get(this.p.p.h.f, 'SelectionType')
+            switch get(this.p.get_figure(), 'SelectionType')
                 case 'normal'
                     this.p.left_click_on_axes(index);
                 case 'alt'
@@ -360,8 +369,8 @@ classdef PlotPanel < handle
                 case this.h.zbox
                     val = round(str2double(get(this.h.zbox, 'string')));
             end
-            if val > this.p.p.fileinfo.size(this.curr_dims(3))
-                val = this.p.p.fileinfo.size(this.curr_dims(3));
+            if val > this.dims(this.curr_dims(3))
+                val = this.dims(this.curr_dims(3));
             elseif val <= 0
                 val = 1;
             end
@@ -381,8 +390,8 @@ classdef PlotPanel < handle
                 case this.h.sabox
                     val = round(str2double(get(this.h.sabox, 'string')));
             end
-            if val > this.p.p.fileinfo.size(this.curr_dims(4))
-                val = this.p.p.fileinfo.size(this.curr_dims(4));
+            if val > this.dims(this.curr_dims(4))
+                val = this.dims(this.curr_dims(4));
             elseif val <= 0
                 val = 1;
             end

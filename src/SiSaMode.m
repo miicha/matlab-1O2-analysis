@@ -1,14 +1,10 @@
-classdef SiSaMode < handle
+classdef SiSaMode < GenericMode
     %SISAMODE
     
     properties
         gplt = {};
         plt = {};
-        
-        p;            % parent, generic UI object
-        h = struct(); % GUI handles
-        
-        data;       % source data from HDF5
+              
         data_sum;
         x_data;         % time data
         fit_params;
@@ -34,16 +30,12 @@ classdef SiSaMode < handle
         t_zero = 1;      % channel in which the maximum of the excitation was reached
         
         % slices to be displayed
-        curr_dims = [1, 2, 3, 4];
         ind = {':', ':', 1, 1};
         transpose = false;
 
         current_param = 1;
         
         disp_fit_params = 0;
-        l_min; % maximum of the current parameter over all data points
-        l_max; % minimum of the current parameter over all data points
-        use_user_legend = false;
         
         fitted = false;
         cmap = 'summer';
@@ -138,7 +130,7 @@ classdef SiSaMode < handle
                         this.h.scale_y = uicontrol(this.h.pres_controls);
                                 
                                 
-            set(this.h.sisamode, 'title', 'SiSa',...
+            set(this.h.sisamode, 'title', 'Singulett-Sauerstoff-Lumineszenz',...
                                  'tag', '1',...
                                  'SizeChangedFcn', @this.resize);
                 %% Plot
@@ -194,7 +186,7 @@ classdef SiSaMode < handle
                               'position', [220 445 200 21],...
                               'visible', 'off');          
                             
-            this.h.pp = PlotPanel(this);
+            this.plotpanel = PlotPanel(this);
             
             %% tabs for switching selection modes
             set(this.h.tabs, 'units', 'pixels',...
@@ -477,9 +469,9 @@ classdef SiSaMode < handle
             end
             
             if this.disp_ov
-                this.h.pp.plot_array(plot_data, this.overlays{this.current_ov});
+                this.plotpanel.plot_array(plot_data, this.overlays{this.current_ov});
             else 
-                this.h.pp.plot_array(plot_data);
+                this.plotpanel.plot_array(plot_data);
             end
         end
         
@@ -719,15 +711,7 @@ classdef SiSaMode < handle
             set(this.h.ov_disp, 'Value', val);
             this.plot_array();
         end
-        
-        function set_transpose(this)
-            if this.curr_dims(1) > this.curr_dims(2)
-                this.transpose = true;
-            else 
-                this.transpose = false;
-            end
-        end
-        
+                
         function destroy(this, children_only)
             if ~isempty(this.plt)
                 for i = 1:length(this.plt)
@@ -1136,16 +1120,12 @@ classdef SiSaMode < handle
         
         % mouseclicks
         function left_click_on_axes(this, index)
-            if ~this.disp_ov
-                this.set_disp_ov(true);
-            end
             if ~strcmp(this.p.fileinfo.path, '')
                 if sum(this.data(index{:}, :))
-                    this.overlays{this.current_ov}(index{:}) = ...
-                    ~this.overlays{this.current_ov}(index{:});
+                    i = length(this.plt);
+                    this.plt{i+1} = SiSaPlot([index{:}], this);
                 end
             end
-            this.plot_array();
         end
         
         function right_click_on_axes(this, index)
@@ -1160,9 +1140,7 @@ classdef SiSaMode < handle
             end
             this.plot_array();
         end
-    end
-    
-    methods (Access = private)
+        
         function resize(this, varargin)
             mP = get(this.h.parent, 'Position');
 
@@ -1192,7 +1170,9 @@ classdef SiSaMode < handle
             set(this.h.ov_controls, 'Position', tmp);
             set(this.h.sel_controls, 'Position', tmp);
         end
-        
+    end
+    
+    methods (Access = private)       
         %% Callbacks:
         function change_overlay_cond_cb(this, varargin)
             this.compute_ov();
@@ -1336,69 +1316,6 @@ classdef SiSaMode < handle
             this.models(this.model) = m;
         end 
         
-        function set_dim_cb(this, varargin)
-            t = str2double(get(varargin{1}, 'Tag'));
-            val = get(varargin{1}, 'Value');
-            oval = this.curr_dims(t);
-            % swap elements
-            a = this.curr_dims;
-            a([find(a==oval) find(a==val)]) = a([find(a==val) find(a==oval)]);
-            this.curr_dims = a;
-            
-            hs = {this.h.d1_select, this.h.d2_select, this.h.d3_select, this.h.d4_select};
-            for i = 1:4
-                set(hs{i}, 'value', this.curr_dims(i));
-                if i <= 2
-                    this.ind{this.curr_dims(i)} = ':';
-                else
-                    this.ind{this.curr_dims(i)} = 1;
-                end
-            end
-                       
-            this.update_sliders();
-            this.plot_array();
-        end
-        
-        function set_d3_cb(this, varargin)
-            switch varargin{1}
-                case this.h.zslider
-                    val = round(get(this.h.zslider, 'value'));
-                case this.h.zbox
-                    val = round(str2double(get(this.h.zbox, 'string')));
-            end
-            if val > this.p.fileinfo.size(this.curr_dims(3))
-                val = this.p.fileinfo.size(this.curr_dims(3));
-            elseif val <= 0
-                val = 1;
-            end
-            
-            set(this.h.zslider, 'value', val);
-            set(this.h.zbox, 'string', num2str(val));
-            this.ind{this.curr_dims(3)} = val;
-            
-            this.plot_array();
-        end
-        
-        function set_d4_cb(this, varargin)
-            switch varargin{1}
-                case this.h.saslider
-                    val = round(get(this.h.saslider, 'value'));
-                case this.h.sabox
-                    val = round(str2double(get(this.h.sabox, 'string')));
-            end
-            if val > this.p.fileinfo.size(this.curr_dims(4))
-                val = this.p.fileinfo.size(this.curr_dims(4));
-            elseif val <= 0
-                val = 1;
-            end
-            
-            set(this.h.saslider, 'value', val);
-            set(this.h.sabox, 'string', num2str(val));
-            this.ind{this.curr_dims(4)} = val;
-            
-            this.plot_array();
-        end
-        
         function set_param_cb(this, varargin)
             this.current_param = get(this.h.param, 'value');
             this.plot_array();
@@ -1432,33 +1349,6 @@ classdef SiSaMode < handle
             this.cancel_f = true;
             set(this.h.fit, 'string', 'global Fitten', 'callback', @this.fit_all_cb);
             set(this.h.hold, 'visible', 'off');
-        end
-        
-        % upper and lower bound of legend
-        function set_tick_cb(this, varargin)
-            switch varargin{1}
-                case this.h.tick_min
-                    new_l_min = str2double(get(this.h.tick_min, 'string'));
-                    if new_l_min < this.l_max(this.current_param)
-                        this.l_min(this.current_param) = new_l_min;
-                        this.use_user_legend = true;
-                    elseif isempty(get(this.h.tick_min, 'string'))
-                        this.use_user_legend = false;
-                    else
-                        set(this.h.tick_min, 'string', this.l_min(this.current_param));
-                    end
-                case this.h.tick_max
-                    new_l_max = str2double(get(this.h.tick_max, 'string'));
-                    if new_l_max > this.l_min(this.current_param)
-                        this.l_max(this.current_param) = new_l_max;
-                        this.use_user_legend = true;
-                    elseif isempty(get(this.h.tick_max, 'string'))
-                        this.use_user_legend = false;
-                    else
-                        set(this.h.tick_max, 'string', this.l_max(this.current_param));
-                    end
-            end
-            this.plot_array();
         end
     end
     

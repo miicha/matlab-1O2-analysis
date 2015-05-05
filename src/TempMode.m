@@ -1,17 +1,6 @@
-classdef TempMode
+classdef TempMode < GenericMode
     %TEMPMODE
     % Platzhalter. Macht was draus! :)
-    
-    properties
-        p;
-        data;
-        l_min = 0; % maximum of the current parameter over all data points
-        l_max = 1; % minimum of the current parameter over all data points
-        use_user_legend = false;
-        curr_dims = [1, 2, 3, 4];
-        
-        h = struct();
-    end
     
     methods
         function this = TempMode(parent, data)
@@ -25,12 +14,9 @@ classdef TempMode
                              
             this.h.plotpanel = uipanel(this.h.tempmode);
             
-            this.h.pp = PlotPanel(this);
-
             set(this.h.tempmode, 'title', 'Temperatur',...
                                  'tag', '3');
                              
-            set(this.h.parent, 'SizeChangedFcn', @this.resize);
             %% Plot
             set(this.h.plotpanel, 'units', 'pixels',...
                                 'position', [5 5 500 500],...
@@ -39,6 +25,8 @@ classdef TempMode
                                 'BackgroundColor', [.85 .85 .85]);
             
 
+
+            this.plotpanel = PlotPanel(this);
 
             this.resize();
             this.plot_array();
@@ -53,8 +41,7 @@ classdef TempMode
         end
                 
         function plot_array(this)
-            this
-            this.h.pp.plot_array(this.data);
+            this.plotpanel.plot_array(this.data);
         end
         
         function right_click_on_axes(this, point)

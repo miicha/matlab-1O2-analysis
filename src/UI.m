@@ -14,7 +14,6 @@ classdef UI < handle
         scale = [5 5 5];          % distance between the centers of two pixels in mm
         par_size = 16;  % when doing parallel processing: how many "tasks" should be sent to all threads?
         file_opened = 0;
-        dimnames = {'x', 'y', 'z', 's'};
         data_read = false;
         points;
 
@@ -461,6 +460,10 @@ classdef UI < handle
                 bP = get(this.h.info, 'Position');
                 bP(3) = mP(3);
                 set(this.h.info, 'Position', bP);
+            end
+            
+            for i = 1:length(this.modes)
+                this.modes{i}.resize();
             end
         end
         
