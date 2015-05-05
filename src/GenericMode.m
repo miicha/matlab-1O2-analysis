@@ -5,6 +5,7 @@ classdef GenericMode < handle
         p;              % parent
         
         plotpanel;      % PlotPanel
+        
         data;           % data
         l_min = 0;      % maximum of the current parameter over all data points
         l_max = 1;      % minimum of the current parameter over all data points

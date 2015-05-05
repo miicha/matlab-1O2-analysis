@@ -325,9 +325,9 @@ classdef PlotPanel < handle
             % handle multiple samples
             if s(this.curr_dims(4)) > 1 
                 set(this.h.saslider, 'min', 1, 'max', s(this.curr_dims(4)),...
-                                  'visible', 'on',...
-                                  'value', 1,...
-                                  'SliderStep', [1 5]/(s(this.curr_dims(4))-1));
+                                     'visible', 'on',...
+                                     'value', 1,...
+                                     'SliderStep', [1 5]/(s(this.curr_dims(4))-1));
                 set(this.h.sabox, 'visible', 'on');
                 set(this.h.d4_select, 'visible', 'on');
             else 
@@ -375,6 +375,11 @@ classdef PlotPanel < handle
                 val = 1;
             end
             
+            if isnan(val)   
+                set(this.h.zslider, 'value', this.ind{this.curr_dims(3)});
+                set(this.h.zbox, 'string', num2str(this.ind{this.curr_dims(3)}));
+                return
+            end
             set(this.h.zslider, 'value', val);
             set(this.h.zbox, 'string', num2str(val));
             this.ind{this.curr_dims(3)} = val;
@@ -395,7 +400,11 @@ classdef PlotPanel < handle
             elseif val <= 0
                 val = 1;
             end
-            
+            if isnan(val)   
+                set(this.h.saslider, 'value', this.ind{this.curr_dims(4)});
+                set(this.h.sabox, 'string', num2str(this.ind{this.curr_dims(4)}));
+                return
+            end
             set(this.h.saslider, 'value', val);
             set(this.h.sabox, 'string', num2str(val));
             this.ind{this.curr_dims(4)} = val;
