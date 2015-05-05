@@ -43,9 +43,11 @@ classdef TempMode < GenericMode
         end
         
         function right_click_on_axes(this, point)
+            % dummy against errors
         end
         
         function left_click_on_axes(this, point)
+            % dummy against errors
         end
         
         function resize(this, varargin)

@@ -116,4 +116,3 @@ classdef FluoMode < GenericMode
         end
     end
 end
-
