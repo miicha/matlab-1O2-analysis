@@ -33,21 +33,9 @@ classdef TempMode < GenericMode
         end
                 
         function save_fig(this, varargin)
-            [file, path] = uiputfile([this.p.savepath filesep() this.p.genericname...
-                                     '_Temp.pdf']);
-            if ~ischar(file) || ~ischar(path) % no file selected
-                return
-            end
-            this.p.set_savepath(path);
-            f = this.plotpanel.generate_export_fig('off');
-            tmp = get(f, 'position');
-
-            % save the plot and close the figure
-            set(f, 'PaperUnits', 'points');
-            set(f, 'PaperSize', [tmp(3) tmp(4)]*.8);
-            set(f, 'PaperPosition', [0 0 tmp(3) tmp(4)]*.8);
-            print(f, '-dpdf', '-r600', fullfile(path, file));
-            close(f);
+            np = this.plotpanel.save_fig([this.p.savepath filesep() this.p.genericname...
+                                          '_Temp.pdf']);
+            this.p.set_savepath(np);
         end     
         
         function plot_array(this)
