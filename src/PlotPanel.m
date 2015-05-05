@@ -318,6 +318,7 @@ classdef PlotPanel < handle
         end
         
         function newpath = save_fig(this, path)
+            [newpath, ~, ~] = fileparts(path);
             [file, path] = uiputfile(path);
             if ~ischar(file) || ~ischar(path) % no file selected
                 return
