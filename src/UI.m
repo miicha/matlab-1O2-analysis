@@ -227,7 +227,7 @@ classdef UI < handle
             this.readHDF5();
         end
 
-        function readHDF5(this, varargin)            
+        function readHDF5(this, varargin)
             filepath = [this.fileinfo.path this.fileinfo.name{1}];
             k = keys(this.points);
             fid = H5F.open(filepath);
@@ -247,6 +247,7 @@ classdef UI < handle
                         else
                             dset_id = H5D.open(gid,sprintf('%d', j));
                         end
+                        
                         d = H5D.read(dset_id);
                         H5D.close(dset_id);
                         if strcmp(mode, 'sisa')

@@ -27,6 +27,5 @@ classdef GenericMode < handle
             f = this.p.h.f;
         end
     end
-    
 end
 

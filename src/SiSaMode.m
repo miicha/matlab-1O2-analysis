@@ -15,6 +15,7 @@ classdef SiSaMode < GenericMode
         
         overlays = {};  % 1 is always the automatically generated overlay,
                         % additional overlays can be added
+        overlay_num2name = {'', 'Overlay 1'};
         current_ov = 1;
         overlay_data;
         disp_ov = false;
@@ -28,10 +29,6 @@ classdef SiSaMode < GenericMode
         t_offset = 25;   % excitation is over after t_offset channels after 
                          % maximum counts were reached - needs UI element
         t_zero = 1;      % channel in which the maximum of the excitation was reached
-        
-        % slices to be displayed
-        ind = {':', ':', 1, 1};
-        transpose = false;
 
         current_param = 1;
         
@@ -571,8 +568,12 @@ classdef SiSaMode < GenericMode
             end
         end % mean, std, etc.
 
-        function add_ov(this, init)
+        function add_ov(this, init, name)
             new_ov_number = length(this.overlays)+1;
+            if nargin < 3
+                name = ['Overlay ' num2str(new_ov_number)];
+            end
+            this.overlay_num2name{new_ov_number} = name;
             this.overlays{new_ov_number} = init;
             this.generate_overlay();
             this.set_current_ov(new_ov_number);
@@ -583,7 +584,10 @@ classdef SiSaMode < GenericMode
             if position == 1 % cannot delete first overlay
                 return
             end
-     
+            for i = position:length(this.overlay_num2name)-1
+                this.overlay_num2name{i} = this.overlay_num2name{i+1};
+            end
+            this.overlay_num2name{end} = [];
             this.overlays(position) = [];
             this.generate_overlay();
             this.set_current_ov(this.current_ov-1);
@@ -608,12 +612,13 @@ classdef SiSaMode < GenericMode
             end
             
             for i = 2:ov_number
+                name = this.overlay_num2name{i};
                 pos_act_r = pos_act_r-[0 25 0 0];
                 this.h.ov_radiobtns{i} = uicontrol(this.h.ov_buttongroup,...
                                                  'units', 'pixels',...
                                                  'style', 'radiobutton',...
                                                  'Tag', num2str(i),...
-                                                 'string', ['Overlay ' num2str(i)],...
+                                                 'string', name,...
                                                  'position', pos_act_r);
                 this.h.del_overlay{i} = uicontrol(this.h.ov_controls,...
                                                  'units', 'pixels',...
@@ -659,6 +664,10 @@ classdef SiSaMode < GenericMode
             if ~children_only
                 delete(this);
             end
+        end
+        
+        function ind = get_current_slice(this)
+            ind = this.plotpanel.get_slice();
         end
         
     % functions that actually compute something
@@ -1019,7 +1028,7 @@ classdef SiSaMode < GenericMode
             end
             this.generate_sel_vals();
         end
-                
+        
         function save_fig(this, varargin)
             if this.disp_fit_params
                 tmp = 'gefittet';
@@ -1100,7 +1109,15 @@ classdef SiSaMode < GenericMode
         end
         
         function add_ov_cb(this, varargin)
-            this.add_ov(this.overlays{varargin{1}.Callback{2}});
+            if varargin{1} == this.h.ov_add_from_auto
+                name = [this.h.ov_drpd.String{this.h.ov_drpd.Value} ' '...
+                        this.h.ov_rel.String{this.h.ov_rel.Value} ' '...
+                        this.h.ov_val.String];
+                this.add_ov(this.overlays{varargin{1}.Callback{2}}, name);
+            else
+                ov_ind = varargin{1}.Callback{2};
+                this.add_ov(this.overlays{ov_ind}, [this.overlay_num2name{ov_ind} ' *']);
+            end
         end
         
         function del_ov_cb(this, varargin)

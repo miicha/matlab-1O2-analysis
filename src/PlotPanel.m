@@ -5,6 +5,11 @@ classdef PlotPanel < handle
     %  - left_click_on_axes()
     %  - right_click_on_axes()
     %  - get_figure()
+    %
+    % methods
+    %   plot_array(data, overlay_data)
+    %   handle = generate_export_fig(visibility)
+    %   newpath = save_fig(path)
     
     properties
         p;     % parent
@@ -14,6 +19,7 @@ classdef PlotPanel < handle
         curr_dims = [1, 2, 3, 4];
         ind = {':', ':', 1, 1};
         dimnames = {'x', 'y', 'z', 's'};
+        transpose = false;
         
         l_min; % maximum of the current parameter over all data points
         l_max; % minimum of the current parameter over all data points
@@ -186,12 +192,12 @@ classdef PlotPanel < handle
                 this.first_call = false;
             end
             
-            transpose = this.get_transpose(size(data, this.curr_dims(1)),...
-                                           size(data, this.curr_dims(2)),...
-                                           size(plot_data));
+            this.transpose = this.get_transpose(size(data, this.curr_dims(1)),...
+                                                size(data, this.curr_dims(2)),...
+                                                size(plot_data));
             
             % squeeze does strange things: (1x3x1)-array -> (3x1)-array
-            if transpose
+            if this.transpose
                 plot_data = plot_data';
                 if disp_ov
                     ov_data = squeeze(ov_data(this.ind{:}))';
@@ -334,13 +340,13 @@ classdef PlotPanel < handle
             print(f, '-dpdf', '-r600', fullfile(path, file));
             close(f);
         end
-    end
-    
-    methods (Access = private)
+        
         function slice = get_slice(this)
             slice = this.ind;
         end
-        
+    end
+    
+    methods (Access = private)       
         function transp = get_transpose(this, sx, sy, sn)
             sxn = sn(1);
             syn = sn(2);
