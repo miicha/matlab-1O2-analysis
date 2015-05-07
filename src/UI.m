@@ -242,12 +242,11 @@ classdef UI < handle
                     gid = H5G.open(fid,dataset_group);
                     info = H5G.get_info(gid);
                     for j = 1:info.nlinks % iterate over all samples
-                        if ~strcmp(mode, 'sisa')
-                            dset_id = H5D.open(gid,sprintf('%d', j-1));
-                        else
-                            dset_id = H5D.open(gid,sprintf('%d', j));
+                        try
+                            dset_id = H5D.open(gid, sprintf('%d', j-1));
+                        catch
+                            continue
                         end
-                        
                         d = H5D.read(dset_id);
                         H5D.close(dset_id);
                         if strcmp(mode, 'sisa')
