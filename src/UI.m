@@ -123,6 +123,9 @@ classdef UI < handle
                     this.saveini();
                     this.load_global_state([filepath name])
                     return
+                elseif regexp(ext, 'diff$')
+                    this.fileinfo.name = {name};
+                    this.openDIFF();
                 end
                 [~, n] = fileparts(name);
             end
@@ -245,7 +248,7 @@ classdef UI < handle
                         try
                             dset_id = H5D.open(gid, sprintf('%d', j-1));
                         catch
-                            continue
+                            dset_id = H5D.open(gid, sprintf('%d', j));
                         end
                         d = H5D.read(dset_id);
                         H5D.close(dset_id);
