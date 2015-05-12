@@ -244,7 +244,7 @@ classdef UI < handle
                     dataset_group= sprintf('/%s/%s',k{i}, mode);
                     gid = H5G.open(fid,dataset_group);
                     info = H5G.get_info(gid);
-                    for j = 1:info.nlinks % iterate over all samples
+                    for j = 1:info.nlinks-1 % iterate over all samples
                         try
                             dset_id = H5D.open(gid, sprintf('%d', j-1));
                         catch
@@ -256,7 +256,7 @@ classdef UI < handle
                             sisadata(index(1), index(2), index(3), j, :) = d;
                         elseif strcmp(mode, 'spec')
                             fluodata(index(1), index(2), index(3), j, :) = d;
-                        elseif strcmp(mode, 'Temperature')
+                        elseif strcmp(mode, 'Temp')
                             tempdata(index(1), index(2), index(3), j, :) = d;
                         end
                     end
