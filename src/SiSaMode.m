@@ -427,7 +427,13 @@ classdef SiSaMode < GenericMode
             
             this.overlays{1} = ones(tmp(1), tmp(2), tmp(3), tmp(4));
             this.overlays{2} = zeros(tmp(1), tmp(2), tmp(3), tmp(4));
-                                    
+            
+            % find mean of t_0
+            [~, I] = max(this.data, [], 5);
+            this.t_zero = round(mean(mean(mean(mean(I)))));
+            this.t_end = length(this.data(1,1,1,1,:)) - this.t_zero;
+            this.x_data = ((1:length(this.data(1, 1, 1, 1, :)))-this.t_zero)'*this.channel_width;
+            
             % UI stuff
             t = keys(this.models);
             t = this.models(t{get(this.h.drpd, 'value')});
@@ -718,12 +724,6 @@ classdef SiSaMode < GenericMode
         end
 
         function estimate_parameters(this)
-            % find mean of t_0
-            [~, I] = max(this.data, [], 5);
-            this.t_zero = round(mean(mean(mean(mean(I)))));
-            this.t_end = length(this.data(1,1,1,1,:)) - this.t_zero;
-            this.x_data = ((1:length(this.data(1, 1, 1, 1, :)))-this.t_zero)'*this.channel_width;
-            
             n = this.models(this.model);
             this.est_params = zeros(this.p.fileinfo.size(1), this.p.fileinfo.size(2),...
                               this.p.fileinfo.size(3), this.p.fileinfo.size(4), length(n{2}));

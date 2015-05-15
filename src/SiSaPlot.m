@@ -458,7 +458,9 @@ classdef SiSaPlot < handle
         end
         
         function globalize(this, varargin)
-            this.smode.set_model(this.model_str);
+            if ~strcmp(this.model_str, this.smode.model)
+                this.smode.set_model(this.model_str);
+            end
             if this.fitted
                 par = this.fit_params;
             else
