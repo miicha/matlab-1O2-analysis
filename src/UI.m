@@ -246,18 +246,23 @@ classdef UI < handle
                     info = H5G.get_info(gid);
                     for j = 1:info.nlinks-1 % iterate over all samples
                         try
-                            dset_id = H5D.open(gid, sprintf('%d', j-1));
+                            try
+                                dset_id = H5D.open(gid, sprintf('%d', j-1));
+                            catch
+                                dset_id = H5D.open(gid, sprintf('%d', j));
+                            end
+                            d = H5D.read(dset_id);
+                            H5D.close(dset_id);
+
+                            if strcmp(mode, 'sisa')
+                                sisadata(index(1), index(2), index(3), j, :) = d;
+                            elseif strcmp(mode, 'spec')
+                                fluodata(index(1), index(2), index(3), j, :) = d;
+                            elseif strcmp(mode, 'Temp')
+                                tempdata(index(1), index(2), index(3), j, :) = d;
+                            end
                         catch
-                            dset_id = H5D.open(gid, sprintf('%d', j));
-                        end
-                        d = H5D.read(dset_id);
-                        H5D.close(dset_id);
-                        if strcmp(mode, 'sisa')
-                            sisadata(index(1), index(2), index(3), j, :) = d;
-                        elseif strcmp(mode, 'spec')
-                            fluodata(index(1), index(2), index(3), j, :) = d;
-                        elseif strcmp(mode, 'Temp')
-                            tempdata(index(1), index(2), index(3), j, :) = d;
+                            this.update_infos(['    |     Fehler beim Einlesen von ' mode ' ' num2str(index) ' ' num2str(j)]);
                         end
                     end
                     H5G.close(gid);

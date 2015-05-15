@@ -23,12 +23,6 @@ classdef SiSaMode < GenericMode
         
         cancel_f = false;
         hold_f = false;
-        model = '1. A*(exp(-t/t1)-exp(-t/t2))+offset';      % fit model, should be global  
-        
-        channel_width = 20/1000;   % needs UI element
-        t_offset = 25;   % excitation is over after t_offset channels after 
-                         % maximum counts were reached - needs UI element
-        t_zero = 1;      % channel in which the maximum of the excitation was reached
 
         current_param = 1;
         
@@ -36,6 +30,18 @@ classdef SiSaMode < GenericMode
         
         fitted = false;
         cmap = 'summer';
+        
+        sisafit;
+        
+        % deprecated:
+        model = '1. A*(exp(-t/t1)-exp(-t/t2))+offset';      % fit model, should be global  
+        
+        channel_width = 20/1000;   % needs UI element
+        t_offset = 25;   % excitation is over after t_offset channels after 
+                         % maximum counts were reached - needs UI element
+        t_zero = 1;      % channel in which the maximum of the excitation was reached
+
+        t_end;
         
         fix = {};
         gstart = [0 0 0 0];
@@ -421,7 +427,7 @@ classdef SiSaMode < GenericMode
             
             this.overlays{1} = ones(tmp(1), tmp(2), tmp(3), tmp(4));
             this.overlays{2} = zeros(tmp(1), tmp(2), tmp(3), tmp(4));
-                          
+                                    
             % UI stuff
             t = keys(this.models);
             t = this.models(t{get(this.h.drpd, 'value')});
@@ -715,7 +721,7 @@ classdef SiSaMode < GenericMode
             % find mean of t_0
             [~, I] = max(this.data, [], 5);
             this.t_zero = round(mean(mean(mean(mean(I)))));
-            
+            this.t_end = length(this.data(1,1,1,1,:)) - this.t_zero;
             this.x_data = ((1:length(this.data(1, 1, 1, 1, :)))-this.t_zero)'*this.channel_width;
             
             n = this.models(this.model);
@@ -777,7 +783,7 @@ classdef SiSaMode < GenericMode
             end
             
             g_par = find(this.use_gstart);
-            x = this.x_data((this.t_zero + this.t_offset):end);
+            x = this.x_data((this.t_zero + this.t_offset):this.t_end);
             
             lt = 0;
             m = 1;
@@ -788,7 +794,7 @@ classdef SiSaMode < GenericMode
                 if this.overlays{this.current_ov}(i, j, k, l) || ~this.disp_ov
                     innertime = tic();
 
-                    y = squeeze(this.data(i, j, k, l, (this.t_offset+this.t_zero):end));
+                    y = squeeze(this.data(i, j, k, l, this.t_zero+(this.t_offset:this.t_end)));
                     w = sqrt(y);
                     w(w == 0) = 1;
                     if ~isempty(g_par)
@@ -861,7 +867,7 @@ classdef SiSaMode < GenericMode
             ov = reshape(this.overlays{this.current_ov}, numel(this.overlays{this.current_ov}), 1);
             d_ov = this.disp_ov;
             t_length = size(this.data, 5) - (this.t_offset + this.t_zero) + 1;
-            d = reshape(this.data(:, :, :, :, (this.t_offset+this.t_zero):end), n_pixel, 1, t_length);
+            d = reshape(this.data(:, :, :, :, this.t_zero+(this.t_offset:this.t_end)), n_pixel, 1, t_length);
            
             m = this.models(this.model);
             parcount = length(m{2});
@@ -880,7 +886,7 @@ classdef SiSaMode < GenericMode
 
             lt = 0;
             
-            x = this.x_data((this.t_offset+this.t_zero):end);
+            x = this.x_data((this.t_offset+this.t_zero):this.t_end);
             for n = start:this.p.par_size:n_pixel
                 if n == start
                     this.p.update_infos(['   |   Fitte ' num2str(start) '/' num2str(prod(this.p.fileinfo.size)) ' (parallel).'])
