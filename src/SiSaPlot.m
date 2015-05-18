@@ -415,16 +415,19 @@ classdef SiSaPlot < handle
             cpoint = cpoint(1, 1);
             t = this.t_zero + round(cpoint/this.channel_width);
             n = length(this.data);
-            x = ((1:n)-t)'*this.channel_width;
             if t <= 0
                 t = 1;
-                x = ((1:n)-t)'*this.channel_width;
-            elseif t + this.t_offset >= n
-                t = length(this.x_data)-this.t_offset-1;
-                x = ((1:n)-t)'*this.channel_width;
+            elseif t + this.t_offset >= n - 1
+                t = n - this.t_offset - 2;
+            elseif t + this.t_end >= n
+                this.t_end = n - t;
+            end
+            % end line sticks to the end
+            if this.t_end == n - this.t_zero
+                this.t_end = n - t;
             end
             this.t_zero = t;
-            this.x_data = x;
+            this.x_data = ((1:n)-t)'*this.channel_width;
             this.plotdata(true)
         end
         

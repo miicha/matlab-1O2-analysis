@@ -783,7 +783,7 @@ classdef SiSaMode < GenericMode
             end
             
             g_par = find(this.use_gstart);
-            x = this.x_data((this.t_zero + this.t_offset):this.t_end);
+            x = this.x_data(this.t_zero + (this.t_offset:this.t_end));
             
             lt = 0;
             m = 1;
@@ -886,7 +886,7 @@ classdef SiSaMode < GenericMode
 
             lt = 0;
             
-            x = this.x_data((this.t_offset+this.t_zero):this.t_end);
+            x = this.x_data(this.t_zero+(this.t_offset:this.t_end));
             for n = start:this.p.par_size:n_pixel
                 if n == start
                     this.p.update_infos(['   |   Fitte ' num2str(start) '/' num2str(prod(this.p.fileinfo.size)) ' (parallel).'])

@@ -299,6 +299,14 @@ classdef UI < handle
                 for i = 1:length(name)
                     this.fileinfo.size = [length(name), 1, 1];
                     d = dlmread([this.fileinfo.path name{i}]);
+                    if i > 1
+                        if length(d) > size(data, 5)
+                            d = d(1:size(data, 5));
+                            this.update_infos(['    |    Länge der Daten ungleich in ' name{i}]);
+                        elseif length(d) < size(data, 5)
+                            d = [d; zeros(size(data, 5) - length(d),1)];
+                        end
+                    end
                     data(i, 1, 1, 1,:) = d;
                 end
                 this.fileinfo.np = length(name);
