@@ -1,0 +1,3 @@
+[submodule "3rd-party/sisa-fit-tools"]
+	path = 3rd-party/sisa-fit-tools
+	url = git@git.daten.tk:sebastian.pfitzner/sisa-fit-tools.git

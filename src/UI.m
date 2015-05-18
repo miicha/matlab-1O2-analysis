@@ -14,14 +14,9 @@ classdef UI < handle
         scale = [5 5 5];          % distance between the centers of two pixels in mm
         par_size = 16;  % when doing parallel processing: how many "tasks" should be sent to all threads?
         file_opened = 0;
-        dimnames = {'x', 'y', 'z', 's'};
         data_read = false;
         points;
 
-        % slices to be displayed
-        curr_dims = [1, 2, 3, 4];
-        ind = {':', ':', 1, 1};
-        transpose = false;
         
         genericname;
         openpath; % persistent, in ini
@@ -49,7 +44,7 @@ classdef UI < handle
                         'position', [200 200 1010 700],...
                         'numbertitle', 'off',...
                         'menubar', 'none',...
-                        'name', 'SISA Scan',...
+                        'name', 'Scan',...
                         'resize', 'on',...
                         'Color', [.95, .95, .95],...
                         'ResizeFcn', @this.resize,...
@@ -128,6 +123,9 @@ classdef UI < handle
                     this.saveini();
                     this.load_global_state([filepath name])
                     return
+                elseif regexp(ext, 'diff$')
+                    this.fileinfo.name = {name};
+                    this.openDIFF();
                 end
                 [~, n] = fileparts(name);
             end
@@ -232,7 +230,7 @@ classdef UI < handle
             this.readHDF5();
         end
 
-        function readHDF5(this, varargin)            
+        function readHDF5(this, varargin)
             filepath = [this.fileinfo.path this.fileinfo.name{1}];
             k = keys(this.points);
             fid = H5F.open(filepath);
@@ -246,20 +244,25 @@ classdef UI < handle
                     dataset_group= sprintf('/%s/%s',k{i}, mode);
                     gid = H5G.open(fid,dataset_group);
                     info = H5G.get_info(gid);
-                    for j = 1:info.nlinks % iterate over all samples
-                        if ~strcmp(mode, 'sisa')
-                            dset_id = H5D.open(gid,sprintf('%d', j-1));
-                        else
-                            dset_id = H5D.open(gid,sprintf('%d', j));
-                        end
-                        d = H5D.read(dset_id);
-                        H5D.close(dset_id);
-                        if strcmp(mode, 'sisa')
-                            sisadata(index(1), index(2), index(3), j, :) = d;
-                        elseif strcmp(mode, 'spec')
-                            fluodata(index(1), index(2), index(3), j, :) = d;
-                        elseif strcmp(mode, 'Temperature')
-                            tempdata(index(1), index(2), index(3), j, :) = d;
+                    for j = 1:info.nlinks-1 % iterate over all samples
+                        try
+                            try
+                                dset_id = H5D.open(gid, sprintf('%d', j-1));
+                            catch
+                                dset_id = H5D.open(gid, sprintf('%d', j));
+                            end
+                            d = H5D.read(dset_id);
+                            H5D.close(dset_id);
+
+                            if strcmp(mode, 'sisa')
+                                sisadata(index(1), index(2), index(3), j, :) = d;
+                            elseif strcmp(mode, 'spec')
+                                fluodata(index(1), index(2), index(3), j, :) = d;
+                            elseif strcmp(mode, 'Temp')
+                                tempdata(index(1), index(2), index(3), j, :) = d;
+                            end
+                        catch
+                            this.update_infos(['    |     Fehler beim Einlesen von ' mode ' ' num2str(index) ' ' num2str(j)]);
                         end
                     end
                     H5G.close(gid);
@@ -296,6 +299,14 @@ classdef UI < handle
                 for i = 1:length(name)
                     this.fileinfo.size = [length(name), 1, 1];
                     d = dlmread([this.fileinfo.path name{i}]);
+                    if i > 1
+                        if length(d) > size(data, 5)
+                            d = d(1:size(data, 5));
+                            this.update_infos(['    |    Länge der Daten ungleich in ' name{i}]);
+                        elseif length(d) < size(data, 5)
+                            d = [d; zeros(size(data, 5) - length(d),1)];
+                        end
+                    end
                     data(i, 1, 1, 1,:) = d;
                 end
                 this.fileinfo.np = length(name);
@@ -462,6 +473,10 @@ classdef UI < handle
                 bP(3) = mP(3);
                 set(this.h.info, 'Position', bP);
             end
+            
+            for i = 1:length(this.modes)
+                this.modes{i}.resize();
+            end
         end
         
         %% Callbacks
@@ -489,7 +504,9 @@ classdef UI < handle
         
         % punt to current mode to handle everything
         function save_fig_cb(this, varargin)
-            this.modes{this.current_mode}.save_fig();
+            if ~isempty(this.modes)
+                this.modes{this.current_mode}.save_fig();
+            end
         end
         
         function mode_change_cb(this, varargin)

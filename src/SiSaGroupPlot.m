@@ -2,13 +2,14 @@ classdef SiSaGroupPlot < handle
     %SiSaGroupPlot
     
     properties
-        smode
+        p
         x_pos
         y_pos
         x_data
         y_data
         x_size
         y_size
+        ind
         data
         params
         model_fun
@@ -16,25 +17,22 @@ classdef SiSaGroupPlot < handle
     end
     
     methods
-        function this = SiSaGroupPlot(smode)
-            this.smode = smode;
-            [this.x_pos, this.y_pos] = find(smode.overlay_data); % size of the selection
-            if smode.curr_dims(1) < smode.curr_dims(2)
-                this.x_data = this.x_pos;
-                this.y_data = this.y_pos;
-            else
-                this.y_data = this.x_pos;
-                this.x_data = this.y_pos;
-            end
+        function this = SiSaGroupPlot(p)
+            this.p = p;
+            [this.x_pos, this.y_pos] = find(p.overlays{p.current_ov}); % size of the selection
+            this.x_data = this.x_pos;
+            this.y_data = this.y_pos;
+
             
             this.x_pos = this.x_pos - min(this.x_pos) + 1;
             this.y_pos = this.y_pos - min(this.y_pos) + 1;
             this.x_size = max(this.x_pos) - min(this.x_pos) + 1;
             this.y_size = max(this.y_pos) - min(this.y_pos) + 1;
             
-            this.data = squeeze(smode.data(smode.ind{:}, :));
-            this.params = squeeze(smode.fit_params(smode.ind{:}, :));
-            tmp = this.smode.models(this.smode.model);
+            this.ind = p.get_current_slice();
+            this.data = squeeze(p.data(this.ind{:}, :));
+            this.params = squeeze(p.fit_params(this.ind{:}, :));
+            tmp = this.p.models(this.p.model);
             this.model_fun =  tmp{1};
             
             
@@ -80,37 +78,38 @@ classdef SiSaGroupPlot < handle
             indy = this.y_data;
 %             size(this.data)
             pltdata = this.data(indx, indy, :);
- 
-            maxy = max(max(max(pltdata(:, :, (this.smode.t_zero+this.smode.t_offset):end))))*1.2;
+
+            maxy = max(max(max(pltdata(:, :, (this.p.t_zero+this.p.t_offset):end))))*1.2;
             for i = 1:length(indx)
                 if ndims(this.params)==3
                     p = num2cell(squeeze(this.params(indx(i), indy(i), :)));
                 else
                     p = num2cell(squeeze(this.params(indx(i), :)));
                 end
-                fitdata = this.model_fun(p{:}, this.smode.x_data(this.smode.t_zero:end));
+                fitdata = this.model_fun(p{:}, this.p.x_data(this.p.t_zero:end));
                 
                 this.h.s{i} = subplot(this.y_size, this.x_size,sub2ind([this.x_size, this.y_size],...
                         this.x_pos(i), 1+this.y_size-this.y_pos(i)));
-                plot(this.smode.x_data(this.smode.t_zero:end), squeeze(this.data(indx(i),...
-                           indy(i), this.smode.t_zero:end)),'.');
+                plot(this.p.x_data(this.p.t_zero:end), squeeze(this.data(indx(i),...
+                           indy(i), this.p.t_zero:end)),'.');
                        
-                set(this.h.s{i}, 'xtick', [], 'ytick', [], 'ButtonDownFcn', @this.click_cb, 'Tag', num2str(i));
+                set(this.h.s{i}, 'xtick', [], 'ytick', [], 'ButtonDownFcn', @this.click_cb,...
+                                 'Tag', [num2str(indx(i)) '/' num2str(indy(i))]);
                 
                 hold on
-                plot(this.smode.x_data(this.smode.t_zero:end), fitdata, 'r-');
+                plot(this.p.x_data(this.p.t_zero:end), fitdata, 'r-');
                 hold off
-                xlim([0 max(this.smode.x_data)])
+                xlim([0 max(this.p.x_data)])
                 ylim([0 maxy])
             end
         end
         
         function save_fig_cb(this, varargin)
-            [name, path] = uiputfile('*.pdf', 'Plot als PDF speichern', fullfile(this.smode.savepath, this.smode.genericname));
+            [name, path] = uiputfile('*.pdf', 'Plot als PDF speichern', fullfile(this.p.p.savepath, this.p.p.genericname));
             if name == 0
                 return
             end
-            this.smode.set_savepath(path);
+            this.p.p.set_savepath(path);
             path = fullfile(path, name);
             set(this.h.f, 'toolbar', 'none');
             tmp = get(this.h.f, 'position');
@@ -125,24 +124,18 @@ classdef SiSaGroupPlot < handle
         end
         
         function click_cb(this, varargin)
-            t = str2double(varargin{1}.Tag);
-            this.x_data(t);
+            indxy = str2double(strsplit(varargin{1}.Tag, '/'));
+            slice = this.ind;
             
-            index{this.smode.curr_dims(1)} = this.x_data(t); % x ->
-            index{this.smode.curr_dims(2)} = this.y_data(t); % y ^
-            index{this.smode.curr_dims(3)} = this.smode.ind{this.smode.curr_dims(3)};
-            index{this.smode.curr_dims(4)} = this.smode.ind{this.smode.curr_dims(4)};
-
-            for i = 1:4
-                if index{i} > this.smode.p.fileinfo.size(i)
-                    index{i} = this.smode.p.fileinfo.size(i);
-                elseif index{i} <= 0
-                     index{i} = 1;
+            a = false(length(slice), 1);
+            for i = 1:length(slice)
+                if ischar(slice{i})
+                    a(i) = true;
                 end
             end
-            
-            i = length(this.smode.plt);
-            this.smode.plt{i+1} = SiSaPlot([index{:}], this.smode);
+
+            slice(logical(a)) = num2cell(indxy);
+            this.p.left_click_on_axes(slice);
         end % mouseclick on plot
     end
 end

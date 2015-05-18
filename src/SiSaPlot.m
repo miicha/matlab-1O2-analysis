@@ -18,6 +18,7 @@ classdef SiSaPlot < handle
         model_str;
         t_offset;
         t_zero;
+        t_end;
         channel_width;
         fit_info = true; % should probably be false?
         
@@ -43,6 +44,7 @@ classdef SiSaPlot < handle
             this.n_param = length(tmp{2});
             this.t_offset = smode.t_offset;
             this.t_zero = smode.t_zero;
+            this.t_end = smode.t_end;
 
             this.channel_width = smode.channel_width;
             
@@ -218,19 +220,28 @@ classdef SiSaPlot < handle
             m = max(datal((this.t_offset+this.t_zero):end));
             m = m*1.1;
             
+            if this.t_end == 0
+                this.t_end = length(this.x_data) - this.t_zero - 1;
+            end
+            
             axes(this.h.axes);
             cla
             hold on
             plot(this.x_data(1:(this.t_offset+this.t_zero)), datal(1:(this.t_offset+this.t_zero)),...
                                                                    '.-', 'Color', [.8 .8 1]);
-            plot(this.x_data((this.t_offset+this.t_zero):end), datal((this.t_offset+this.t_zero):end),...
+            plot(this.x_data(this.t_zero+(this.t_offset:this.t_end)), datal(this.t_zero+(this.t_offset:this.t_end)),...
                                    'Marker', '.', 'Color', [.8 .8 1], 'MarkerEdgeColor', 'blue');
+            plot(this.x_data(this.t_zero+this.t_end:end), datal(this.t_zero+this.t_end:end),...
+                                   '.-', 'Color', [.8 .8 1]);
             
             this.h.zeroline = line([0 0], [0 realmax], 'Color', [.7 0 .5],... 
                       'ButtonDownFcn', @this.plot_click, 'LineWidth', 1.2, 'LineStyle', '--',...
                       'Tag', 'line');
             this.h.offsetline = line([this.t_offset this.t_offset]*this.channel_width,...
                 [0 realmax], 'Color', [0 .6 .5], 'ButtonDownFcn', @this.plot_click, 'LineWidth', 1.2,...
+                'LineStyle', '-.', 'Tag', 'line');
+            this.h.endline = line([this.t_end this.t_end]*this.channel_width,...
+                [0 realmax], 'Color', [0 .8 .8], 'ButtonDownFcn', @this.plot_click, 'LineWidth', 1.2,...
                 'LineStyle', '-.', 'Tag', 'line');
             hold off
             xlim([min(this.x_data)-1 max(this.x_data)+1]);
@@ -253,14 +264,21 @@ classdef SiSaPlot < handle
             hold off
             
             axes(this.h.res);
-            residues = (this.data((this.t_offset+this.t_zero):end)-...
-                 fitdata((this.t_offset+this.t_zero):end))./sqrt(1+this.data((this.t_offset+this.t_zero):end));
-            plot(this.x_data((this.t_offset+this.t_zero):end), residues, 'b.');
+            
+            residues = (this.data(this.t_zero+(this.t_offset:this.t_end))-...
+                 fitdata(this.t_zero+(this.t_offset:this.t_end)))./...
+                 sqrt(1+this.data(this.t_zero+(this.t_offset:this.t_end)));
+            plot(this.x_data(this.t_zero+(this.t_offset:this.t_end)), residues, 'b.');
+            
             hold on
             plot(this.x_data(1:(this.t_offset+this.t_zero)),...
                  (this.data(1:(this.t_offset+this.t_zero))-...
                  fitdata(1:(this.t_offset+this.t_zero)))./...
                  sqrt(1+this.data(1:(this.t_offset+this.t_zero))), '.', 'Color', [.8 .8 1]);
+            plot(this.x_data((this.t_zero+this.t_end):end),...
+                 (this.data((this.t_zero+this.t_end):end)-...
+                 fitdata((this.t_zero+this.t_end):end))./...
+                 sqrt(1+this.data((this.t_zero+this.t_end):end)), '.', 'Color', [.8 .8 1]);
             line([min(this.x_data)-1 max(this.x_data)+1], [0 0], 'Color', 'r', 'LineWidth', 1.5);
             xlim([min(this.x_data)-1 max(this.x_data)+1]);
             m = max([abs(max(residues)) abs(min(residues))]);
@@ -284,8 +302,8 @@ classdef SiSaPlot < handle
         end
         
         function fit(this, varargin)
-            x = this.x_data((this.t_zero+this.t_offset):end);
-            y = this.data((this.t_zero+this.t_offset):end);
+            x = this.x_data(this.t_zero+(this.t_offset:this.t_end));
+            y = this.data(this.t_zero+(this.t_offset:this.t_end));
             w = sqrt(y);
             w(w == 0) = 1;
 
@@ -387,6 +405,8 @@ classdef SiSaPlot < handle
                     set(this.h.f, 'WindowButtonMotionFcn', @this.plot_drag_zero);
                 case this.h.offsetline
                     set(this.h.f, 'WindowButtonMotionFcn', @this.plot_drag_offs);
+                case this.h.endline
+                    set(this.h.f, 'WindowButtonMotionFcn', @this.plot_drag_end);
             end
         end
         
@@ -395,16 +415,19 @@ classdef SiSaPlot < handle
             cpoint = cpoint(1, 1);
             t = this.t_zero + round(cpoint/this.channel_width);
             n = length(this.data);
-            x = ((1:n)-t)'*this.channel_width;
             if t <= 0
                 t = 1;
-                x = ((1:n)-t)'*this.channel_width;
-            elseif t + this.t_offset >= n
-                t = length(this.x_data)-this.t_offset-1;
-                x = ((1:n)-t)'*this.channel_width;
+            elseif t + this.t_offset >= n - 1
+                t = n - this.t_offset - 2;
+            elseif t + this.t_end >= n
+                this.t_end = n - t;
+            end
+            % end line sticks to the end
+            if this.t_end == n - this.t_zero
+                this.t_end = n - t;
             end
             this.t_zero = t;
-            this.x_data = x;
+            this.x_data = ((1:n)-t)'*this.channel_width;
             this.plotdata(true)
         end
         
@@ -420,22 +443,37 @@ classdef SiSaPlot < handle
             this.plotdata(true)
         end
         
+        function plot_drag_end(this, varargin)
+            cpoint = get(this.h.axes, 'CurrentPoint');
+            cpoint = cpoint(1, 1);
+            if cpoint > this.x_data(end)
+                cpoint = this.x_data(end);
+            elseif cpoint < (this.t_offset)*this.channel_width
+                cpoint = (this.t_offset + 1)*this.channel_width;
+            end
+            this.t_end = round(cpoint/this.channel_width);
+            this.plotdata(true)
+        end
+        
         function stop_dragging(this, varargin)
             set(this.h.f, 'WindowButtonMotionFcn', '');
 %             this.plotdata();
         end
         
         function globalize(this, varargin)
-            this.smode.t_offset = this.t_offset;
-            this.smode.t_zero = this.t_zero;
-            this.smode.x_data = this.x_data;
-            this.smode.set_model(this.model_str);
+            if ~strcmp(this.model_str, this.smode.model)
+                this.smode.set_model(this.model_str);
+            end
             if this.fitted
                 par = this.fit_params;
             else
                 par = this.est_params;
             end
             this.smode.set_gstart(par);
+            this.smode.t_offset = this.t_offset;
+            this.smode.t_zero = this.t_zero;
+            this.smode.x_data = this.x_data;
+            this.smode.t_end = this.t_end;
         end
         
         function save_fig_selloc_cb(this, varargin)
