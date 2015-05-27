@@ -141,6 +141,15 @@ classdef UI < handle
         
         function openHDF5(this)
             filepath = fullfile(this.fileinfo.path, this.fileinfo.name{1});
+            
+            FileInfo = h5info(filepath);
+            % File-Version und Typ auslesen (geht nur bei neuen Dateien)
+            try
+                FileVersion = FileInfo.Attributes.Value.Nummer{1};
+                FileType = FileInfo.Attributes.Value.Typ;
+            catch
+            end
+            
             % get dimensions of scan, determine if scan finished
             try
                 x_step = h5readatt(filepath, '/PATH/DATA','X Step Size mm');
@@ -235,6 +244,7 @@ classdef UI < handle
             k = keys(this.points);
             fid = H5F.open(filepath);
 
+            
             for i = 1:this.fileinfo.np
                 index = this.points(k{i});
                 % every point should have exactly as many samples
@@ -244,16 +254,20 @@ classdef UI < handle
                     dataset_group= sprintf('/%s/%s',k{i}, mode);
                     gid = H5G.open(fid,dataset_group);
                     info = H5G.get_info(gid);
-                    for j = 1:info.nlinks-1 % iterate over all samples
+                    n = info.nlinks;
+                    if info.nlinks > 1
+                        n = n-1;
+                    end
+                    for j = 1:n % iterate over all samples
                         try
                             try
-                                dset_id = H5D.open(gid, sprintf('%d', j-1));
+                                dset_id = H5D.open(gid, sprintf('%d', j-1))
                             catch
-                                dset_id = H5D.open(gid, sprintf('%d', j));
+                                dset_id = H5D.open(gid, sprintf('%d', j))
                             end
                             d = H5D.read(dset_id);
                             H5D.close(dset_id);
-
+                            mode
                             if strcmp(mode, 'sisa')
                                 sisadata(index(1), index(2), index(3), j, :) = d;
                             elseif strcmp(mode, 'spec')
