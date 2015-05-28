@@ -729,7 +729,7 @@ classdef SiSaMode < GenericMode
                               this.p.fileinfo.size(3), this.p.fileinfo.size(4), length(n{2}));
             ub = zeros(length(n{3}), 1);
             lb = ones(length(n{2}), 1)*100;
-            prod(this.p.fileinfo.size)
+            
             for n = 1:prod(this.p.fileinfo.size)
                 [i,j,k,l] = ind2sub(this.p.fileinfo.size, n);
            
@@ -760,7 +760,6 @@ classdef SiSaMode < GenericMode
             this.gstart = (ub+lb)./2;
             
             this.generate_bounds();
-            size(this.est_params)
             this.p.update_infos();
             set(this.h.ov_val, 'string', mean(mean(mean(mean(squeeze(this.est_params(:, :, :, :, 1)))))));
         end
