@@ -729,23 +729,23 @@ classdef SiSaMode < GenericMode
                               this.p.fileinfo.size(3), this.p.fileinfo.size(4), length(n{2}));
             ub = zeros(length(n{3}), 1);
             lb = ones(length(n{2}), 1)*100;
-            po = values(this.p.points);
-            for i = 1:this.p.fileinfo.np
-                for j = 1:this.p.fileinfo.size(4)
-                    d = this.data(po{i}(1), po{i}(2), po{i}(3), j, :);
-                    
-                    ps = SiSaMode.estimate_parameters_p(squeeze(d), this.model, this.t_zero, this.t_offset, this.channel_width);
-                    this.est_params(po{i}(1), po{i}(2), po{i}(3), j, :) = ps;
-                    if mod(i, round(this.p.fileinfo.np/20)) == 0
-                        this.p.update_infos(['   |   Parameter abschätzen ' num2str(i) '/' num2str(this.p.fileinfo.np) '.']);
+            prod(this.p.fileinfo.size)
+            for n = 1:prod(this.p.fileinfo.size)
+                [i,j,k,l] = ind2sub(this.p.fileinfo.size, n);
+           
+                d = this.data(i, j, k, l, :);
+
+                ps = SiSaMode.estimate_parameters_p(squeeze(d), this.model, this.t_zero, this.t_offset, this.channel_width);
+                this.est_params(i, j, k, l, :) = ps;
+                if mod(i, round(this.p.fileinfo.np/20)) == 0
+                    this.p.update_infos(['   |   Parameter abschätzen ' num2str(i) '/' num2str(this.p.fileinfo.np) '.']);
+                end
+                for m = 1:length(ps) % find biggest and smallest params
+                    if ps(m) > ub(m)
+                        ub(m) = ps(m);
                     end
-                    for k = 1:length(ps) % find biggest and smallest params
-                        if ps(k) > ub(k)
-                            ub(k) = ps(k);
-                        end
-                        if ps(k) < lb(k) && ps(k) ~= 0
-                            lb(k) = ps(k);
-                        end
+                    if ps(m) < lb(m) && ps(m) ~= 0
+                        lb(m) = ps(m);
                     end
                 end
             end
@@ -760,7 +760,7 @@ classdef SiSaMode < GenericMode
             this.gstart = (ub+lb)./2;
             
             this.generate_bounds();
-            
+            size(this.est_params)
             this.p.update_infos();
             set(this.h.ov_val, 'string', mean(mean(mean(mean(squeeze(this.est_params(:, :, :, :, 1)))))));
         end

@@ -3,11 +3,10 @@ classdef UI < handle
     properties (Access = private)
         modes; % started modes
         current_mode = 1;
-        modes_in_file; % modes contained in file
         online_ver = 'http://www.daten.tk/webhook/tags.php?owner=sebastian.pfitzner&project=sisa-scan-auswertung';
     end
     
-    properties        
+    properties
         version = '0.4.0';
         fileinfo = struct('path', '', 'size', [0 0 0 0],...
                           'name', '', 'np', 0); 
@@ -15,8 +14,6 @@ classdef UI < handle
         par_size = 16;  % when doing parallel processing: how many "tasks" should be sent to all threads?
         file_opened = 0;
         data_read = false;
-        points;
-
         
         genericname;
         openpath; % persistent, in ini
@@ -145,165 +142,51 @@ classdef UI < handle
             FileInfo = h5info(filepath);
             % File-Version und Typ auslesen (geht nur bei neuen Dateien)
             try
-                FileVersion = FileInfo.Attributes.Value.Nummer{1};
-                FileType = FileInfo.Attributes.Value.Typ;
+                FileType = FileInfo.Attributes.Value.Typ{1};
             catch
+                FileType = 'scanning';
             end
             
-            % get dimensions of scan, determine if scan finished
-            try
-                x_step = h5readatt(filepath, '/PATH/DATA','X Step Size mm');
-                y_step = h5readatt(filepath, '/PATH/DATA','Y Step Size mm');
-                z_step = h5readatt(filepath, '/PATH/DATA','Z Step Size mm');
-                this.scale = [x_step y_step z_step];
-            catch
-                % nothing. just an old file.
-            end
-            try
-                dims = h5readatt(filepath, '/PATH/DATA', 'GRID DIMENSIONS');
-                if strcmp(dims{:}, '')
-                    dims = {'0/0/0'};
-                end
-                dims = strsplit(dims{:}, '/');
-
-                        % offset of 1 should be fixed in labview scan software
-                offset = 1;
-                if str2double(dims{3}) < 0
-                    offset = abs(str2double(dims{3}))+1;
-                end
-                this.fileinfo.size = [str2double(dims{1})+1 str2double(dims{2})+1 str2double(dims{3})+offset];
-                        % end of fix
-
-                % get attributes from file
-                fin = h5readatt(filepath, '/PATH/DATA', 'LAST POINT');
-
-                % get scanned points
-                tmp = h5read(filepath, '/PATH/DATA');
-                tmp = tmp.Name;
-                
-                if  strcmp(fin{:}, 'CHECKPOINT')
-                    this.fileinfo.finished = true;
-                    num_of_points = length(tmp) - 1;
-                else
-                    this.fileinfo.finished = false;
-                    num_of_points = length(tmp);
-                end
-            catch exception
-                % really ugly... and doesn't work.
-                display(exception);
-                offset=1;
-                [tmp,dims]=estimate_path(filepath);
-                this.fileinfo.finished = true;
-                this.fileinfo.size = [dims{1} dims{2} dims{3}];
-                fin=tmp{end};
-                if strcmp(fin, 'CHECKPOINT')
-                    tmp = tmp(1:end-1);
-                    fin = tmp{end};
-                end
-                num_of_points = length(tmp);
-            end
-            
-            % get max number of samples per point (should be at /0/0/0/sisa)
-            info = h5info(filepath, '/0/0/0/sisa');
-            this.fileinfo.size(4) = length(info.Datasets);
-            
-            % create map between string and position in data
-                % now reasonably fast(about 10 times faster then before), 
-                % approx factor 2 possible with:
-                % vec = cellfun(@(x) textscan(x,'%d/%d/%d', 'CollectOutput', 1),tmp);
-                % but vec is the complete matrix and I don't know how to 
-                % put this matrix into this.points()
-            this.points = containers.Map;
-            for i = 1:num_of_points
-                vec = cell2mat(textscan(tmp{i},'%n/%n/%n')) + [1 1 offset];
-                this.points(tmp{i}) = vec;
-                if mod(i, 15) == 0
-                    this.update_infos(['   |   Metadaten einlesen ' num2str(i) '.']);
-                end
-                if strcmp(tmp{i}, fin)
-                    break
-                end
-            end
-
-            % get number of scanned points
-            this.fileinfo.np = this.points.Count;
-            
-            % UI stuff
-            set(this.h.f, 'name', ['SISA Scan - ' this.fileinfo.name{1}]);
-            
-            info = h5info(filepath, '/0/0/0');
-            info = {info.Groups.Name};
-            for i = 1:length(info)
-                this.modes_in_file{i} = regexprep(info{i}, '/0/0/0/', '');
-            end
-            this.readHDF5();
-        end
-
-        function readHDF5(this, varargin)
-            filepath = [this.fileinfo.path this.fileinfo.name{1}];
-            k = keys(this.points);
-            fid = H5F.open(filepath);
-
-            
-            for i = 1:this.fileinfo.np
-                index = this.points(k{i});
-                % every point should have exactly as many samples
-                % as the first point, except for the last one
-                for m = 1:length(this.modes_in_file)
-                    mode = this.modes_in_file{m};
-                    dataset_group= sprintf('/%s/%s',k{i}, mode);
-                    gid = H5G.open(fid,dataset_group);
-                    info = H5G.get_info(gid);
-                    n = info.nlinks;
-                    if info.nlinks > 1
-                        n = n-1;
+            switch FileType
+                case 'scanning'
+                    reader = scanning_reader(filepath);
+                    fn = fieldnames(reader.meta.fileinfo);
+                    for i = 1:length(fn)
+                        this.fileinfo.(fn{i}) = reader.meta.fileinfo.(fn{i});
                     end
-                    for j = 1:n % iterate over all samples
-                        try
-                            try
-                                dset_id = H5D.open(gid, sprintf('%d', j-1))
-                            catch
-                                dset_id = H5D.open(gid, sprintf('%d', j))
-                            end
-                            d = H5D.read(dset_id);
-                            H5D.close(dset_id);
-                            mode
-                            if strcmp(mode, 'sisa')
-                                sisadata(index(1), index(2), index(3), j, :) = d;
-                            elseif strcmp(mode, 'spec')
-                                fluodata(index(1), index(2), index(3), j, :) = d;
-                            elseif strcmp(mode, 'Temp')
-                                tempdata(index(1), index(2), index(3), j, :) = d;
-                            end
-                        catch
-                            this.update_infos(['    |     Fehler beim Einlesen von ' mode ' ' num2str(index) ' ' num2str(j)]);
-                        end
+                    
+                    if isfield(reader.data, 'sisa')
+                        % open a SiSa tab
+                        this.modes{1} = SiSaMode(this, double(reader.data.sisa));
                     end
-                    H5G.close(gid);
-                end
-                if mod(i, 15) == 0
-                    this.update_infos(['   |   Daten einlesen ' num2str(i) '/' num2str(this.fileinfo.np) '.']);
-                end
+                    if isfield(reader.data, 'fluo')
+                        % open a fluorescence tab
+                        this.modes{2} = FluoMode(this, double(reader.data.fluo));
+                    end
+                    if isfield(reader.data, 'temp')
+                        % open a temperature tab
+                        this.modes{3} = TempMode(this, double(reader.data.temp));
+                    end
+                    
+                case 'in-vivo'
+                    reader = invivo_reader(filepath);
+                    tmp = size(reader.data.sisa.data);
+                    this.fileinfo.size = tmp(1:4);
+                    
+                    if isfield(reader.data, 'sisa')
+                        % open a SiSa tab
+                        this.modes{1} = SiSaMode(this, double(reader.data.sisa.data));
+                    end
+                    if isfield(reader.data, 'fluo')
+                        % open a fluorescence tab
+                        this.modes{2} = FluoMode(this, double(reader.data.fluo.data));
+                    end
+                    if isfield(reader.data, 'temp')
+                        % open a temperature tab
+                        this.modes{3} = TempMode(this, double(reader.data.temp));
+                    end
             end
-            H5F.close(fid);
-            
-            %% update filesize
-            tmp = size(sisadata);
-            this.fileinfo.size = tmp(1:4);
-            
-            if find(ismember(this.modes_in_file, 'sisa'))
-                % open a SiSa tab
-                this.modes{1} = SiSaMode(this, double(sisadata));
-            end
-            if find(ismember(this.modes_in_file, 'spec'))
-                % open a fluorescence tab
-                this.modes{2} = FluoMode(this, double(fluodata));
-            end
-            if find(ismember(this.modes_in_file, 'Temperature'))
-                % open a temperature tab
-                this.modes{3} = TempMode(this, double(tempdata));
-            end
-            
+
             this.data_read = true;
         end
         
@@ -330,10 +213,7 @@ classdef UI < handle
             tmp = size(data);
             this.fileinfo.size = tmp(1:4);
             
-            this.points = containers.Map;
             for i = 1:length(name)
-                vec = [i 1 1];
-                this.points(num2str(vec)) = vec;
                 if mod(i, round(length(name)/10)) == 0
                     this.update_infos(['   |   Metadaten einlesen ' num2str(i) '.']);
                 end
