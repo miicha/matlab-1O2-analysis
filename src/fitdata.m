@@ -27,6 +27,14 @@ function [params, p_err, chisq] = fitdata(model, x, y, err, start_in, fix)
         func = model{1};
     end    
     
+    params = nan(length(start_in),1);
+    p_err = nan(length(start_in),1);
+    chisq = NaN;
+    
+    if sum(y) == 0
+        return
+    end
+    
     ft = fittype(func, 'independent', 't');
     fo = fitoptions('Method', 'NonlinearLeastSquares', 'lower', lbound,...
                     'upper', ubound, 'weights', 1./err,... % <- 1./err is important!
@@ -34,9 +42,7 @@ function [params, p_err, chisq] = fitdata(model, x, y, err, start_in, fix)
 
     [fitobject, gof] = fit(double(x), y, ft, fo);
     
-    params = nan(length(start_in),1);
     params(fix_ind) = start_in(fix_ind);
-    p_err = nan(length(start_in),1);
     p_err(fix_ind) = 0;
 
     chisq = sum(((feval(fitobject, x) - y)./err).^2)/(length(x)-length(start)-1);

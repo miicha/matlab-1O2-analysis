@@ -71,10 +71,11 @@ classdef invivo_reader < HDF5_reader
                         case '/fluo'
                             % iterate over all samples and read them
                             for k = 1:N
-                                sa_id = H5G.open(f_id, [locs{i} modi{j}]);
+                                sa_name = H5L.get_name_by_idx(f_id, [locs{i} modi{j}], idx_type, order, k-1, lapl_id);
+                                sa_id = H5G.open(f_id, [locs{i} modi{j} '/' sa_name]);
                                 sa_info = H5G.get_info(sa_id);
                                 M = sa_info.nlinks; % number of files in group
-                                sa_name = H5L.get_name_by_idx(f_id, [locs{i} modi{j}], idx_type, order, k-1, lapl_id);
+                                
                                 for l = 1:M
                                     obj_id = H5O.open_by_idx(f_id, [locs{i} modi{j} '/' sa_name], idx_type, order, l-1, 'H5P_DEFAULT');
                                     name = H5I.get_name(obj_id);
@@ -101,9 +102,9 @@ classdef invivo_reader < HDF5_reader
             this.meta.sample.Injektionszeit = tmp{1};
 
             % get the real locations of the measurements, not the HDF-path to them
-            tmp = regexp(locs, '/\w+$', 'match');
+            tmp = regexp(locs, '/[\w\s]+$', 'match');
             locations = cell(length(tmp), 1);
-            for i = 1:length(tmp)
+            for i = 1:length(locations)
                 locations{i} = tmp{i}{1}(2:end);
             end
             this.meta.locations = locations;
