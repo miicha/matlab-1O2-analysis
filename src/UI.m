@@ -7,7 +7,7 @@ classdef UI < handle
     end
     
     properties
-        version = '0.4.0';
+        version = '0.4.1';
         fileinfo = struct('path', '', 'size', [0 0 0 0],...
                           'name', '', 'np', 0); 
         scale = [5 5 5];          % distance between the centers of two pixels in mm
@@ -25,9 +25,6 @@ classdef UI < handle
     methods
     % create new instance with basic controls
         function this = UI(path, name, pos)
-            %% add 3rd-party to PATH
-            addpath(genpath('../3rd-party'));
-
             %% initialize all UI objects:
             this.h.f = figure();
             
@@ -103,6 +100,9 @@ classdef UI < handle
         
     % functions for opening and reading various files:
         function open_file(this, path, name)
+            %% add 3rd-party to PATH
+            addpath(genpath('../3rd-party'));
+
             this.loadini();
             this.fileinfo.path = path;
             this.openpath = path;
@@ -133,10 +133,10 @@ classdef UI < handle
 
             this.genericname = n;
             
-%             tmp = size(this.data);
-%             this.fileinfo.size = tmp(1:4);
-
             this.saveini();
+            
+            %% delete 3rd-party from PATH
+            rmpath(genpath('../3rd-party'));
         end
         
         function openHDF5(this)
@@ -178,7 +178,8 @@ classdef UI < handle
                     
                     if isfield(reader.data, 'sisa')
                         % open a SiSa tab
-                        this.modes{1} = InvivoMode(this, double(reader.data.sisa.data), reader);
+                        this.modes{1} = InvivoMode(this, double(reader.data.sisa.data),...
+                                                         double(reader.data.sisa.verlauf), reader);
                     end
                     if isfield(reader.data, 'fluo')
                         % open a fluorescence tab
@@ -347,8 +348,6 @@ classdef UI < handle
                 delete(this.h.f);
                 delete(this);
             end
-            %% delete 3rd-party from PATH
-            rmpath(genpath('../3rd-party'));
         end
     end
 

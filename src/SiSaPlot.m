@@ -334,7 +334,6 @@ classdef SiSaPlot < handle
             this.chisq = chi;
             this.fitted = true;
             this.plotdata();
-            this.plotfit();
         end
         
         function set_model(this, varargin)
@@ -576,7 +575,7 @@ classdef SiSaPlot < handle
         end
     end
     
-    methods (Access = private)
+    methods (Access = protected)
         function resize(this, varargin)
             if isfield(this.h, 'f')
                 fP = get(this.h.f, 'position');
