@@ -18,7 +18,6 @@ classdef InvivoPlot < SiSaPlot
             set(this.h.inset, 'units', 'pixels',...
                               'position', [700 500 200 100],...
                               'xtick', [], 'ytick', []);
-            title(this.h.inset, 'Verlauf', 'FontWeight', 'normal');
                           
             set(this.h.f, 'ResizeFcn', @this.resize);
             this.resize();
@@ -44,6 +43,7 @@ classdef InvivoPlot < SiSaPlot
             xlim([1 length(this.evo_data)]);
             
             set(this.h.inset, 'xtick', [], 'ytick', []);
+            title(this.h.inset, 'Verlauf', 'FontWeight', 'normal');
         end
     end
 
