@@ -25,6 +25,9 @@ classdef UI < handle
     methods
     % create new instance with basic controls
         function this = UI(path, name, pos)
+            %% add 3rd-party to PATH
+            addpath(genpath('../3rd-party'));
+
             %% initialize all UI objects:
             this.h.f = figure();
             
@@ -344,6 +347,8 @@ classdef UI < handle
                 delete(this.h.f);
                 delete(this);
             end
+            %% delete 3rd-party from PATH
+            rmpath(genpath('../3rd-party'));
         end
     end
 
