@@ -179,7 +179,7 @@ classdef UI < handle
                     if isfield(reader.data, 'sisa')
                         % open a SiSa tab
                         this.modes{1} = InvivoMode(this, double(reader.data.sisa.data),...
-                                                         double(reader.data.sisa.verlauf), reader);
+                                                         reader.data.sisa.verlauf, reader);
                     end
                     if isfield(reader.data, 'fluo')
                         % open a fluorescence tab

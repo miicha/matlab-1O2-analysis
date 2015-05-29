@@ -13,7 +13,7 @@ classdef InvivoMode < SiSaMode
             this@SiSaMode(parent, data);
             
             this.evo_data = evo_data;
-            
+                       
             set(this.h.sisamode, 'title', 'in-vivo');
             
             this.locations = reader.meta.locations;
