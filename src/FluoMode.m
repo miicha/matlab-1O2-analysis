@@ -5,13 +5,15 @@ classdef FluoMode < GenericMode
         spec_pos = 1;
         num_spec_points;
         current_spec_point = 1;
+        wavelengths;
     end
     
     methods
-        function this = FluoMode(parent, data)
+        function this = FluoMode(parent, data, wavelengths)
             this.p = parent;
             this.data = data;
             this.num_spec_points = size(data, 5);
+            this.wavelengths = wavelengths;
             
             this.h.parent = parent.h.modepanel;
             
@@ -66,7 +68,7 @@ classdef FluoMode < GenericMode
         
         function left_click_on_axes(this, point)
             figure;
-            plot(squeeze(this.data(point{:}, :)))
+            plot(this.wavelengths,squeeze(this.data(point{:}, :)))
         end
         
         function resize(this, varargin)
@@ -93,7 +95,8 @@ classdef FluoMode < GenericMode
                 case this.h.specslider
                     val = round(get(this.h.specslider, 'value'));
                 case this.h.specbox
-                    val = round(str2double(get(this.h.specbox, 'string')));
+                    temp = str2double(get(this.h.specbox, 'string'));
+                    [~,val] = min(abs(this.wavelengths-temp));
             end
 
             if val > this.num_spec_points
@@ -109,7 +112,7 @@ classdef FluoMode < GenericMode
             end
             
             set(this.h.specslider, 'value', val);
-            set(this.h.specbox, 'string', num2str(val));
+            set(this.h.specbox, 'string', num2str(this.wavelengths(val)));
             this.current_spec_point = val;
 
             this.plot_array();

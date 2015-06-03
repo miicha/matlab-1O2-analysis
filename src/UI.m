@@ -183,7 +183,7 @@ classdef UI < handle
                     end
                     if isfield(reader.data, 'fluo')
                         % open a fluorescence tab
-                        this.modes{2} = FluoMode(this, double(reader.data.fluo.data));
+                        this.modes{2} = FluoMode(this, double(reader.data.fluo.data), reader.meta.fluo.x_achse);
                     end
                     if isfield(reader.data, 'temp')
                         % open a temperature tab
