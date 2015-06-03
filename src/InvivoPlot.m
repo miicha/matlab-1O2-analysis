@@ -10,15 +10,15 @@ classdef InvivoPlot < SiSaPlot
     methods
         function this = InvivoPlot(point, imode)
             this = this@SiSaPlot(point, imode);
-            this.evo_data = imode.evo_data(point);
-            
+
+            this.evo_data = squeeze(imode.evo_data(point(1), point(2), point(3), point(4),:));
+                        
             this.h.inset = axes();
 
             this.plotdata();
             set(this.h.inset, 'units', 'pixels',...
                               'position', [700 500 200 100],...
                               'xtick', [], 'ytick', []);
-            title(this.h.inset, 'Verlauf', 'FontWeight', 'normal');
                           
             set(this.h.f, 'ResizeFcn', @this.resize);
             this.resize();
@@ -28,7 +28,6 @@ classdef InvivoPlot < SiSaPlot
             if nargin < 2
                 realtime = false;
             end
-%             this.inset = axes();
 
             plotdata@SiSaPlot(this, realtime);
             
@@ -44,6 +43,7 @@ classdef InvivoPlot < SiSaPlot
             xlim([1 length(this.evo_data)]);
             
             set(this.h.inset, 'xtick', [], 'ytick', []);
+            title(this.h.inset, 'Verlauf', 'FontWeight', 'normal');
         end
     end
 
