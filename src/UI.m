@@ -1,6 +1,6 @@
 classdef UI < handle
     %UI 
-    properties (Access = private)
+    properties (SetAccess = private)
         modes; % started modes
         current_mode = 1;
         online_ver = 'http://www.daten.tk/webhook/tags.php?owner=sebastian.pfitzner&project=sisa-scan-auswertung';
@@ -102,7 +102,8 @@ classdef UI < handle
         function open_file(this, path, name)
             %% add 3rd-party to PATH
             addpath(genpath('../3rd-party'));
-
+            
+            %%
             this.loadini();
             this.fileinfo.path = path;
             this.openpath = path;

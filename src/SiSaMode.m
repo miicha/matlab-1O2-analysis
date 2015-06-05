@@ -102,6 +102,7 @@ classdef SiSaMode < GenericMode
                             this.h.gstart_text = uicontrol(this.h.bounds);
                             this.h.fix_text = uicontrol(this.h.bounds);
                             this.h.glob_text = uicontrol(this.h.bounds);
+                    this.h.load_data = uicontrol(this.h.fit_tab);
                     this.h.parallel = uicontrol(this.h.fit_tab);
                     this.h.fit = uicontrol(this.h.fit_tab);
                     this.h.hold = uicontrol(this.h.fit_tab);
@@ -118,6 +119,7 @@ classdef SiSaMode < GenericMode
                 this.h.sel_tab = uitab(this.h.tabs);
                     this.h.sel_controls = uipanel(this.h.sel_tab);
                         this.h.sel_btn_plot = uicontrol(this.h.sel_controls);
+                        this.h.export_fit_btn = uicontrol(this.h.sel_controls);
 
                     this.h.sel_values = uipanel(this.h.sel_tab);
 
@@ -217,6 +219,12 @@ classdef SiSaMode < GenericMode
                             'string', 'parallel Fitten? (keine Interaktivität!)',...
                             'tooltipString', 'Dauert am Anfang ein bisschen. Keine Fortschrittsanzeige!',...
                             'position', [2 35 200 15]);
+                        
+            set(this.h.load_data,  'units', 'pixels',...
+                                   'style', 'push',...
+                                   'position', [2 320 220 28],...
+                                   'string', 'Daten laden und abziehen',...
+                                   'callback', @this.load_ext_data_cb);
                         
             if isdeployed()
                 set(this.h.parallel, 'visible', 'off');
@@ -354,7 +362,13 @@ classdef SiSaMode < GenericMode
                              'position', [15 50 50 20],...
                              'string', 'Plotten',...
                              'callback', @this.plot_group);
-
+                         
+            set(this.h.export_fit_btn, 'units', 'pixels',...
+                             'style', 'push',...
+                             'position', [85 50 50 20],...
+                             'string', 'Export Fit',...
+                             'callback', @this.export_fit_cb);
+                         
             % info about the selected data
             set(this.h.sel_values, 'units', 'pixels',...
                                    'bordertype', 'line',...
@@ -1102,6 +1116,47 @@ classdef SiSaMode < GenericMode
     
     methods (Access = private)       
         %% Callbacks:
+        function load_ext_data_cb(this, varargin)
+            [name, filepath] = uigetfile({[this.p.openpath '*.fit']}, 'Dateien auswählen');
+            if (~ischar(name) && ~iscell(name)) || ~ischar(filepath) % no file selected
+                return
+            end
+            this.p.openpath = filepath;
+            loaded = load([filepath name], '-mat');
+            this.t_zero = loaded.fit.t_zero;
+            [s1, s2, s3, s4] = size(loaded.fit.params(:, :, :, :, 1));
+            for i = 1:s1
+                for j = 1:s2
+                    for k = 1:s3
+                        for l = 1:s4
+                            pars = num2cell(squeeze(loaded.fit.params(i, j, k, l, :)));
+                            this.data(i, j, k, l, this.t_zero:end) = squeeze(this.data(i, j, k, l, this.t_zero:end)) - loaded.fit.model(pars{:}, this.x_data(this.t_zero:end));
+                        end
+                    end
+                end
+            end
+            
+        end
+        
+        function export_fit_cb(this, varargin)
+            if this.fitted
+                [file, path] = uiputfile([this.p.savepath filesep() this.p.genericname...
+                                         '.fit']);
+                                     
+                if ~ischar(file) || ~ischar(path) % no file selected
+                    return
+                end
+                this.p.set_savepath(path);
+                fit.params = this.fit_params;
+                fit.params_err = this.fit_params_err;
+                fit.chisq = this.fit_chisq;
+                tmp4 = this.models(this.model);
+                fit.model = tmp4{1};
+                fit.t_zero = this.t_zero;
+                save([path file], 'fit');
+            end
+        end
+        
         function change_overlay_cond_cb(this, varargin)
             this.compute_ov();
             this.plot_array();
