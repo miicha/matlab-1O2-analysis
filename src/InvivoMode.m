@@ -11,10 +11,16 @@ classdef InvivoMode < SiSaMode
     methods
         function this = InvivoMode(parent, data, evo_data, reader)
             this@SiSaMode(parent, data);
+            if reader.meta.sisa.Optik == 1270
+                set(this.h.sisamode, 'background', [0.8 0.2 0.2]);
+            else
+                set(this.h.sisamode, 'background', [0.2 0.2 0.8]);
+            end
             
             this.evo_data = evo_data;
                        
             set(this.h.sisamode, 'title', 'in-vivo');
+            
             
             this.locations = reader.meta.locations;
         end

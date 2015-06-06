@@ -69,6 +69,7 @@ classdef FluoMode < GenericMode
         function left_click_on_axes(this, point)
             figure;
             plot(this.wavelengths,squeeze(this.data(point{:}, :)))
+            title(num2str(cell2mat(point)))
         end
         
         function resize(this, varargin)

@@ -10,12 +10,20 @@ classdef InvivoPlot < SiSaPlot
     methods
         function this = InvivoPlot(point, imode)
             this = this@SiSaPlot(point, imode);
-
+            location = imode.locations(point(2));
+            
+%             title(location)
+            
             this.evo_data = squeeze(imode.evo_data(point(1), point(2), point(3), point(4),:));
-                        
+            
             this.h.inset = axes();
 
             this.plotdata();
+            
+            basename = this.h.f.Name;
+            
+            this.h.f.Name = [basename ' - ' location{1}];
+            
             set(this.h.inset, 'units', 'pixels',...
                               'position', [700 500 200 100],...
                               'xtick', [], 'ytick', []);
