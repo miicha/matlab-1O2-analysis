@@ -1121,21 +1121,55 @@ classdef SiSaMode < GenericMode
             if (~ischar(name) && ~iscell(name)) || ~ischar(filepath) % no file selected
                 return
             end
+            
+            single = questdlg('Einzeln (bei gleichen Datensätzen) oder den Mittelwert abziehen?',...
+                              '', 'erste', 'einzeln', 'mittelwert', 'einzeln');
             this.p.openpath = filepath;
             loaded = load([filepath name], '-mat');
-            this.t_zero = loaded.fit.t_zero;
-            [s1, s2, s3, s4] = size(loaded.fit.params(:, :, :, :, 1));
-            for i = 1:s1
-                for j = 1:s2
-                    for k = 1:s3
-                        for l = 1:s4
-                            pars = num2cell(squeeze(loaded.fit.params(i, j, k, l, :)));
-                            this.data(i, j, k, l, this.t_zero:end) = squeeze(this.data(i, j, k, l, this.t_zero:end)) - loaded.fit.model(pars{:}, this.x_data(this.t_zero:end));
+            this.t_zero = loaded.fit.t_zero;  
+            this.t_end = length(this.x_data)-this.t_zero;
+            switch single 
+                case 'erste'
+                    pars = num2cell(squeeze(loaded.fit.params(1,1,1,1,:)));
+                    bg = loaded.fit.model(pars{:}, this.x_data(this.t_zero:end));
+                    [s1, s2, s3, s4] = size(this.est_params(:, :, :, :, 1));
+
+                    for i = 1:s1
+                        for j = 1:s2
+                            for k = 1:s3
+                                for l = 1:s4
+                                    this.data(i, j, k, l, this.t_zero:end) = squeeze(this.data(i, j, k, l, this.t_zero:end)) - bg;
+                                end
+                            end
                         end
                     end
-                end
+                case 'mittel'
+                    pars = num2cell(squeeze(mean(mean(mean(mean(loaded.fit.params, 1), 2), 3), 4)));
+                    bg = loaded.fit.model(pars{:}, this.x_data(this.t_zero:end));
+                    [s1, s2, s3, s4] = size(this.est_params(:, :, :, :, 1));
+                    for i = 1:s1
+                        for j = 1:s2
+                            for k = 1:s3
+                                for l = 1:s4
+                                    this.data(i, j, k, l, this.t_zero:end) = squeeze(this.data(i, j, k, l, this.t_zero:end)) - bg;
+                                end
+                            end
+                        end
+                    end
+                case 'einzeln'
+                    [s1, s2, s3, s4] = size(loaded.fit.params(:, :, :, :, 1));
+                    for i = 1:s1
+                        for j = 1:s2
+                            for k = 1:s3
+                                for l = 1:s4
+                                    pars = num2cell(squeeze(loaded.fit.params(i, j, k, l, :)));
+                                    this.data(i, j, k, l, this.t_zero:end) = squeeze(this.data(i, j, k, l, this.t_zero:end)) - loaded.fit.model(pars{:}, this.x_data(this.t_zero:end));
+                                end
+                            end
+                        end
+                    end
             end
-            
+            this.data(this.data<0) = 0;
         end
         
         function export_fit_cb(this, varargin)
