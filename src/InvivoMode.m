@@ -4,8 +4,9 @@ classdef InvivoMode < SiSaMode
     
     properties
         locations;
-        
+        genericname;
         evo_data;
+        savepath;
     end
     
     methods
