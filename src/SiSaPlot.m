@@ -257,8 +257,17 @@ classdef SiSaPlot < handle
         function plotfit(this)
             p = num2cell(this.fit_params);
             fitdata = this.model{1}(p{:}, this.x_data);
-            
+
             axes(this.h.axes);
+            
+            if get(this.h.drpd, 'value') == 2 || get(this.h.drpd, 'value') == 3
+                tmp = keys(this.models);
+                sisamodel = this.models(tmp{1});
+                sisadata = sisamodel{1}(p{1}, p{2}, p{3}, p{5}, this.x_data);
+                hold on
+                plot(this.x_data,  sisadata, 'color', [1 0.6 0.2], 'LineWidth', 1.5, 'HitTest', 'off');
+                hold off
+            end
             hold on
             plot(this.x_data,  fitdata, 'r', 'LineWidth', 1.5, 'HitTest', 'off');
             hold off
