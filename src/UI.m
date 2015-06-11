@@ -101,7 +101,9 @@ classdef UI < handle
     % functions for opening and reading various files:
         function open_file(this, path, name)
             %% add 3rd-party to PATH
-            addpath(genpath('../3rd-party'));
+            own_filename = mfilename('fullpath');
+            folder_3rdparty = [own_filename(1:end-6) '3rd-party'];
+            addpath(genpath(folder_3rdparty));
             
             %%
             this.loadini();
