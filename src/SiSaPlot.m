@@ -81,8 +81,10 @@ classdef SiSaPlot < handle
                 name = [smode.p.fileinfo.name{1} ' - ' num2str(this.cp)];
             end
             
+            scsize = get(0,'screensize');
+            
             set(this.h.f, 'units', 'pixels',...
-                         'position', [500 200 1000 710],...
+                         'position', [scsize(3)-1050 scsize(4)-820 1000 710],...
                          'numbertitle', 'off',...
                          'resize', 'on',...
                          'menubar', 'none',...
@@ -244,11 +246,11 @@ classdef SiSaPlot < handle
                 [0 realmax], 'Color', [0 .8 .8], 'ButtonDownFcn', @this.plot_click, 'LineWidth', 1.2,...
                 'LineStyle', '-.', 'Tag', 'line');
             hold off
-            
+            xlim([min(this.x_data)-1 max(this.x_data)+1]);
 
             if ~realtime             
                 ylim([0 m]);
-                xlim([min(this.x_data)-1 max(this.x_data)+1]);
+                
                 if this.fitted
                     this.plotfit();
                 end
