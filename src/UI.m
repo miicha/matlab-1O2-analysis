@@ -86,8 +86,7 @@ classdef UI < handle
             
             %% init
             this.resize();
-%             this.set_model('1. A*(exp(-t/t1)-exp(-t/t2))+offset');
-%             
+
             if nargin > 1
                 if nargin == 3
                     set(this.h.f, 'position', pos);
@@ -100,11 +99,9 @@ classdef UI < handle
         
     % functions for opening and reading various files:
         function open_file(this, path, name)
-            %% add 3rd-party to PATH
-            own_filename = mfilename('fullpath');
-            folder_3rdparty = [own_filename(1:end-6) '3rd-party'];
-            addpath(genpath(folder_3rdparty));
-            
+            %% add to PATH
+            addpath(genpath([get_executable_dir '\..\3rd-party']));
+            addpath([get_executable_dir '\..\src']);
             %%
             this.loadini();
             this.fileinfo.path = path;
@@ -137,9 +134,6 @@ classdef UI < handle
             this.genericname = n;
             
             this.saveini();
-            
-            %% delete 3rd-party from PATH
-            rmpath(genpath('../3rd-party'));
         end
         
         function openHDF5(this)
@@ -401,6 +395,10 @@ classdef UI < handle
             end
             close(this.h.f);
             delete(this);
+            
+%             %% add to PATH
+%             addpath(genpath([get_executable_dir '\..\3rd-party']));
+%             addpath([get_executable_dir '\..\src']);
         end
         
         % punt to current mode to handle everything
@@ -427,6 +425,10 @@ classdef UI < handle
         
         function destroy_cb(this, varargin)
             this.destroy(false);
+            
+%             %% clean up PATH            
+%             rmpath(genpath([get_executable_dir '\..\3rd-party']));
+%             rmpath(([get_executable_dir '\..\src']));
         end
         
         function open_versioninfo_cb(this, varargin)
