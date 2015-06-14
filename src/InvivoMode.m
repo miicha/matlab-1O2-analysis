@@ -4,9 +4,7 @@ classdef InvivoMode < SiSaMode
     
     properties
         locations;
-        genericname;
         evo_data;
-        savepath;
     end
     
     methods
@@ -34,6 +32,19 @@ classdef InvivoMode < SiSaMode
                 end
             end
         end
+        
+        function read_channel_width(this)
+            % read Channel Width
+            
+            try
+                chanWidth=h5read(fullfile(this.p.fileinfo.path, this.p.fileinfo.name{1}), '/Meta/sisa/Parameter')
+                
+                this.channel_width=single(chanWidth.Kanalbreite);
+            catch
+                % nothing. just an old file.
+            end
+        end
+        
     end
     
 end
