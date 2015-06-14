@@ -246,11 +246,11 @@ classdef SiSaPlot < handle
                 [0 realmax], 'Color', [0 .8 .8], 'ButtonDownFcn', @this.plot_click, 'LineWidth', 1.2,...
                 'LineStyle', '-.', 'Tag', 'line');
             hold off
-            xlim([min(this.x_data)-1 max(this.x_data)+1]);
+            
 
             if ~realtime             
                 ylim([0 m]);
-                
+                xlim([min(this.x_data)-1 max(this.x_data)+1]);
                 if this.fitted
                     this.plotfit();
                 end
