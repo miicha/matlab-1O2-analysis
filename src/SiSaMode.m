@@ -493,11 +493,11 @@ classdef SiSaMode < GenericMode
                         plot_data = this.est_params(:, :, :, :, param);
                 end
             end
-            
+            mparam = sprintf('m%d', param);
             if this.disp_ov
-                this.plotpanel.plot_array(plot_data, this.overlays{this.current_ov});
+                this.plotpanel.plot_array(plot_data, mparam, this.overlays{this.current_ov});
             else 
-                this.plotpanel.plot_array(plot_data);
+                this.plotpanel.plot_array(plot_data, mparam);
             end
         end
         

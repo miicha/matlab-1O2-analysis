@@ -11,31 +11,65 @@ classdef PlotPanel < handle
     %   handle = generate_export_fig(visibility)
     %   newpath = save_fig(path)
     
+    
+    %%%%%%% ToDo: - callback_handlers implementieren
+    %             - fluo-mode umbauen, so dass es hierzu passt
+    %             - resize funktionabel machen
+    
+    
     properties
         p;     % parent
         cmap = 'summer';
         
-        dims;
-        curr_dims = [1, 2, 3, 4];
-        ind = {':', ':', 1, 1};
-        dimnames = {'x', 'y', 'z', 's'};
+        mode;
+        dims; % dimension of dataset
+        curr_dims;
+        ind;
+        dimnames;
         transpose = false;
+        
+        slices = {};
         
         l_min; % maximum of the current parameter over all data points
         l_max; % minimum of the current parameter over all data points
-        use_user_legend = false;
+        use_user_legend;
         
         first_call = true;
+        
+        callbacks;
         
         h = struct();
     end
     
     methods
-        function this = PlotPanel(parent)
+        function this = PlotPanel(parent, callback_handlers)
+            % callback_handlers is a struct of callback functions for
+            % providing sliders or other UI-elements for changing that
+            % parameter. If it is empty, all those callbacks will be
+            % handled (and sliders will be created) by PlotPanel.
+            
+            if nargin < 2
+                callback_handlers = struct();
+            end
+            
+            this.callbacks = callback_handlers;
+            
             this.p = parent;
             this.h.parent = parent.h.plotpanel;
             
             this.dims = parent.p.fileinfo.size;
+            
+            this.dimnames = {'x', 'y', 'z', 's'};
+            this.ind = {':', ':', 1, 1};
+            % fill the dimnames with defaults
+            i = 0;
+            while length(this.dimnames) < length(this.dims)
+                this.dimnames = [this.dimnames sprintf('%s', 97+i)];
+                this.ind = [this.ind 1];
+                i = i + 1;
+            end
+            
+            this.curr_dims = 1:length(this.dims);
             
             this.h.plotpanel = uipanel(this.h.parent);
                 this.h.axes = axes('parent', this.h.plotpanel);
@@ -43,16 +77,17 @@ classdef PlotPanel < handle
                 this.h.tick_min = uicontrol(this.h.plotpanel);
                 this.h.tick_max = uicontrol(this.h.plotpanel);
                 this.h.plttxt = uicontrol(this.h.plotpanel);
-                this.h.zslider = uicontrol(this.h.plotpanel);
-                this.h.zbox = uicontrol(this.h.plotpanel);
-                this.h.saslider = uicontrol(this.h.plotpanel);
-                this.h.sabox = uicontrol(this.h.plotpanel);
                 
                 this.h.d1_select = uicontrol(this.h.plotpanel);
                 this.h.d2_select = uicontrol(this.h.plotpanel);
-                this.h.d3_select = uicontrol(this.h.plotpanel);
-                this.h.d4_select = uicontrol(this.h.plotpanel);
                 
+                
+                for i = 3:length(this.dims) % TODO: use callback_handlers from above
+                    this.h.(sprintf('d%d_slider', i)) = uicontrol(this.h.plotpanel);
+                    this.h.(sprintf('d%d_edit', i)) = uicontrol(this.h.plotpanel);
+                    this.h.(sprintf('d%d_select', i)) = uicontrol(this.h.plotpanel);
+                end
+            
             set(this.h.parent, 'SizeChangedFcn', @this.resize);
                 
             set(this.h.plotpanel, 'units', 'pixels',...
@@ -83,40 +118,48 @@ classdef PlotPanel < handle
                              'BackgroundColor', get(this.h.plotpanel, 'BackgroundColor'),...
                              'FontSize', 9,...
                              'visible', 'off');
-                                                       
-            set(this.h.zslider, 'units', 'pixels',...
-                              'style', 'slider',...
-                              'position', [460 85 20 340],...
-                              'value', 1,...
-                              'visible', 'off',...
-                              'callback', @this.set_d3_cb,...
-                              'BackgroundColor', [1 1 1]);
-                           
-            set(this.h.zbox, 'units', 'pixels',...
-                           'style', 'edit',...
-                           'string', '1',...
-                           'position', [460 430 20, 20],...
-                           'callback', @this.set_d3_cb,...
-                           'visible', 'off',...
-                           'BackgroundColor', [1 1 1]);
-            
-            set(this.h.saslider, 'units', 'pixels',...
-                               'style', 'slider',...
-                               'position', [490 85 20 340],... 
-                               'value', 1,...
-                               'visible', 'off',...
-                               'BackgroundColor', [1 1 1],...
-                               'ForegroundColor', [0 0 0],...
-                               'callback', @this.set_d4_cb);
-
-            set(this.h.sabox, 'units', 'pixels',...
+            j = 0;
+            for i = 3:length(this.dims)
+                if this.dims(this.curr_dims(i)) == 1
+                    tmp = 5;
+                else
+                    tmp = this.dims(this.curr_dims(i))-1;
+                end
+                
+                set(this.h.(sprintf('d%d_slider', i)), 'units', 'pixels',...
+                            'style', 'slider',...
+                            'position', [460+j*25 85 20 340],...
+                            'min', 1, 'max', this.dims(this.curr_dims(i)),...
+                            'SliderStep', [1 5]/tmp,...
+                            'value', 1,...
+                            'callback', {@this.set_nth_val_cb, i},...
+                            'BackgroundColor', [1 1 1]);
+                
+                set(this.h.(sprintf('d%d_edit', i)), 'units', 'pixels',...
                             'style', 'edit',...
                             'string', '1',...
-                            'position', [490 460 20 20],...
-                            'callback', @this.set_d4_cb,...
-                            'visible', 'off',...
+                            'position', [460+j*25 430 20, 20],...
+                            'callback', {@this.set_nth_val_cb, i},...
                             'BackgroundColor', [1 1 1]);
+                
+                set(this.h.(sprintf('d%d_select', i)), 'units', 'pixels',...
+                            'style', 'popupmenu',...
+                            'string', this.dimnames,...
+                            'value', i,...
+                            'tag', num2str(i),...
+                            'callback', @this.set_dim_cb,...
+                            'position', [465+j*25 520 30 17],...
+                            'BackgroundColor', [1 1 1]);
+                 
+                if this.dims(this.curr_dims(i)) == 1 
+                    this.h.(sprintf('d%d_slider', i)).Visible = 'off';
+                    this.h.(sprintf('d%d_edit', i)).Visible = 'off';
+                    this.h.(sprintf('d%d_select', i)).Visible = 'off';
+                end
                         
+                 j = j + 1;
+            end
+            
             set(this.h.tick_min, 'units', 'pixels',...
                                'style', 'edit',...
                                'visible', 'off',...
@@ -154,36 +197,16 @@ classdef PlotPanel < handle
                                 'callback', @this.set_dim_cb,...
                                 'position', [5 300 30 17],...
                                 'BackgroundColor', [1 1 1]);
-
-
-            set(this.h.d3_select, 'units', 'pixels',...
-                                'style', 'popupmenu',...
-                                'string', this.dimnames,...
-                                'value', 3,...
-                                'visible', 'off',...
-                                'tag', '3',...
-                                'callback', @this.set_dim_cb,...
-                                'position', [465 520 30 17],...
-                                'BackgroundColor', [1 1 1]);
-
-                            
-            set(this.h.d4_select, 'units', 'pixels',...
-                                'style', 'popupmenu',...
-                                'string', this.dimnames,...
-                                'value', 4,...
-                                'visible', 'off',...
-                                'tag', '4',...
-                                'callback', @this.set_dim_cb,...
-                                'position', [505 520 30 17],...
-                                'BackgroundColor', [1 1 1]);
         end
         
-        function plot_array(this, data, ov_data)
-            if nargin < 3 || isempty(ov_data)
+        function plot_array(this, data, mode, ov_data)
+            if nargin < 4 || isempty(ov_data)
                 disp_ov = false;
             else
                 disp_ov  = true;
             end
+            
+            this.mode = mode;
                        
             plot_data = squeeze(data(this.ind{:}));
             
@@ -207,11 +230,12 @@ classdef PlotPanel < handle
                     ov_data = squeeze(ov_data(this.ind{:}));
                 end
             end
-            if ~this.use_user_legend
-                [this.l_min, this.l_max] = this.calculate_legend(data);
+            if (isfield(this.use_user_legend, this.mode) && ~this.use_user_legend.(this.mode))...
+                                                         || ~isfield(this.l_min, this.mode)
+                this.calculate_legend(data);
             end
-            tickmin = this.l_min;
-            tickmax = this.l_max;
+            tickmin = this.l_min.(this.mode);
+            tickmax = this.l_max.(this.mode);
             
             % plotting:
             % Memo to self: Don't try using HeatMaps... seriously.
@@ -260,8 +284,16 @@ classdef PlotPanel < handle
             scale_pix = 800/d;  % max width or height of the axes
             scl = this.p.p.scale./max(this.p.p.scale);
             
-            x_pix = x*scale_pix*scl(1);
-            y_pix = y*scale_pix*scl(2);
+            if x == 1
+                x_pix = 150;
+            else
+                x_pix = x*scale_pix*scl(1);
+            end
+            if y == 1
+                y_pix = 150;
+            else
+                y_pix = y*scale_pix*scl(2);
+            end
             
             tmp = get(this.h.axes, 'position');
 
@@ -380,6 +412,8 @@ classdef PlotPanel < handle
                     this.p.left_click_on_axes(index);
                 case 'alt'
                     this.p.right_click_on_axes(index);
+                case 'extend' % shift + click
+                    
             end
         end 
         
@@ -397,39 +431,26 @@ classdef PlotPanel < handle
             this.update_sliders();
         end
         
-        function [tickmin, tickmax] = calculate_legend(this, data)
-            tickmin = min(min(min(min(data))));
-            tickmax = max(max(max(max(data))));
+        function calculate_legend(this, data)
+            this.l_min.(this.mode) = min(min(min(min(data))));
+            this.l_max.(this.mode) = max(max(max(max(data))));
         end
         
         function update_sliders(this)
             s = this.dims;
-
-            % handle z-scans
-            if s(this.curr_dims(3)) > 1 
-                set(this.h.zslider, 'min', 1, 'max', s(this.curr_dims(3)),...
-                                  'visible', 'on',...
-                                  'value', 1,...
-                                  'SliderStep', [1 5]/(s(this.curr_dims(3))-1));
-                set(this.h.zbox, 'visible', 'on');
-                set(this.h.d3_select, 'visible', 'on');
-            else 
-                set(this.h.zbox, 'visible', 'off');
-                set(this.h.zslider, 'visible', 'off');
-                set(this.h.d3_select, 'visible', 'off');
-            end
-            % handle multiple samples
-            if s(this.curr_dims(4)) > 1 
-                set(this.h.saslider, 'min', 1, 'max', s(this.curr_dims(4)),...
-                                     'visible', 'on',...
-                                     'value', 1,...
-                                     'SliderStep', [1 5]/(s(this.curr_dims(4))-1));
-                set(this.h.sabox, 'visible', 'on');
-                set(this.h.d4_select, 'visible', 'on');
-            else 
-                set(this.h.sabox, 'visible', 'off');
-                set(this.h.saslider, 'visible', 'off');
-                set(this.h.d4_select, 'visible', 'off');
+            for i = 3:length(this.dims)
+                if s(this.curr_dims(i)) > 1 
+                    set(this.h.(sprintf('d%d_slider', i)), 'min', 1, 'max', s(this.curr_dims(i)),...
+                                      'visible', 'on',...
+                                      'value', 1,...
+                                      'SliderStep', [1 5]/(s(this.curr_dims(i))-1));
+                    set(this.h.(sprintf('d%d_edit', i)), 'visible', 'on');
+                    set(this.h.(sprintf('d%d_select', i)), 'visible', 'on');
+                else
+                    set(this.h.(sprintf('d%d_slider', i)), 'visible', 'off');
+                    set(this.h.(sprintf('d%d_edit', i)), 'visible', 'off');
+                    set(this.h.(sprintf('d%d_select', i)), 'visible', 'off');
+                end
             end
         end
         
@@ -443,9 +464,9 @@ classdef PlotPanel < handle
             a([find(a==oval) find(a==val)]) = a([find(a==val) find(a==oval)]);
             this.curr_dims = a;
             
-            hs = {this.h.d1_select, this.h.d2_select, this.h.d3_select, this.h.d4_select};
-            for i = 1:4
-                set(hs{i}, 'value', this.curr_dims(i));
+            for i = 1:length(this.dims)
+                set(this.h.(sprintf('d%d_select', i)), 'value', this.curr_dims(i));
+                
                 if i <= 2
                     this.ind{this.curr_dims(i)} = ':';
                 else
@@ -457,79 +478,59 @@ classdef PlotPanel < handle
             this.update_plot();
         end
         
-        % slider for 3rd dimension
-        function set_d3_cb(this, varargin)
-            switch varargin{1}
-                case this.h.zslider
-                    val = round(get(this.h.zslider, 'value'));
-                case this.h.zbox
-                    val = round(str2double(get(this.h.zbox, 'string')));
-            end
-            if val > this.dims(this.curr_dims(3))
-                val = this.dims(this.curr_dims(3));
-            elseif val <= 0
-                val = 1;
+        function value = set_nth_val(this, dim, value)  
+            if value > this.dims(this.curr_dims(dim))
+                value = this.dims(this.curr_dims(dim));
+            elseif value < 1
+                value = 1;
             end
             
-            if isnan(val)   
-                set(this.h.zslider, 'value', this.ind{this.curr_dims(3)});
-                set(this.h.zbox, 'string', num2str(this.ind{this.curr_dims(3)}));
-                return
+            if isnan(value)
+                value = this.ind{this.curr_dims(dim)};
             end
-            set(this.h.zslider, 'value', val);
-            set(this.h.zbox, 'string', num2str(val));
-            this.ind{this.curr_dims(3)} = val;
+            
+            this.ind{this.curr_dims(dim)} = value;
             
             this.update_plot();
         end
         
-        % slider for fourth dimension
-        function set_d4_cb(this, varargin)
-            switch varargin{1}
-                case this.h.saslider
-                    val = round(get(this.h.saslider, 'value'));
-                case this.h.sabox
-                    val = round(str2double(get(this.h.sabox, 'string')));
+        % n-th dimension slider
+        function set_nth_val_cb(this, caller, ~, dim)
+            switch caller.Style
+                case 'slider'
+                    value = round(caller.Value);
+                case 'edit' 
+                    value = round(str2double(caller.String));
             end
-            if val > this.dims(this.curr_dims(4))
-                val = this.dims(this.curr_dims(4));
-            elseif val <= 0
-                val = 1;
-            end
-            if isnan(val)   
-                set(this.h.saslider, 'value', this.ind{this.curr_dims(4)});
-                set(this.h.sabox, 'string', num2str(this.ind{this.curr_dims(4)}));
-                return
-            end
-            set(this.h.saslider, 'value', val);
-            set(this.h.sabox, 'string', num2str(val));
-            this.ind{this.curr_dims(4)} = val;
             
-            this.update_plot();
+            value = this.set_nth_val(dim, value);
+            
+            this.h.(sprintf('d%d_edit', dim)).String = num2str(value);
+            this.h.(sprintf('d%d_slider', dim)).Value = value;
         end
-     
+            
         % upper and lower bound of legend
         function set_tick_cb(this, varargin)
             switch varargin{1}
                 case this.h.tick_min
                     new_l_min = str2double(get(this.h.tick_min, 'string'));
-                    if new_l_min < this.l_max
-                        this.l_min = new_l_min;
-                        this.use_user_legend = true;
+                    if new_l_min < this.l_max.(this.mode)
+                        this.l_min.(this.mode) = new_l_min;
+                        this.use_user_legend.(this.mode) = true;
                     elseif isempty(get(this.h.tick_min, 'string'))
-                        this.use_user_legend = false;
+                        this.use_user_legend.(this.mode) = false;
                     else
-                        set(this.h.tick_min, 'string', this.l_min);
+                        set(this.h.tick_min, 'string', this.l_min.(this.mode));
                     end
                 case this.h.tick_max
                     new_l_max = str2double(get(this.h.tick_max, 'string'));
-                    if new_l_max > this.l_min
-                        this.l_max = new_l_max;
-                        this.use_user_legend = true;
+                    if new_l_max > this.l_min.(this.mode)
+                        this.l_max.(this.mode) = new_l_max;
+                        this.use_user_legend.(this.mode) = true;
                     elseif isempty(get(this.h.tick_max, 'string'))
-                        this.use_user_legend = false;
+                        this.use_user_legend.(this.mode) = false;
                     else
-                        set(this.h.tick_max, 'string', this.l_max);
+                        set(this.h.tick_max, 'string', this.l_max.(this.mode));
                     end
             end
             this.update_plot();
@@ -554,13 +555,13 @@ classdef PlotPanel < handle
             tmp(1) = aP(1) + aP(3)/2;
             set(this.h.d1_select, 'Position', tmp);
 
-            tmp = get(this.h.d3_select, 'Position');
-            tmp(1) = aP(1) + aP(3) + 5;
-            tmp(2) = aP(2) + aP(4) - 16;
-            set(this.h.d3_select, 'Position', tmp);
-
-            tmp(1) = aP(1) + aP(3) + 40;
-            set(this.h.d4_select, 'Position', tmp);
+%             tmp = get(this.h.d3_select, 'Position');
+%             tmp(1) = aP(1) + aP(3) + 5;
+%             tmp(2) = aP(2) + aP(4) - 16;
+%             set(this.h.d3_select, 'Position', tmp);
+% 
+%             tmp(1) = aP(1) + aP(3) + 40;
+%             set(this.h.d4_select, 'Position', tmp);
 
             tmp = get(this.h.legend, 'position');
             tmp(3) = aP(3);
@@ -570,21 +571,21 @@ classdef PlotPanel < handle
             tmp(1) = aP(3) + aP(1) - tmp(3);
             set(this.h.tick_max, 'position', tmp);
             
-            tmp = get(this.h.zslider, 'position');
-            tmp(1) = aP(1) + aP(3) + 15;
-            tmp(4) = aP(4) - 50;
-            set(this.h.zslider, 'position', tmp);
-
-            tmp(1) = tmp(1) + 25;
-            set(this.h.saslider, 'position', tmp);
-
-            tmp = get(this.h.zbox, 'position');
-            tmp(1) = aP(1) + aP(3) + 15;
-            tmp(2) = aP(1) + 20;
-            set(this.h.zbox, 'position', tmp);
-
-            tmp(1) = tmp(1) + 25;
-            set(this.h.sabox, 'position', tmp);
+%             tmp = get(this.h.zslider, 'position');
+%             tmp(1) = aP(1) + aP(3) + 15;
+%             tmp(4) = aP(4) - 50;
+%             set(this.h.zslider, 'position', tmp);
+% 
+%             tmp(1) = tmp(1) + 25;
+%             set(this.h.saslider, 'position', tmp);
+% 
+%             tmp = get(this.h.zbox, 'position');
+%             tmp(1) = aP(1) + aP(3) + 15;
+%             tmp(2) = aP(1) + 20;
+%             set(this.h.zbox, 'position', tmp);
+% 
+%             tmp(1) = tmp(1) + 25;
+%             set(this.h.sabox, 'position', tmp);
         end
     end
     
