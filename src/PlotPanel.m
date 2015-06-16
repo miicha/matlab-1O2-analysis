@@ -21,7 +21,8 @@ classdef PlotPanel < handle
         p;     % parent
         cmap = 'summer';
         
-        mode;
+        mode; % must be a valid matlab identifier; index for struct l_min,
+              % l_max and use_user_legend
         dims; % dimension of dataset
         curr_dims;
         ind;
