@@ -545,7 +545,31 @@ classdef PlotPanel < handle
             set(this.h.plotpanel, 'Position', pP);
 
             aP = get(this.h.axes, 'Position');
-            aP(3:4) = [(pP(3)-aP(1))-80 (pP(4)-aP(2))-5];
+            aP(4) = (pP(4)-aP(2))-5;
+            set(this.h.axes, 'Position', aP);
+            
+            j = 0;
+            for i = length(this.dims):-1:3
+                tmp = this.h.(sprintf('d%d_select', i)).Position;
+                tmp(1) = pP(3) - 40 - 31*j;
+                tmp(2) = aP(2) + aP(4) - 16;
+                this.h.(sprintf('d%d_select', i)).Position = tmp;
+                
+                tmp = this.h.(sprintf('d%d_slider', i)).Position;
+                tmp(1) = pP(3) - 35 - 30*j;
+                tmp(4) = aP(4) - 50;
+                this.h.(sprintf('d%d_slider', i)).Position = tmp;
+                
+                tmp = this.h.(sprintf('d%d_edit', i)).Position;
+                tmp(1) = pP(3) - 35 - 30*j;
+                tmp(2) = aP(1) + 20;
+                this.h.(sprintf('d%d_edit', i)).Position = tmp;
+                
+                j = j + 1;
+            end
+
+            aP = get(this.h.axes, 'Position');
+            aP(3) = tmp(1) - aP(1) - 15;
             set(this.h.axes, 'Position', aP);
 
             tmp = get(this.h.d2_select, 'Position');
@@ -555,15 +579,7 @@ classdef PlotPanel < handle
             tmp = get(this.h.d1_select, 'Position');
             tmp(1) = aP(1) + aP(3)/2;
             set(this.h.d1_select, 'Position', tmp);
-
-%             tmp = get(this.h.d3_select, 'Position');
-%             tmp(1) = aP(1) + aP(3) + 5;
-%             tmp(2) = aP(2) + aP(4) - 16;
-%             set(this.h.d3_select, 'Position', tmp);
-% 
-%             tmp(1) = aP(1) + aP(3) + 40;
-%             set(this.h.d4_select, 'Position', tmp);
-
+            
             tmp = get(this.h.legend, 'position');
             tmp(3) = aP(3);
             set(this.h.legend, 'position', tmp);
@@ -571,22 +587,6 @@ classdef PlotPanel < handle
             tmp = get(this.h.tick_max, 'position');
             tmp(1) = aP(3) + aP(1) - tmp(3);
             set(this.h.tick_max, 'position', tmp);
-            
-%             tmp = get(this.h.zslider, 'position');
-%             tmp(1) = aP(1) + aP(3) + 15;
-%             tmp(4) = aP(4) - 50;
-%             set(this.h.zslider, 'position', tmp);
-% 
-%             tmp(1) = tmp(1) + 25;
-%             set(this.h.saslider, 'position', tmp);
-% 
-%             tmp = get(this.h.zbox, 'position');
-%             tmp(1) = aP(1) + aP(3) + 15;
-%             tmp(2) = aP(1) + 20;
-%             set(this.h.zbox, 'position', tmp);
-% 
-%             tmp(1) = tmp(1) + 25;
-%             set(this.h.sabox, 'position', tmp);
         end
     end
     
