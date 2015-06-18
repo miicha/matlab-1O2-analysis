@@ -476,23 +476,7 @@ classdef SiSaMode < GenericMode
         
         function plot_array(this, varargin)
             this.generate_mean();
-            param = this.current_param;
-
-            if this.disp_fit_params
-                switch param
-                    case length(this.est_params(1, 1, 1, 1, :)) + 1
-                        plot_data = this.fit_chisq;
-                    otherwise
-                        plot_data = this.fit_params(:, :, :, :, param);
-                end
-            else
-                switch param
-                    case length(this.est_params(1, 1, 1, 1, :)) + 1
-                        plot_data = this.data_sum;
-                    otherwise
-                        plot_data = this.est_params(:, :, :, :, param);
-                end
-            end
+            [plot_data, param] = this.get_data();
             mparam = sprintf('m%d', param);
             if this.disp_ov
                 this.plotpanel.plot_array(plot_data, mparam, this.overlays{this.current_ov});
@@ -697,6 +681,30 @@ classdef SiSaMode < GenericMode
         
         function ind = get_current_slice(this)
             ind = this.plotpanel.get_slice();
+        end
+        
+        function fig = get_figure(this)
+            fig = this.p.get_figure();
+        end
+        
+        function [plot_data, param] = get_data(this)
+            param = this.current_param;
+
+            if this.disp_fit_params
+                switch param
+                    case length(this.est_params(1, 1, 1, 1, :)) + 1
+                        plot_data = this.fit_chisq;
+                    otherwise
+                        plot_data = this.fit_params(:, :, :, :, param);
+                end
+            else
+                switch param
+                    case length(this.est_params(1, 1, 1, 1, :)) + 1
+                        plot_data = this.data_sum;
+                    otherwise
+                        plot_data = this.est_params(:, :, :, :, param);
+                end
+            end
         end
         
     % functions that actually compute something

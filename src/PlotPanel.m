@@ -10,8 +10,8 @@ classdef PlotPanel < handle
     %   plot_array(data, overlay_data)
     %   handle = generate_export_fig(visibility)
     %   newpath = save_fig(path)
-    
-    
+
+
     %%%%%%% ToDo: - callback_handlers implementieren
     %             - fluo-mode umbauen, so dass es hierzu passt
     %             - resize funktionabel machen
@@ -270,6 +270,10 @@ classdef PlotPanel < handle
             end
             set(this.h.d1_select, 'visible', 'on');
             set(this.h.d2_select, 'visible', 'on');
+            
+            for i = 1:length(this.slices)
+                this.slices{i}.plot_slice();
+            end
         end
         
         function fighandle = generate_export_fig(this, vis)
@@ -377,6 +381,39 @@ classdef PlotPanel < handle
         function slice = get_slice(this)
             slice = this.ind;
         end
+        
+        function fig = get_figure(this)
+            fig = this.p.get_figure();
+        end
+                
+        function index = get_current_point(this)
+            cp = get(this.h.axes, 'CurrentPoint');
+            cp = round(cp(1, 1:2));
+            cp(cp == 0) = 1;
+
+            index{this.curr_dims(1)} = cp(1); % x ->
+            index{this.curr_dims(2)} = cp(2); % y ^
+            for i = 3:length(this.dims)
+                index{this.curr_dims(i)} = this.ind{this.curr_dims(i)};
+            end
+
+            for i = 1:4
+                if index{i} > this.dims(i)
+                    index{i} = this.dims(i);
+                elseif index{i} <= 0
+                     index{i} = 1;
+                end
+            end
+        end
+        
+        function [x, y] = get_xy_dims(this)
+            x = this.curr_dims(1);
+            y = this.curr_dims(2);
+        end
+        
+        function data = get_data(this)
+            data = this.p.get_data();
+        end
     end
     
     methods (Access = private)       
@@ -392,29 +429,14 @@ classdef PlotPanel < handle
         end
         
         function aplot_click_cb(this, varargin)
-            cp = get(this.h.axes, 'CurrentPoint');
-            cp = round(cp(1, 1:2));
-            cp(cp == 0) = 1;
-
-            index{this.curr_dims(1)} = cp(1); % x ->
-            index{this.curr_dims(2)} = cp(2); % y ^
-            index{this.curr_dims(3)} = this.ind{this.curr_dims(3)};
-            index{this.curr_dims(4)} = this.ind{this.curr_dims(4)};
-
-            for i = 1:4
-                if index{i} > this.dims(i)
-                    index{i} = this.dims(i);
-                elseif index{i} <= 0
-                     index{i} = 1;
-                end
-            end
+            index = this.get_current_point();
             switch get(this.p.get_figure(), 'SelectionType')
                 case 'normal'
                     this.p.left_click_on_axes(index);
                 case 'alt'
                     this.p.right_click_on_axes(index);
                 case 'extend' % shift + click
-                    
+                    this.slices{end+1} = Slice(this, index, [1 1 1], this.h.axes);
             end
         end 
         

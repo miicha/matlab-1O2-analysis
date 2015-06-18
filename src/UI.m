@@ -257,6 +257,10 @@ classdef UI < handle
             delete(this);
         end
         
+        function fig = get_figure(this)
+            fig = this.h.f;
+        end
+        
     % functions for updating the GUI
         function update_infos(this, text)
             str = [[this.fileinfo.path this.fileinfo.name{1}] '  |   Dimensionen: ' num2str(this.fileinfo.size)];
