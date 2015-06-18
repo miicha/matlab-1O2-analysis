@@ -177,7 +177,7 @@ classdef UI < handle
                     end
                     
                 case 'in-vivo'
-                    reader = invivo_reader(filepath);
+                    reader = invivo_reader(filepath, this);
                     tmp = size(reader.data.sisa.data);
                     this.fileinfo.size = tmp(1:4);
                     
