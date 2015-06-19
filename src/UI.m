@@ -147,10 +147,14 @@ classdef UI < handle
         function openHDF5(this)
             filepath = fullfile(this.fileinfo.path, this.fileinfo.name{1});
             
-            FileInfo = h5info(filepath);
             % File-Version und Typ auslesen (geht nur bei neuen Dateien)
-            try
-                FileType = FileInfo.Attributes.Value.Typ{1};
+            try                
+                f_id = H5F.open(filepath);
+                attr_id = H5A.open(f_id,'Version');
+                info = H5A.read(attr_id);
+                H5A.close(attr_id);
+                H5F.close(f_id);
+                FileType = info.Typ{1};
             catch
                 FileType = 'scanning';
             end
@@ -177,7 +181,7 @@ classdef UI < handle
                     end
                     
                 case 'in-vivo'
-                    reader = invivo_reader(filepath);
+                    reader = invivo_reader(filepath, this);
                     tmp = size(reader.data.sisa.data);
                     this.fileinfo.size = tmp(1:4);
                     
