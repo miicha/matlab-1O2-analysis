@@ -136,7 +136,9 @@ classdef SiSaMode < GenericMode
                         this.h.scale_x = uicontrol(this.h.pres_controls);
                         this.h.scale_y_text = uicontrol(this.h.pres_controls);
                         this.h.scale_y = uicontrol(this.h.pres_controls);
-                                
+            
+            dims = size(data);
+            this.plotpanel = PlotPanel(this, dims(1:4));
                                 
             set(this.h.sisamode, 'title', 'SiSa-Lumineszenz',...
                                  'tag', '1',...
@@ -194,8 +196,6 @@ classdef SiSaMode < GenericMode
                               'position', [220 445 200 21],...
                               'visible', 'off');          
                             
-            this.plotpanel = PlotPanel(this);
-            
             %% tabs for switching selection modes
             set(this.h.tabs, 'units', 'pixels',...
                              'position', [10 5 250 550],...

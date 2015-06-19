@@ -126,19 +126,24 @@ classdef Slice < handle
             
             m = (this.point_2{this.p.curr_dims(2)}-this.point_1{this.p.curr_dims(2)})/...
                 (this.point_2{this.p.curr_dims(1)}-this.point_1{this.p.curr_dims(1)});
+            b = this.point_1{this.p.curr_dims(2)} - m*this.point_1{this.p.curr_dims(1)};
+
+            x_1 = this.point_1{this.p.curr_dims(1)};
+            x_2 = this.point_2{this.p.curr_dims(1)};
             
             if isinf(m)
                 d = d';
                 m = 0;
+                b = this.point_1{this.p.curr_dims(1)};
+                
+                x_1 = this.point_1{this.p.curr_dims(2)};
+                x_2 = this.point_2{this.p.curr_dims(2)};
             end
-            
-            b = this.point_1{this.p.curr_dims(2)} - m*this.point_1{this.p.curr_dims(1)};
             
             l = @(x) round(m.*x + b);
             
-            x_1 = this.point_1{this.p.curr_dims(1)};
-            x_2 = this.point_2{this.p.curr_dims(1)};
-            
+
+
             if x_1 > x_2
                 tmp = x_2;
                 x_2 = x_1;

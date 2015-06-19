@@ -50,8 +50,8 @@ classdef FluoMode < GenericMode
                                 'BackgroundColor', [1 1 1],...
                                 'callback', @this.spec_cb);
 
-            this.plotpanel = PlotPanel(this);
-            
+                            
+            this.plotpanel = PlotPanel(this, size(data));
             this.resize();
             this.plot_array();
         end
@@ -63,12 +63,12 @@ classdef FluoMode < GenericMode
         end
                 
         function plot_array(this)
-            this.plotpanel.plot_array(this.data(:, :, :, :, this.current_spec_point));
+            this.plotpanel.plot_array(this.data(:, :, :, :, :), 'a');
         end
         
         function left_click_on_axes(this, point)
             figure;
-            plot(this.wavelengths,squeeze(this.data(point{:}, :)))
+            plot(this.wavelengths,squeeze(this.data(point{1:4}, :)))
             title(num2str(cell2mat(point)))
         end
         
@@ -117,6 +117,10 @@ classdef FluoMode < GenericMode
             this.current_spec_point = val;
 
             this.plot_array();
+        end
+        
+        function data = get_data(this)
+            data = this.data(:, :, :, :, :);
         end
     end
 end

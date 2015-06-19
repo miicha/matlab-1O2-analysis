@@ -42,13 +42,13 @@ classdef PlotPanel < handle
     end
     
     methods
-        function this = PlotPanel(parent, callback_handlers)
+        function this = PlotPanel(parent, dims, callback_handlers)
             % callback_handlers is a struct of callback functions for
             % providing sliders or other UI-elements for changing that
-            % parameter. If it is empty, all those callbacks will be
+            % parameter. If it is not provided, all those callbacks will be
             % handled (and sliders will be created) by PlotPanel.
             
-            if nargin < 2
+            if nargin < 3
                 callback_handlers = struct();
             end
             
@@ -57,7 +57,12 @@ classdef PlotPanel < handle
             this.p = parent;
             this.h.parent = parent.h.plotpanel;
             
-            this.dims = parent.p.fileinfo.size;
+            while length(dims) < 4
+                dims = [dims 1];
+            end
+                
+            this.dims = dims;
+            
             
             this.dimnames = {'x', 'y', 'z', 's'};
             this.ind = {':', ':', 1, 1};
@@ -211,7 +216,7 @@ classdef PlotPanel < handle
             plot_data = squeeze(data(this.ind{:}));
             
             if this.first_call
-                this.update_dims(size(data));
+%                 this.update_dims(size(data));
                 this.first_call = false;
             end
             
@@ -395,7 +400,7 @@ classdef PlotPanel < handle
             for i = 3:length(this.dims)
                 index{this.curr_dims(i)} = this.ind{this.curr_dims(i)};
             end
-
+            
             for i = 1:4
                 if index{i} > this.dims(i)
                     index{i} = this.dims(i);
