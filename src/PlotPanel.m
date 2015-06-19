@@ -14,9 +14,8 @@ classdef PlotPanel < handle
 
     %%%%%%% ToDo: - callback_handlers implementieren
     %             - fluo-mode umbauen, so dass es hierzu passt
-    %             - resize funktionabel machen
-    
-    
+
+
     properties
         p;     % parent
         cmap = 'summer';
@@ -628,6 +627,4 @@ classdef PlotPanel < handle
             set(this.h.tick_max, 'position', tmp);
         end
     end
-    
 end
-
