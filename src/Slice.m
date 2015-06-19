@@ -27,7 +27,7 @@ classdef Slice < handle
             axes(this.p.h.axes)
             hold on
             this.h.p1 = plot(point_1{x}, point_1{y}, 'o', 'color', this.color, 'markerfacecolor', this.color,...
-                 'ButtonDownFcn', @this.update_point_1_cb);
+                 'markeredgecolor', 'k', 'ButtonDownFcn', @this.update_point_1_cb);
             hold off
         end
 
@@ -43,7 +43,7 @@ classdef Slice < handle
                 case 'normal'
                     this.p.get_figure().WindowButtonUpFcn = @this.stop_dragging_cb_1;
                 case 'alt'
-                    this.open_plot();
+                    this.open_slice_plot();
                 case 'open'
                     this.delete_slice();
             end
@@ -54,7 +54,7 @@ classdef Slice < handle
                 case 'normal'
                     this.p.get_figure().WindowButtonUpFcn = @this.stop_dragging_cb_2;
                 case 'alt'
-                    this.open_plot();
+                    this.open_slice_plot();
                 case 'open'
                     this.delete_slice();
             end
@@ -67,8 +67,11 @@ classdef Slice < handle
             if isfield(this.h, 'p2')
                 delete(this.h.p2)
             end
-            if isfield(this.h, 'l')
-                delete(this.h.l)
+            if isfield(this.h, 'l1')
+                delete(this.h.l1)
+            end
+            if isfield(this.h, 'l2')
+                delete(this.h.l2)
             end
             this.p.delete_slice(this);
             delete(this);
@@ -91,13 +94,18 @@ classdef Slice < handle
                 if isfield(this.h, 'p2')
                     delete(this.h.p2)
                 end
-                if isfield(this.h, 'l')
-                    delete(this.h.l)
+                if isfield(this.h, 'l1')
+                    delete(this.h.l1)
+                end
+                if isfield(this.h, 'l2')
+                    delete(this.h.l2)
                 end
                 
                 hold on
-                this.h.l = line([this.point_1{x} this.point_2{x}], [this.point_1{y} this.point_2{y}],...
-                      'color', this.color,  'HitTest', 'off');
+                this.h.l1 = line([this.point_1{x} this.point_2{x}], [this.point_1{y} this.point_2{y}],...
+                      'color', [.2 .2 .2],  'HitTest', 'off', 'linewidth', 1.8);
+                this.h.l2 = line([this.point_1{x} this.point_2{x}], [this.point_1{y} this.point_2{y}],...
+                      'color', this.color,  'HitTest', 'off', 'linewidth', 1);
                 this.h.p2 = plot(this.point_2{x}, this.point_2{y}, 'o', 'color', this.color,...
                      'markerfacecolor', this.color, 'markeredgecolor', 'k', 'ButtonDownFcn', @this.update_point_2_cb);
                 this.h.p1 = plot(this.point_1{x}, this.point_1{y}, 'o', 'color', this.color, 'markerfacecolor', this.color,...
@@ -106,12 +114,15 @@ classdef Slice < handle
             end
         end
 
-        function open_plot(this)
+        function open_slice_plot(this)
             figure()
             d = this.p.get_data();
             tmp = this.p.get_slice();
             d = squeeze(d(tmp{:}));
             
+            if this.p.transpose
+                d = d';
+            end
             
             m = (this.point_2{this.p.curr_dims(2)}-this.point_1{this.p.curr_dims(2)})/...
                 (this.point_2{this.p.curr_dims(1)}-this.point_1{this.p.curr_dims(1)});
@@ -120,16 +131,24 @@ classdef Slice < handle
                 d = d';
                 m = 0;
             end
+            
             b = this.point_1{this.p.curr_dims(2)} - m*this.point_1{this.p.curr_dims(1)};
             
             l = @(x) round(m.*x + b);
             
+            x_1 = this.point_1{this.p.curr_dims(1)};
+            x_2 = this.point_2{this.p.curr_dims(1)};
+            
+            if x_1 > x_2
+                tmp = x_2;
+                x_2 = x_1;
+                x_1 = tmp;
+            end
 
             [x, y] = size(d);
             x_i = 0;
-            for i = this.point_1{this.p.curr_dims(1)}:this.point_2{this.p.curr_dims(1)}
+            for i = x_1:x_2
                 x_i = x_i + 1;
-
                 if l(i) < 1 || l(i) > y
                     continue
                 end
