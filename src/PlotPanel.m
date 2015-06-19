@@ -270,7 +270,7 @@ classdef PlotPanel < handle
             end
             set(this.h.d1_select, 'visible', 'on');
             set(this.h.d2_select, 'visible', 'on');
-            
+
             for i = 1:length(this.slices)
                 this.slices{i}.plot_slice();
             end
@@ -414,6 +414,23 @@ classdef PlotPanel < handle
         function data = get_data(this)
             data = this.p.get_data();
         end
+        
+        function create_slice(this, index)
+            color = rand(1, 3);
+            while sum(color) < 1.5
+                color = rand(1, 3);
+            end
+            this.slices{end+1} = Slice(this, index, color, this.h.axes); 
+        end
+        
+        function delete_slice(this, slice)
+            for i = 1:numel(this.slices)
+                if this.slices(i) == slice
+                    this.slices(i) = [];
+                    return
+                end
+            end
+        end
     end
     
     methods (Access = private)       
@@ -436,7 +453,7 @@ classdef PlotPanel < handle
                 case 'alt'
                     this.p.right_click_on_axes(index);
                 case 'extend' % shift + click
-                    this.slices{end+1} = Slice(this, index, [1 1 1], this.h.axes);
+                    this.create_slice(index);
             end
         end 
         
