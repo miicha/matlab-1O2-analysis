@@ -63,7 +63,7 @@ classdef FluoMode < GenericMode
         end
                 
         function plot_array(this)
-            this.plotpanel.plot_array(this.data(:, :, :, :, this.current_spec_point));
+            this.plotpanel.plot_array(this.data(:, :, :, :, this.current_spec_point), 'a');
         end
         
         function left_click_on_axes(this, point)
