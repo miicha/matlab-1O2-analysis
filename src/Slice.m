@@ -131,10 +131,11 @@ classdef Slice < handle
             x_1 = this.point_1{this.p.curr_dims(1)};
             x_2 = this.point_2{this.p.curr_dims(1)};
             
-            if isinf(m)
+            if abs(m) > 1 % guarantees that x_2 - x_1 > y_2 - y_1
                 d = d';
-                m = 0;
-                b = this.point_1{this.p.curr_dims(1)};
+                m = (this.point_2{this.p.curr_dims(1)}-this.point_1{this.p.curr_dims(1)})/...
+                    (this.point_2{this.p.curr_dims(2)}-this.point_1{this.p.curr_dims(2)});
+                b = this.point_1{this.p.curr_dims(1)} - m*this.point_1{this.p.curr_dims(2)};
                 
                 x_1 = this.point_1{this.p.curr_dims(2)};
                 x_2 = this.point_2{this.p.curr_dims(2)};
@@ -157,7 +158,6 @@ classdef Slice < handle
                 if l(i) < 1 || l(i) > y
                     continue
                 end
-                
                 plot_vec(x_i) = d(i, l(i));
                 if x_i == 1
                     x_vec(1) = 0;
