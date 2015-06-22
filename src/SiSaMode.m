@@ -138,7 +138,7 @@ classdef SiSaMode < GenericMode
                         this.h.scale_y = uicontrol(this.h.pres_controls);
             
             dims = size(data);
-            this.plotpanel = PlotPanel(this, dims(1:4));
+            this.plotpanel = PlotPanel(this, dims(1:4), {'x', 'y', 'z', 's'});
                                 
             set(this.h.sisamode, 'title', 'SiSa-Lumineszenz',...
                                  'tag', '1',...

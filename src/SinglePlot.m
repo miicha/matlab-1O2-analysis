@@ -35,7 +35,7 @@ classdef SinglePlot < handle
             if nargin < 3
                 defpath = '';
             end
-            
+
             this.xdata = xdata;
             this.ydata = ydata;
             this.defpath = defpath;

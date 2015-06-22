@@ -35,24 +35,11 @@ classdef PlotPanel < handle
         
         first_call = true;
         
-        callbacks;
-        
         h = struct();
     end
     
     methods
-        function this = PlotPanel(parent, dims, callback_handlers)
-            % callback_handlers is a struct of callback functions for
-            % providing sliders or other UI-elements for changing that
-            % parameter. If it is not provided, all those callbacks will be
-            % handled (and sliders will be created) by PlotPanel.
-            
-            if nargin < 3
-                callback_handlers = struct();
-            end
-            
-            this.callbacks = callback_handlers;
-            
+        function this = PlotPanel(parent, dims, dimnames)
             this.p = parent;
             this.h.parent = parent.h.plotpanel;
             
@@ -62,13 +49,11 @@ classdef PlotPanel < handle
                 
             this.dims = dims;
             
-            
-            this.dimnames = {'x', 'y', 'z', 's'};
+            this.dimnames = dimnames;
             this.ind = {':', ':', 1, 1};
             % fill the dimnames with defaults
             i = 0;
-            while length(this.dimnames) < length(this.dims)
-                this.dimnames = [this.dimnames sprintf('%s', 97+i)];
+            while length(this.ind) < length(this.dims)
                 this.ind = [this.ind 1];
                 i = i + 1;
             end
@@ -142,7 +127,7 @@ classdef PlotPanel < handle
                 set(this.h.(sprintf('d%d_edit', i)), 'units', 'pixels',...
                             'style', 'edit',...
                             'string', '1',...
-                            'position', [460+j*25 430 20, 20],...
+                            'position', [460+j*25 430 30 20],...
                             'callback', {@this.set_nth_val_cb, i},...
                             'BackgroundColor', [1 1 1]);
                 
@@ -152,7 +137,7 @@ classdef PlotPanel < handle
                             'value', i,...
                             'tag', num2str(i),...
                             'callback', @this.set_dim_cb,...
-                            'position', [465+j*25 520 30 17],...
+                            'position', [460+j*25 520 30 17],...
                             'BackgroundColor', [1 1 1]);
                  
                 if this.dims(this.curr_dims(i)) == 1 
@@ -436,7 +421,7 @@ classdef PlotPanel < handle
         end
     end
     
-    methods (Access = private)       
+    methods (Access = protected)       
         function transp = get_transpose(this, sx, sy, sn)
             sxn = sn(1);
             syn = sn(2);
@@ -603,7 +588,7 @@ classdef PlotPanel < handle
                 this.h.(sprintf('d%d_slider', i)).Position = tmp;
                 
                 tmp = this.h.(sprintf('d%d_edit', i)).Position;
-                tmp(1) = pP(3) - 35 - 30*j;
+                tmp(1) = pP(3) - 40 - 31*j;
                 tmp(2) = aP(1) + 20;
                 this.h.(sprintf('d%d_edit', i)).Position = tmp;
                 
