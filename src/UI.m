@@ -7,10 +7,13 @@ classdef UI < handle
     end
     
     properties
-        version = '0.4.1';
+        version = '0.4.2';
         fileinfo = struct('path', '', 'size', [0 0 0 0],...
                           'name', '', 'np', 0); 
-        scale = [5 5 5];          % distance between the centers of two pixels in mm
+                      
+        scale = [5 5 5 3];          % distance between the centers of two pixels in units
+        units = {'mm', 'mm', 'mm', 's'};
+        
         par_size = 16;  % when doing parallel processing: how many "tasks" should be sent to all threads?
         file_opened = 0;
         data_read = false;
@@ -497,7 +500,7 @@ classdef UI < handle
         end
     end
 
-    methods (Static=true)      
+    methods (Static=true)
         function ver2isnewer = compare_versions(ver1, ver2)
             ver1_parts = str2double(strsplit(ver1, '.'));
             ver2_parts = str2double(strsplit(ver2, '.'));
