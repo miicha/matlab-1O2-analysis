@@ -6,14 +6,22 @@ classdef FluoMode < GenericMode
         num_spec_points;
         current_spec_point = 1;
         wavelengths;
+        scale;
+        units;
     end
     
     methods
-        function this = FluoMode(parent, data, wavelengths)
+        function this = FluoMode(parent, data, wavelengths, int_time)
             this.p = parent;
             this.data = data;
             this.num_spec_points = size(data, 5);
             this.wavelengths = wavelengths;
+            
+            this.scale = this.p.scale;
+            this.units = this.p.units;
+            
+            this.scale(4) = int_time/1000;
+            this.units{4} = 't [s]';
             
             this.h.parent = parent.h.modepanel;
             

@@ -8,19 +8,21 @@ classdef InvivoMode < SiSaMode
     end
     
     methods
-        function this = InvivoMode(parent, data, evo_data, reader)
+        function this = InvivoMode(parent, data, evo_data, int_time, reader)
             this@SiSaMode(parent, data);
             if reader.meta.sisa.Optik == 1270
                 set(this.h.sisamode, 'background', [0.8 0.2 0.2]);
             else
                 set(this.h.sisamode, 'background', [0.2 0.2 0.8]);
             end
+
+            this.scale(4) = int_time;
+            this.units{4} = 's';
             
             this.evo_data = evo_data;
                        
             set(this.h.sisamode, 'title', 'in-vivo');
-            
-            
+      
             this.locations = reader.meta.locations;
         end
         
@@ -37,7 +39,7 @@ classdef InvivoMode < SiSaMode
             % read Channel Width
             
             try
-                chanWidth=h5read(fullfile(this.p.fileinfo.path, this.p.fileinfo.name{1}), '/Meta/sisa/Parameter')
+                chanWidth=h5read(fullfile(this.p.fileinfo.path, this.p.fileinfo.name{1}), '/Meta/sisa/Parameter');
                 
                 this.channel_width=single(chanWidth.Kanalbreite);
             catch

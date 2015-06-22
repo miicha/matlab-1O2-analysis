@@ -191,11 +191,14 @@ classdef UI < handle
                     if isfield(reader.data, 'sisa')
                         % open a SiSa tab
                         this.modes{1} = InvivoMode(this, double(reader.data.sisa.data),...
-                                                         reader.data.sisa.verlauf, reader);
+                                                         reader.data.sisa.verlauf,...
+                                                         reader.meta.sisa.int_time, reader);
                     end
                     if isfield(reader.data, 'fluo')
                         % open a fluorescence tab
-                        this.modes{2} = FluoMode(this, double(reader.data.fluo.data), reader.meta.fluo.x_achse);
+                        this.modes{2} = FluoMode(this, double(reader.data.fluo.data),...
+                                                       reader.meta.fluo.x_achse,...
+                                                       reader.meta.fluo.int_time);
                     end
                     if isfield(reader.data, 'temp')
                         % open a temperature tab

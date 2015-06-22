@@ -123,13 +123,18 @@ classdef Slice < handle
                 d = d';
             end
             
+            x_1 = this.point_1{this.p.curr_dims(1)};
+            x_2 = this.point_2{this.p.curr_dims(1)};
+            
+            y_1 = this.point_1{this.p.curr_dims(2)};
+            y_2 = this.point_2{this.p.curr_dims(2)};
+            
             m = (this.point_2{this.p.curr_dims(2)}-this.point_1{this.p.curr_dims(2)})/...
                 (this.point_2{this.p.curr_dims(1)}-this.point_1{this.p.curr_dims(1)});
             b = this.point_1{this.p.curr_dims(2)} - m*this.point_1{this.p.curr_dims(1)};
 
-            x_1 = this.point_1{this.p.curr_dims(1)};
-            x_2 = this.point_2{this.p.curr_dims(1)};
             
+            transp = false;
             if abs(m) > 1 % guarantees that x_2 - x_1 > y_2 - y_1
                 d = d';
                 m = (this.point_2{this.p.curr_dims(1)}-this.point_1{this.p.curr_dims(1)})/...
@@ -138,12 +143,14 @@ classdef Slice < handle
                 
                 x_1 = this.point_1{this.p.curr_dims(2)};
                 x_2 = this.point_2{this.p.curr_dims(2)};
+                
+                y_1 = this.point_1{this.p.curr_dims(1)};
+                y_2 = this.point_2{this.p.curr_dims(1)};
+                transp = true;
             end
             
             l = @(x) round(m.*x + b);
             
-
-
             if x_1 > x_2
                 tmp = x_2;
                 x_2 = x_1;
@@ -159,14 +166,37 @@ classdef Slice < handle
                 end
                 plot_vec(x_i) = d(i, l(i));
                 if x_i == 1
-                    x_vec(1) = 0;
+                    x_vec(1) = x_1;
                     continue
                 end
                 x_vec(x_i) = x_vec(x_i-1) + sqrt(1 + (l(i)-l(i-1))^2);
-                
+            end
+
+            if y_2 == y_1
+                if transp
+                    x_label = this.p.p.units{this.p.curr_dims(2)};
+                    x_vec = x_vec * this.p.p.scale(this.p.curr_dims(2));
+                else
+                    x_label = this.p.p.units{this.p.curr_dims(1)};
+                    x_vec = x_vec * this.p.p.scale(this.p.curr_dims(1));
+                end
+            elseif x_2 == x_1
+                if transp
+                    x_label = this.p.p.units{this.p.curr_dims(1)};
+                    x_vec = x_vec * this.p.p.scale(this.p.curr_dims(1));
+                else
+                    x_label = this.p.p.units{this.p.curr_dims(2)};
+                    x_vec = x_vec * this.p.p.scale(this.p.curr_dims(2));
+                end
+            elseif strcmp(this.p.p.units{this.p.curr_dims(1)}, this.p.p.units{this.p.curr_dims(2)})
+                x_label = this.p.p.units{this.p.curr_dims(1)};
+                % was hübsches zum skalieren überlegen...
+            else
+                x_label = 'a.u.';
             end
             
-            SinglePlot(x_vec, plot_vec, fullfile(this.p.p.p.savepath, this.p.p.p.genericname));
+            SinglePlot(x_vec, plot_vec, fullfile(this.p.p.p.savepath, this.p.p.p.genericname),...
+                       'xlabel', x_label);
         end
 
         function stop_dragging_cb_1(this, varargin)

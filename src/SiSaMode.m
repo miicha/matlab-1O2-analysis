@@ -28,6 +28,9 @@ classdef SiSaMode < GenericMode
         
         disp_fit_params = 0;
         
+        scale;
+        units;
+        
         fitted = false;
         cmap = 'summer';
         
@@ -73,8 +76,8 @@ classdef SiSaMode < GenericMode
                  { '$$f(t) = A\cdot \exp \left(\frac{t}{\tau_1}\right) + B\cdot \exp \left(\frac{t}{\tau_2}\right) + o$$', {'A', '\tau_1', '\tau_2', 'B', 'o'}, {'Counts', '$$\mu$$s', '$$\mu$$s', 'Counts', 'Counts'} }...
                  })
              
-             genericname;
-             savepath;
+         genericname;
+         savepath;
     end
     
     methods
@@ -82,6 +85,9 @@ classdef SiSaMode < GenericMode
             this.p = parent;
             this.data = data;
             this.h.parent = parent.h.modepanel;
+            
+            this.scale = this.p.scale;
+            this.units = this.p.units;
             
             this.read_channel_width();
             
