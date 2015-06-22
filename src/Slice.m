@@ -115,7 +115,6 @@ classdef Slice < handle
         end
 
         function open_slice_plot(this)
-            figure()
             d = this.p.get_data();
             tmp = this.p.get_slice();
             d = squeeze(d(tmp{:}));
@@ -167,7 +166,7 @@ classdef Slice < handle
                 
             end
             
-            plot(x_vec, plot_vec);
+            SinglePlot(x_vec, plot_vec, fullfile(this.p.p.p.savepath, this.p.p.p.genericname));
         end
 
         function stop_dragging_cb_1(this, varargin)
