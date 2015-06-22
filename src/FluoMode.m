@@ -47,10 +47,13 @@ classdef FluoMode < GenericMode
         end
         
         function left_click_on_axes(this, point)
-            figure;
             SinglePlot(this.wavelengths, squeeze(this.data(point{1:4}, :)),...
                        fullfile(this.p.savepath, this.p.genericname),...
                        'title', num2str(cell2mat(point)));
+        end
+        
+        function right_click_on_axes(this, point)
+            % nothing yet. Do something about that! :)
         end
         
         function resize(this, varargin)
