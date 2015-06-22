@@ -13,7 +13,6 @@ classdef PlotPanel < handle
 
 
     %%%%%%% ToDo: - callback_handlers implementieren
-    %             - fluo-mode umbauen, so dass es hierzu passt
 
 
     properties

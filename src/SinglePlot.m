@@ -1,6 +1,26 @@
 classdef SinglePlot < handle
-    %SINGLEPLOT Summary of this class goes here
-    %   Detailed explanation goes here
+    %SINGLEPLOT 1-D plot that can be saved to .pdf and .txt.
+    %
+    %   handle = SinglePlot(xdata, ydata, defpath, varargin)
+    %   
+    %   xdata and ydata can either be vectors or matrices. If xdata is a
+    %   vector, all columns in ydata will be plotted against xdata; if
+    %   xdata is a matrix, each column in ydata will be plotted against the
+    %   correspondung column in xdata.
+    %   
+    %   defpath is the default path (and filename) where the plot or the 
+    %   data should be saved. If undefined the current working dir is the 
+    %   default path. Set to '' if you do not want to specify it but need
+    %   the varargin.
+    %
+    %   varargin are certain property-value-pairs that can customize the
+    %   axes labels and title among others. To be expanded.
+    %
+    %   Example:
+    %       SinglePlot([1 2 3 5], [2 3 4 5]);
+    %
+    %   Author:
+    %       Sebastian Pfitzner
     
     properties
         xdata;
@@ -12,6 +32,10 @@ classdef SinglePlot < handle
     
     methods
         function this = SinglePlot(xdata, ydata, defpath, varargin)
+            if nargin < 3
+                defpath = '';
+            end
+            
             this.xdata = xdata;
             this.ydata = ydata;
             this.defpath = defpath;
@@ -26,17 +50,15 @@ classdef SinglePlot < handle
             
             set(this.h.f, 'resizefcn', @this.resize);
             set(this.h.save_plot, 'units', 'pixels',...
-                                  'position', [10 10 120 30],...
-                                  'string', 'Plot speichern.',...
-                                  'FontSize', 9,...
+                                  'position', [10 10 100 22],...
+                                  'string', 'Plot speichern',...
                                   'callback', @this.save_fig_cb);
             set(this.h.save_data, 'units', 'pixels',...
-                                  'position', [130 10 120 30],...
-                                  'string', 'Daten speichern.',...
-                                  'FontSize', 9,...
+                                  'position', [120 10 100 22],...
+                                  'string', 'Daten speichern',...
                                   'callback', @this.save_data_cb);
             set(this.h.axes, 'units', 'pixels',...
-                             'OuterPosition', [10 50 1000 500])
+                             'OuterPosition', [10 30 1000 500])
             this.plot();
             this.resize();
         end
@@ -120,6 +142,8 @@ classdef SinglePlot < handle
                     fclose(fid);
                     dlmwrite(path, [x this.ydata], '-append');
                 end
+            else % multiple sets of x values
+                warndlg('Cannot currently export plot-data with more than one x-axis');
             end
             
         end
@@ -145,7 +169,7 @@ classdef SinglePlot < handle
             apos = this.h.axes.OuterPosition;
             fpos = this.h.f.Position;
             
-            apos(3:4) = fpos(3:4) - [20 50];
+            apos(3:4) = fpos(3:4) - [20 30];
             this.h.axes.OuterPosition = apos;
         end
     end

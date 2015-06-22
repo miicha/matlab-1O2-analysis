@@ -51,7 +51,7 @@ classdef FluoMode < GenericMode
                                 'callback', @this.spec_cb);
 
                             
-            this.plotpanel = PlotPanel(this, size(data));
+            this.plotpanel = PlotPanel(this, size(data(:,:,:,:,1)));
             this.resize();
             this.plot_array();
         end
@@ -63,7 +63,7 @@ classdef FluoMode < GenericMode
         end
                 
         function plot_array(this)
-            this.plotpanel.plot_array(this.data(:, :, :, :, :), 'a');
+            this.plotpanel.plot_array(this.data(:, :, :, :, this.current_spec_point), 'a');
         end
         
         function left_click_on_axes(this, point)
@@ -120,7 +120,7 @@ classdef FluoMode < GenericMode
         end
         
         function data = get_data(this)
-            data = this.data(:, :, :, :, :);
+            data = this.data(:, :, :, :, this.current_spec_point);
         end
     end
 end
