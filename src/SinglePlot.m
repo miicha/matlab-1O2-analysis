@@ -70,6 +70,13 @@ classdef SinglePlot < handle
             for i = 1:2:length(this.plot_args)
                 plt_props_handler(this.h.axes, this.plot_args{i}, this.plot_args{i+1});
             end
+            xmin = min(min(this.xdata));
+            xmax = max(max(this.xdata));
+            ymin = min(min(this.ydata));
+            ymax = max(max(this.ydata));
+            
+            xlim([xmin-(xmax-xmin)/30 xmax+(xmax-xmin)/30])
+            ylim([ymin-(ymax-ymin)/30 ymax+(ymax-ymin)/30])
         end
         
         function generate_export_fig(this, vis)
@@ -98,8 +105,8 @@ classdef SinglePlot < handle
             
             % save the plot and close the figure
             set(this.h.plot_pre, 'PaperUnits', 'points');
-            set(this.h.plot_pre, 'PaperSize', [x_pix+80 y_pix+80]/1.5);
-            set(this.h.plot_pre, 'PaperPosition', [10 0 x_pix+80 y_pix+80]/1.5);
+            set(this.h.plot_pre, 'PaperSize', [x_pix y_pix]/2);
+            set(this.h.plot_pre, 'PaperPosition', [0 0 x_pix y_pix]/2);
             print(this.h.plot_pre, '-dpdf', '-r600', path);
             close(this.h.plot_pre)
         end
