@@ -511,13 +511,11 @@ classdef SiSaMode < GenericMode
             this.l_max = nan(length(t{4}) + 1, 1);
             this.l_min = nan(length(t{4}) + 1, 1);
             this.model = str;
-            if this.p.data_read
-                this.estimate_parameters();
-                set(this.h.plttxt, 'visible', 'on');
-                set(this.h.param, 'visible', 'on',...
-                                'string', [t{4}, 'Summe']);
-                this.plot_array();
-            end
+            this.estimate_parameters();
+            set(this.h.plttxt, 'visible', 'on');
+            set(this.h.param, 'visible', 'on',...
+                            'string', [t{4}, 'Summe']);
+            this.plot_array();
         end
     
         function set_scale(this, scl)

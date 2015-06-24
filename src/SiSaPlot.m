@@ -198,18 +198,13 @@ classdef SiSaPlot < handle
         
         function getdata(this, smode)
             this.chisq = 0;
-            if ~smode.p.data_read
-                dataset = ['/' num2str(this.cp(1)-1) '/' num2str(this.cp(2)-1)...
-                           '/' num2str(this.cp(3)-1) '/sisa/' num2str(this.cp(4)-1)];
-                this.data(1, :) = h5read(smode.p.fileinfo.path, dataset);
-            else
-                this.data = squeeze(smode.data(this.cp(1), this.cp(2), this.cp(3), this.cp(4), :));
-                this.x_data = smode.x_data;
-                if this.fitted
-                    this.chisq =  squeeze(smode.fit_chisq(this.cp(1), this.cp(2), this.cp(3), this.cp(4), :));
-                    this.fit_params = squeeze(smode.fit_params(this.cp(1), this.cp(2), this.cp(3), this.cp(4), :));
-                    this.fit_params_err = squeeze(smode.fit_params_err(this.cp(1), this.cp(2), this.cp(3), this.cp(4), :));
-                end
+
+            this.data = squeeze(smode.data(this.cp(1), this.cp(2), this.cp(3), this.cp(4), :));
+            this.x_data = smode.x_data;
+            if this.fitted
+                this.chisq =  squeeze(smode.fit_chisq(this.cp(1), this.cp(2), this.cp(3), this.cp(4), :));
+                this.fit_params = squeeze(smode.fit_params(this.cp(1), this.cp(2), this.cp(3), this.cp(4), :));
+                this.fit_params_err = squeeze(smode.fit_params_err(this.cp(1), this.cp(2), this.cp(3), this.cp(4), :));
             end
         end
         

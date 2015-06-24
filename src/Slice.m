@@ -9,12 +9,18 @@ classdef Slice < handle
         ax;
         color;
         old_fcn;
-        
+        number;
         h = struct();
     end
 
     methods
-        function this = Slice(parent, point_1, color, ax)
+        function this = Slice(parent, point_1, color, ax, no)
+            if nargin < 5
+                no = 0;
+            end
+            
+            this.number = no;
+            
             this.p = parent;
             this.point_1 = point_1;
             this.old_fcn = this.p.h.axes.ButtonDownFcn;
@@ -61,17 +67,9 @@ classdef Slice < handle
         end
         
         function delete_slice(this)
-            if isfield(this.h, 'p1')
-                delete(this.h.p1)
-            end
-            if isfield(this.h, 'p2')
-                delete(this.h.p2)
-            end
-            if isfield(this.h, 'l1')
-                delete(this.h.l1)
-            end
-            if isfield(this.h, 'l2')
-                delete(this.h.l2)
+            parts = fieldnames(this.h);
+            for i = 1:length(parts)
+                delete(this.h.(parts{i}))
             end
             this.p.delete_slice(this);
             delete(this);
@@ -88,17 +86,9 @@ classdef Slice < handle
             end
             if flag
                 axes(this.p.h.axes)
-                if isfield(this.h, 'p1')
-                    delete(this.h.p1)
-                end
-                if isfield(this.h, 'p2')
-                    delete(this.h.p2)
-                end
-                if isfield(this.h, 'l1')
-                    delete(this.h.l1)
-                end
-                if isfield(this.h, 'l2')
-                    delete(this.h.l2)
+                parts = fieldnames(this.h);
+                for i = 1:length(parts)
+                    delete(this.h.(parts{i}))
                 end
                 
                 hold on
@@ -110,6 +100,7 @@ classdef Slice < handle
                      'markerfacecolor', this.color, 'markeredgecolor', 'k', 'ButtonDownFcn', @this.update_point_2_cb);
                 this.h.p1 = plot(this.point_1{x}, this.point_1{y}, 'o', 'color', this.color, 'markerfacecolor', this.color,...
                      'markeredgecolor', 'k', 'ButtonDownFcn', @this.update_point_1_cb);
+%                 this.h.p1_text = text(this.point_1{x}, this.point_1{y}, num2str(this.number));
                 hold off
             end
         end
@@ -172,6 +163,9 @@ classdef Slice < handle
                 x_vec(x_i) = x_vec(x_i-1) + sqrt(1 + (l(i)-l(i-1))^2);
             end
 
+            % needs to be generalized to not-uniformly-spaced datapoints!
+            %     (errors for wavelength, but not a problem because a click
+            %      will give that anyways.)
             if y_2 == y_1
                 if transp
                     x_label = this.p.p.units{this.p.curr_dims(2)};

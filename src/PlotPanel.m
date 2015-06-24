@@ -11,9 +11,7 @@ classdef PlotPanel < handle
     %   handle = generate_export_fig(visibility)
     %   newpath = save_fig(path)
 
-
     %%%%%%% ToDo: - callback_handlers implementieren
-
 
     properties
         p;     % parent
@@ -37,18 +35,18 @@ classdef PlotPanel < handle
         
         h = struct();
     end
-    
+
     methods
         function this = PlotPanel(parent, dims, dimnames)
             this.p = parent;
             this.h.parent = parent.h.plotpanel;
-            
+
             while length(dims) < 4
                 dims = [dims 1];
             end
-                
+
             this.dims = dims;
-            
+
             this.dimnames = dimnames;
             this.ind = {':', ':', 1, 1};
             % fill the dimnames with defaults
@@ -187,7 +185,7 @@ classdef PlotPanel < handle
                                 'position', [5 300 30 17],...
                                 'BackgroundColor', [1 1 1]);
         end
-        
+
         function plot_array(this, data, mode, ov_data)
             if nargin < 4 || isempty(ov_data)
                 disp_ov = false;
@@ -263,7 +261,7 @@ classdef PlotPanel < handle
                 this.slices{i}.plot_slice();
             end
         end
-        
+
         function fighandle = generate_export_fig(this, vis)
             x = size(this.p.data, this.curr_dims(1));
             y = size(this.p.data, this.curr_dims(2));
@@ -347,7 +345,7 @@ classdef PlotPanel < handle
             end
             fighandle = this.h.plot_pre;
         end
-        
+
         function newpath = save_fig(this, path)
             [newpath, ~, ~] = fileparts(path);
             [file, path] = uiputfile(path);
@@ -365,15 +363,15 @@ classdef PlotPanel < handle
             print(f, '-dpdf', '-r600', fullfile(path, file));
             close(f);
         end
-        
+
         function slice = get_slice(this)
             slice = this.ind;
         end
-        
+
         function fig = get_figure(this)
             fig = this.p.get_figure();
         end
-                
+
         function index = get_current_point(this)
             cp = get(this.h.axes, 'CurrentPoint');
             cp = round(cp(1, 1:2));
@@ -393,27 +391,27 @@ classdef PlotPanel < handle
                 end
             end
         end
-        
+
         function [x, y] = get_xy_dims(this)
             x = this.curr_dims(1);
             y = this.curr_dims(2);
         end
-        
+
         function data = get_data(this)
             data = this.p.get_data();
         end
-        
+
         function create_slice(this, index)
             color = rand(1, 3);
             while sum(color) < 1.5
                 color = rand(1, 3);
             end
-            this.slices{end+1} = Slice(this, index, color, this.h.axes); 
+            this.slices{end+1} = Slice(this, index, color, this.h.axes, length(this.slices)+1); 
         end
-        
+
         function delete_slice(this, slice)
             for i = 1:numel(this.slices)
-                if this.slices(i) == slice
+                if this.slices{i} == slice
                     this.slices(i) = [];
                     return
                 end
@@ -428,11 +426,11 @@ classdef PlotPanel < handle
             transp = (sxn ~= sx || syn ~= sy) ||...
                      (sx > 1 && sy > 1 && this.curr_dims(1) > this.curr_dims(2));
         end
-        
+
         function update_plot(this)
             this.p.plot_array();
         end
-        
+
         function aplot_click_cb(this, varargin)
             index = this.get_current_point();
             switch get(this.p.get_figure(), 'SelectionType')
@@ -444,7 +442,7 @@ classdef PlotPanel < handle
                     this.create_slice(index);
             end
         end 
-        
+
         function set_transpose(this)
             if this.curr_dims(1) > this.curr_dims(2)
                 this.transpose = true;
@@ -452,18 +450,18 @@ classdef PlotPanel < handle
                 this.transpose = false;
             end
         end
-        
+
         function update_dims(this, dims)
             dims = padarray(dims(:), 4-length(dims), 1, 'post');
             this.dims = dims;
             this.update_sliders();
         end
-        
+
         function calculate_legend(this, data)
             this.l_min.(this.mode) = min(min(min(min(data))));
             this.l_max.(this.mode) = max(max(max(max(data))));
         end
-        
+
         function update_sliders(this)
             s = this.dims;
             for i = 3:length(this.dims)
@@ -481,7 +479,7 @@ classdef PlotPanel < handle
                 end
             end
         end
-        
+
         % change dimension on x/y/z/sa-axes
         function set_dim_cb(this, varargin)
             t = str2double(get(varargin{1}, 'Tag'));
@@ -505,7 +503,7 @@ classdef PlotPanel < handle
             this.update_sliders();
             this.update_plot();
         end
-        
+
         function value = set_nth_val(this, dim, value)  
             if value > this.dims(this.curr_dims(dim))
                 value = this.dims(this.curr_dims(dim));
@@ -521,7 +519,7 @@ classdef PlotPanel < handle
             
             this.update_plot();
         end
-        
+
         % n-th dimension slider
         function set_nth_val_cb(this, caller, ~, dim)
             switch caller.Style
@@ -536,7 +534,7 @@ classdef PlotPanel < handle
             this.h.(sprintf('d%d_edit', dim)).String = num2str(value);
             this.h.(sprintf('d%d_slider', dim)).Value = value;
         end
-            
+
         % upper and lower bound of legend
         function set_tick_cb(this, varargin)
             switch varargin{1}
@@ -563,7 +561,7 @@ classdef PlotPanel < handle
             end
             this.update_plot();
         end
-                
+
         function resize(this, varargin)
             mP = get(this.h.parent, 'Position');
             

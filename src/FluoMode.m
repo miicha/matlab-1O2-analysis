@@ -22,6 +22,7 @@ classdef FluoMode < GenericMode
             
             this.scale(4) = int_time/1000;
             this.units{4} = 't [s]';
+            this.units{5} = 'nm';
             
             this.h.parent = parent.h.modepanel;
             
