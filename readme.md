@@ -19,11 +19,12 @@ herunterzuladen und auszuführen.
 
 #### m-Files
 Zum Installieren
-
+entweder:
 - `git clone` in ein Verzeichnis
+oder:
 - oben rechts auf `Download zip` drücken und irgendwo entpacken
 
-und dann `startUI` in diesem Verzeichnis ausführen.
+und dann `startUI` (im Verzeichnis 'src') ausführen.
 
 ### Hinweise
 
