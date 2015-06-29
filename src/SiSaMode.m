@@ -117,6 +117,7 @@ classdef SiSaMode < GenericMode
                     this.h.hold = uicontrol(this.h.fit_tab);
                     this.h.ov_controls = uipanel(this.h.fit_tab);
                         this.h.ov_disp = uicontrol(this.h.ov_controls);
+                        this.h.ov_sum_disp = uicontrol(this.h.ov_controls);
                         this.h.ov_buttongroup = uibuttongroup(this.h.ov_controls);
                             this.h.ov_radiobtns = {uicontrol(this.h.ov_buttongroup)};
                             this.h.ov_drpd = uicontrol(this.h.ov_controls);
@@ -254,6 +255,12 @@ classdef SiSaMode < GenericMode
                               'position', [15 175 150 20],...
                               'string', 'Overlay anzeigen',...
                               'callback', @this.disp_ov_cb);
+                          
+            set(this.h.ov_sum_disp, 'units', 'pixels',...
+                              'style', 'push',...
+                              'position', [120 175 115 20],...
+                              'string', 'Overlay Daten Summe',...
+                              'callback', @this.disp_ov_sum_cb);
                               
             set(this.h.ov_buttongroup, 'SelectionChangedFcn', @this.set_current_ov_cb);
             
@@ -1235,6 +1242,39 @@ classdef SiSaMode < GenericMode
         
         function disp_ov_cb(this, varargin)
             this.set_disp_ov(varargin{1}.Value);
+        end
+        
+        function disp_ov_sum_cb(this, varargin)
+            global debug_ob
+            debug_ob = this;
+            
+
+            dimensionen = size(this.data);
+            n = dimensionen(end);
+            auswahl = find(this.overlays{this.current_ov});
+            anzahl = length(auswahl);
+
+            auswahl = repmat(this.overlays{this.current_ov},[1 1 1 1 n]);
+
+            global data
+            
+            tmp = this.data(auswahl);
+            
+            for i = 1:anzahl
+                data(:,i) =tmp(i:anzahl:n*anzahl);
+            end
+           
+            data = sum(data,2);
+            
+            figure(999)
+
+            plot(data)
+
+            
+            obere = max(data(this.t_offset+this.t_zero+1:end))*1.2;
+            untere = min(data(this.t_offset:end))*0.8;
+            
+            ylim([untere obere])
         end
         
         function set_current_ov_cb(this, varargin)
