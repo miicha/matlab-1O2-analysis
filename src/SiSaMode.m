@@ -1266,15 +1266,8 @@ classdef SiSaMode < GenericMode
            
             data = sum(data,2);
             
-            figure(999)
-
-            plot(data)
-
+            GenericPlot(data,this);
             
-            obere = max(data(this.t_offset+this.t_zero+1:end))*1.2;
-            untere = min(data(this.t_offset:end))*0.8;
-            
-            ylim([untere obere])
         end
         
         function set_current_ov_cb(this, varargin)
@@ -1473,6 +1466,9 @@ classdef SiSaMode < GenericMode
                     B = A/4;
                     t1 = find(abs(data <= round(A/2.7)));
                     t1 = t1(t1>i+t_offset);
+                    if isempty(t1)
+                        t1 = 10/cw;
+                    end
                     t2 = t1(1)/4;
                     param(5) = mean(data(end-100:end));
                     param(1) = A;
