@@ -67,6 +67,7 @@ classdef SiSaGenericPlot < handle
             this.h.fit_tab = uitab(this.h.tabs);
                 this.h.drpd = uicontrol(this.h.fit_tab);
                 this.h.pb = uicontrol(this.h.fit_tab);
+                this.h.x_zoom = uicontrol(this.h.fit_tab);
                 this.h.pb_glob = uicontrol(this.h.fit_tab);
                 this.h.gof = uicontrol(this.h.fit_tab);
                 this.h.param = uipanel(this.h.fit_tab);
@@ -138,13 +139,19 @@ classdef SiSaGenericPlot < handle
                             'callback', @this.set_model);
                         
             set(this.h.pb, 'units', 'pixels',...
-                          'position', [10 35 98 28],...
+                          'position', [62 35 50 28],...
                           'string', 'Fitten',...
                           'FontSize', 9,...
                           'callback', @this.fit);
+                     
+            set(this.h.x_zoom, 'units', 'pixels',...
+                          'position', [10 35 50 28],...
+                          'string', 'X-Zoom',...
+                          'FontSize', 9,...
+                          'callback', @this.x_zoom);
                       
             set(this.h.pb_glob, 'units', 'pixels',...
-                          'position', [112 35 98 28],...
+                          'position', [113 35 98 28],...
                           'string', 'globalisieren',...
                           'FontSize', 9,...
                           'callback', @this.globalize)
@@ -328,6 +335,19 @@ classdef SiSaGenericPlot < handle
             this.chisq = chi;
             this.fitted = true;
             this.plotdata();
+        end
+        
+        function x_zoom(this, varargin)
+            x_min = this.t_zero*this.channel_width;
+            
+            y_max = max(this.data);
+            
+            
+            x_max = 5*this.t_zero*this.channel_width;
+%             this.channel_width
+            
+            this.h.axes.XLim = [-x_min x_max];
+            this.h.axes.YLim = [0 y_max];
         end
         
         function set_model(this, varargin)
