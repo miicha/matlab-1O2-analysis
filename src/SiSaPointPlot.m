@@ -1,4 +1,4 @@
-classdef SiSaPlot < GenericPlot
+classdef SiSaPointPlot < SiSaGenericPlot
     %SiSaPlot
     
     properties
@@ -8,14 +8,14 @@ classdef SiSaPlot < GenericPlot
     end
     
     methods
-        function this = SiSaPlot(point, smode)          
-            this = this@GenericPlot(point, smode);
+        function this = SiSaPointPlot(point, smode)    
+            this = this@SiSaGenericPlot(smode);
+
             %% get data from main UI
             
             this.cp = point;
             this.getdata();
-            
-            
+             
             if length(smode.p.fileinfo.name) > 1
                 name = smode.p.fileinfo.name{this.cp(1)};
             else
@@ -23,8 +23,7 @@ classdef SiSaPlot < GenericPlot
             end
             
             this.set_window_name(name);
-           
-            
+            this.plotdata();
         end
         
         function getdata(this, ~)

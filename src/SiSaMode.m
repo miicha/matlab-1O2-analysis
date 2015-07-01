@@ -1087,7 +1087,7 @@ classdef SiSaMode < GenericMode
             if ~strcmp(this.p.fileinfo.path, '')
                 if sum(this.data(index{:}, :))
                     i = length(this.plt);
-                    this.plt{i+1} = SiSaPlot([index{:}], this);
+                    this.plt{i+1} = SiSaPointPlot([index{:}], this);
                 end
             end
         end
@@ -1266,7 +1266,7 @@ classdef SiSaMode < GenericMode
            
             data = sum(data,2);
             
-            GenericPlot(data,this);
+            SiSaDataPlot(data,this);
             
         end
         

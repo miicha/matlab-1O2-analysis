@@ -1,9 +1,9 @@
-classdef GenericPlot < handle
+classdef SiSaGenericPlot < handle
     %GENERICPLOT Summary of this class goes here
     %   Detailed explanation goes here
     
     properties
-        data = rand(4096,1);
+        data;
         x_data;
         smode;
         models;
@@ -24,9 +24,7 @@ classdef GenericPlot < handle
     end
     
     methods
-        function this = GenericPlot(data, smode)
-            this.cp = data;
-            
+        function this = SiSaGenericPlot(smode)            
             %% get data from main UI
             this.smode = smode;                % keep refs to the memory in which
                                         % the UI object is saved
@@ -36,7 +34,9 @@ classdef GenericPlot < handle
             end
 
 
-            this.getdata(data);
+            
+            this.x_data = this.smode.x_data;
+            
             tmp = smode.models(smode.model);
             this.n_param = length(tmp{2});
             this.t_offset = smode.t_offset;
@@ -72,7 +72,6 @@ classdef GenericPlot < handle
                 this.h.save_fig = uicontrol(this.h.exp_tab);
 
             %% figure
-            name = [smode.p.fileinfo.name{1} ' - Generic Plot'];
            
             scsize = get(0,'screensize');
             
@@ -84,8 +83,6 @@ classdef GenericPlot < handle
                          'toolbar', 'figure',...
                          'ResizeFcn', @this.resize,...
                          'WindowButtonUpFcn', @this.stop_dragging);
-                     
-            this.set_window_name(name);
                      
             toolbar_pushtools = findall(findall(this.h.f, 'Type', 'uitoolbar'),...
                                                          'Type', 'uipushtool');
@@ -187,16 +184,11 @@ classdef GenericPlot < handle
             
             %% draw plot
             this.generate_param();      
-            this.plotdata();
+%             this.plotdata();
         end
         
         function set_window_name(this,name)
             set(this.h.f, 'name',  ['SISA Scan - ' name]);
-        end
-        
-        function getdata(this, data)
-            this.data = data;
-            this.x_data = this.smode.x_data;
         end
         
         function plotdata(this, realtime)

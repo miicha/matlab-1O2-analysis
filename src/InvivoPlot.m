@@ -1,4 +1,4 @@
-classdef InvivoPlot < SiSaPlot
+classdef InvivoPlot < SiSaPointPlot
     %INVIVOPLOT Summary of this class goes here
     %   Detailed explanation goes here
     
@@ -9,7 +9,7 @@ classdef InvivoPlot < SiSaPlot
     
     methods
         function this = InvivoPlot(point, imode)
-            this = this@SiSaPlot(point, imode);
+            this = this@SiSaPointPlot(point, imode);
             location = imode.locations(point(2));
             
 %             title(location)
@@ -37,7 +37,7 @@ classdef InvivoPlot < SiSaPlot
                 realtime = false;
             end
 
-            plotdata@SiSaPlot(this, realtime);
+            plotdata@SiSaPointPlot(this, realtime);
             
             if this.first_call
                 this.first_call = 0;
@@ -57,7 +57,7 @@ classdef InvivoPlot < SiSaPlot
 
     methods (Access = protected)
         function resize(this, varargin)
-            resize@SiSaPlot(this);
+            resize@SiSaPointPlot(this);
             
             iP = get(this.h.inset, 'Position');
             aP = get(this.h.axes, 'Position');
