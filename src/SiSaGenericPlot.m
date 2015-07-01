@@ -23,6 +23,10 @@ classdef SiSaGenericPlot < handle
         cp;
     end
     
+    properties (Access = private)
+        current_draggable;
+    end
+    
     methods
         function this = SiSaGenericPlot(smode)            
             %% get data from main UI
@@ -184,7 +188,6 @@ classdef SiSaGenericPlot < handle
             
             %% draw plot
             this.generate_param();      
-%             this.plotdata();
         end
         
         function set_window_name(this,name)
@@ -204,7 +207,7 @@ classdef SiSaGenericPlot < handle
                 this.t_end = length(this.x_data) - this.t_zero - 1;
             end
             
-            axes(this.h.axes);
+            set(gcf,'CurrentAxes',this.h.axes)
             cla
             hold on
             
@@ -401,27 +404,15 @@ classdef SiSaGenericPlot < handle
         end
         
         function plot_drag_zero(this, varargin)
+            this.current_draggable = 'zero';
             cpoint = get(this.h.axes, 'CurrentPoint');
             cpoint = cpoint(1, 1);
-            t = this.t_zero + round(cpoint/this.channel_width);
-            n = length(this.data);
-            if t <= 0
-                t = 1;
-            elseif t + this.t_offset >= n - 1
-                t = n - this.t_offset - 2;
-            elseif t + this.t_end >= n
-                this.t_end = n - t;
-            end
-            % end line sticks to the end
-            if this.t_end == n - this.t_zero
-                this.t_end = n - t;
-            end
-            this.t_zero = t;
-            this.x_data = ((1:n)-t)'*this.channel_width;
-            this.plotdata(true)
+
+            this.h.zeroline.XData = [cpoint cpoint];
         end
         
         function plot_drag_offs(this, varargin)
+            this.current_draggable = 'offs';
             cpoint = get(this.h.axes, 'CurrentPoint');
             cpoint = cpoint(1, 1);
             if cpoint/this.channel_width < 0.01
@@ -434,6 +425,7 @@ classdef SiSaGenericPlot < handle
         end
         
         function plot_drag_end(this, varargin)
+            this.current_draggable = 'end';
             cpoint = get(this.h.axes, 'CurrentPoint');
             cpoint = cpoint(1, 1);
             if cpoint > this.x_data(end)
@@ -446,8 +438,29 @@ classdef SiSaGenericPlot < handle
         end
         
         function stop_dragging(this, varargin)
+            if strcmp(this.current_draggable, 'zero')
+                cpoint = get(this.h.axes, 'CurrentPoint');
+                cpoint = cpoint(1, 1);
+                t = this.t_zero + round(cpoint/this.channel_width);
+                n = length(this.data);
+
+                if t <= 0
+                    t = 1;
+                elseif t + this.t_offset >= n - 1
+                    t = n - this.t_offset - 2;
+                elseif t + this.t_end >= n
+                    this.t_end = n - t;
+                end
+                % end line sticks to the end
+                if this.t_end == n - this.t_zero
+                    this.t_end = n - t;
+                end
+                this.t_zero = t;
+                this.x_data = ((1:n)-t)'*this.channel_width;
+            end
+            this.current_draggable = 'none';
             set(this.h.f, 'WindowButtonMotionFcn', '');
-%             this.plotdata();
+            this.plotdata();
         end
         
         function globalize(this, varargin)
