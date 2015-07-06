@@ -21,6 +21,7 @@ classdef SiSaGenericPlot < handle
         fit_params;         % fitted parameters
         fit_params_err;     % ertimated errors of fitted parameters
         cp;
+        fit_info = true;
     end
     
     properties (Access = private)
@@ -86,8 +87,7 @@ classdef SiSaGenericPlot < handle
                          'resize', 'on',...
                          'menubar', 'none',...
                          'toolbar', 'figure',...
-                         'ResizeFcn', @this.resize,...
-                         'WindowButtonUpFcn', @this.stop_dragging);
+                         'ResizeFcn', @this.resize);
                      
             toolbar_pushtools = findall(findall(this.h.f, 'Type', 'uitoolbar'),...
                                                          'Type', 'uipushtool');
@@ -214,7 +214,7 @@ classdef SiSaGenericPlot < handle
                 this.t_end = length(this.x_data) - this.t_zero - 1;
             end
             
-            set(gcf,'CurrentAxes',this.h.axes)
+            set(this.h.f,'CurrentAxes',this.h.axes)
             cla
             hold on
             
@@ -250,7 +250,7 @@ classdef SiSaGenericPlot < handle
             p = num2cell(this.fit_params);
             fitdata = this.model{1}(p{:}, this.x_data);
 
-            axes(this.h.axes);
+            set(this.h.f,'CurrentAxes',this.h.axes)
             
             if get(this.h.drpd, 'value') == 2 || get(this.h.drpd, 'value') == 3
                 tmp = keys(this.models);
@@ -264,7 +264,7 @@ classdef SiSaGenericPlot < handle
             plot(this.x_data,  fitdata, 'r', 'LineWidth', 1.5, 'HitTest', 'off');
             hold off
             
-            axes(this.h.res);
+            set(this.h.f,'CurrentAxes',this.h.res);
             
             residues = (this.data(this.t_zero+(this.t_offset:this.t_end))-...
                  fitdata(this.t_zero+(this.t_offset:this.t_end)))./...
@@ -416,10 +416,13 @@ classdef SiSaGenericPlot < handle
             switch varargin{1}
                 case this.h.zeroline
                     set(this.h.f, 'WindowButtonMotionFcn', @this.plot_drag_zero);
+                    set(this.h.f, 'WindowButtonUpFcn', @this.stop_dragging);
                 case this.h.offsetline
                     set(this.h.f, 'WindowButtonMotionFcn', @this.plot_drag_offs);
+                    set(this.h.f, 'WindowButtonUpFcn', @this.stop_dragging);
                 case this.h.endline
                     set(this.h.f, 'WindowButtonMotionFcn', @this.plot_drag_end);
+                    set(this.h.f, 'WindowButtonUpFcn', @this.stop_dragging);
             end
         end
         
@@ -480,6 +483,7 @@ classdef SiSaGenericPlot < handle
             end
             this.current_draggable = 'none';
             set(this.h.f, 'WindowButtonMotionFcn', '');
+            set(this.h.f, 'WindowButtonUpFcn', '');
             this.plotdata();
         end
         
