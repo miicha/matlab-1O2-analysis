@@ -189,6 +189,11 @@ classdef Slice < handle
                 x_label = 'a.u.';
             end
             
+            size(x_vec)
+            if x_vec == zeros(size(x_vec))
+                x_vec = 1:length(x_vec);
+            end
+            
             SinglePlot(x_vec, plot_vec, fullfile(this.p.p.p.savepath, this.p.p.p.genericname),...
                        'xlabel', x_label);
         end
