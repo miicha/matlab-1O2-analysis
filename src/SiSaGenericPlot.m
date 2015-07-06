@@ -76,6 +76,7 @@ classdef SiSaGenericPlot < handle
             this.h.exp_tab = uitab(this.h.tabs);
                 this.h.prev_fig = uicontrol(this.h.exp_tab);
                 this.h.save_fig = uicontrol(this.h.exp_tab);
+                this.h.save_data = uicontrol(this.h.exp_tab);
 
             %% figure
            
@@ -185,6 +186,12 @@ classdef SiSaGenericPlot < handle
                           'string', 'Speichern',...
                           'FontSize', 9,...
                           'callback', @this.save_fig_cb);
+                      
+            set(this.h.save_data, 'units', 'pixels',...
+                          'position', [120 5 120 28],...
+                          'string', 'Daten speichern',...
+                          'FontSize', 9,...
+                          'callback', @this.save_data_cb);
 
             %% limit size with java
             drawnow;
@@ -515,7 +522,60 @@ classdef SiSaGenericPlot < handle
             this.save_fig_selloc_cb();
         end
         
+        function save_data_cb(this, varargin)
+            [name, path] = uiputfile('*.txt', 'Plot als PDF speichern', this.generate_filepath());
+            if name == 0
+                return
+            end
+            this.save_data([path name]);
+        end
+        
+        function save_data(this, path)
+            fid = fopen(path, 'w');
+            
+            sx = size(this.x_data);
+            sy = size(this.data);
+            
+            % only one set of x values
+            if sx(1) == 1 || sx(2) == 1
+                if sx(1) < sx(2)
+                    x = this.x_data';
+                else
+                    x = this.x_data;
+                end
+                
+                % only one set of y values
+                if sy(1) == 1 || sy(2) == 1
+                    if sy(1) < sy(2)
+                        y = this.data';
+                    else
+                        y = this.data;
+                    end
+                    fprintf(fid, 'x,y\n');
+                    fclose(fid);
+                    dlmwrite(path, [x y], '-append');
+
+                else % multiple sets of y values
+                    fprintf(fid, 'x,');
+                    for i = 1:sy(2)
+                        if i == sy(2)
+                            fprintf(fid, 'y%d\n', i);
+                        else
+                            fprintf(fid, 'y%d,', i);
+                        end
+                        
+                    end
+                    fclose(fid);
+                    dlmwrite(path, [x this.ydata], '-append');
+                end
+            else % multiple sets of x values
+                warndlg('Cannot currently export plot-data with more than one x-axis');
+            end
+            
+        end
+        
         function path = generate_filepath(this)
+            %ToDo checken warum genericname und savepath leer sind
             point = regexprep(num2str(this.cp), '\s+', '_');
             name = [this.smode.genericname '_p_' point];
             path = fullfile(this.smode.savepath, name);
