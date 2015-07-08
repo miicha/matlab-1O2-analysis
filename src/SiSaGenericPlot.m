@@ -365,6 +365,14 @@ classdef SiSaGenericPlot < handle
             % update UI
             for i = 1:this.n_param
                 str = sprintf('%1.2f', this.fit_params(i));
+                
+                if abs(this.fit_params(i) - this.model{2}(i)) < 1e-10 || abs(this.fit_params(i) - this.model{3}(i)) < 1e-10
+                    this.h.pe{i}.BackgroundColor = [0.8 0.4 0.4];
+                else
+                    this.h.pe{i}.BackgroundColor = [0.9400 0.9400 0.9400];
+                end
+                    
+                
                 set(this.h.pe{i}, 'string', str);
                 if this.fit_params_err(i) < this.fit_params(i)
                     str = sprintf('+-%1.2f', this.fit_params_err(i));   
