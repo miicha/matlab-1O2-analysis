@@ -22,6 +22,8 @@ classdef SiSaGenericPlot < handle
         fit_params_err;     % ertimated errors of fitted parameters
         cp;
         fit_info = true;
+        diff_data;
+        data_backup;
     end
     
     properties (Access = private)
@@ -77,6 +79,12 @@ classdef SiSaGenericPlot < handle
                 this.h.prev_fig = uicontrol(this.h.exp_tab);
                 this.h.save_fig = uicontrol(this.h.exp_tab);
                 this.h.save_data = uicontrol(this.h.exp_tab);
+                this.h.save_data_temp = uicontrol(this.h.exp_tab);
+                
+            this.h.imp_tab = uitab(this.h.tabs);
+                this.h.import_diff_data = uicontrol(this.h.imp_tab);
+                this.h.faktor_slider = uicontrol(this.h.imp_tab);
+                this.h.faktor_edit = uicontrol(this.h.imp_tab);
 
             %% figure
            
@@ -192,6 +200,37 @@ classdef SiSaGenericPlot < handle
                           'string', 'Daten speichern',...
                           'FontSize', 9,...
                           'callback', @this.save_data_cb);
+            
+            set(this.h.save_data_temp, 'units', 'pixels',...
+                          'position', [120 40 120 28],...
+                          'string', 'Daten übergeben',...
+                          'FontSize', 9,...
+                          'callback', @this.save_data_temp_cb);
+                      
+             %% import
+            set(this.h.imp_tab, 'units', 'pixels',...
+                               'Title', 'Import');
+                           
+            set(this.h.import_diff_data, 'units', 'pixels',...
+                          'position', [10 40 98 28],...
+                          'string', 'Load Diff Data',...
+                          'FontSize', 9,...
+                          'callback', @this.load_diff_data_cb);
+                      
+            set(this.h.faktor_slider, 'units', 'pixels',...
+                            'style', 'slider',...
+                            'position', [400 40 300 20],...
+                            'min', 0, 'max', 1.5,...
+                            'SliderStep', [0.01 0.1],...
+                            'value', 0.6,...
+                            'callback', @this.change_faktor_cb,...
+                            'BackgroundColor', [1 1 1]);
+                        
+            set(this.h.faktor_edit, 'units', 'pixels',...
+                            'style', 'edit',...
+                            'string', '0.6',...
+                            'position', [200 40 50 20],...
+                            'callback', @this.change_faktor_cb);
 
             %% limit size with java
             drawnow;
@@ -251,6 +290,36 @@ classdef SiSaGenericPlot < handle
                     this.plotfit();
                 end
             end
+        end
+        
+        function plot_raw_data(this, data, add,varargin)
+            if nargin < 3
+                add = false;
+            end
+            
+            set(this.h.f,'CurrentAxes',this.h.axes);
+            if add
+                hold all
+            end
+            
+            if ischar(add)
+                if nargin > 4 && mod(nargin-1,2) == 0
+                    plot(data(:,1), data(:,2),add,varargin{:})
+                else
+                    plot(data(:,1), data(:,2), add)
+                end
+            else
+                if nargin > 4 && mod(nargin-1,2) == 0
+                    plot(data(:,1), data(:,2), varargin{:})
+                else
+                    plot(data(:,1), data(:,2))
+                end
+            end
+                        
+            if add
+                hold off
+            end
+            
         end
         
         function plotfit(this)
@@ -510,6 +579,8 @@ classdef SiSaGenericPlot < handle
             this.smode.t_end = this.t_end;
         end
         
+        %% Export
+        
         function save_fig_selloc_cb(this, varargin)
             [name, path] = uiputfile('*.pdf', 'Plot als PDF speichern', this.generate_filepath());
             if name == 0
@@ -527,6 +598,12 @@ classdef SiSaGenericPlot < handle
             if name == 0
                 return
             end
+            this.save_data([path name]);
+        end
+        
+        function save_data_temp_cb(this, varargin)
+            path = tempdir;
+            name = 'sisa_temp.txt';
             this.save_data([path name]);
         end
         
@@ -577,8 +654,8 @@ classdef SiSaGenericPlot < handle
         function path = generate_filepath(this)
             %ToDo checken warum genericname und savepath leer sind
             point = regexprep(num2str(this.cp), '\s+', '_');
-            name = [this.smode.genericname '_p_' point];
-            path = fullfile(this.smode.savepath, name);
+            name = [this.smode.p.genericname '_p_' point];
+            path = fullfile(this.smode.p.savepath, name);
         end
         
         function save_fig(this, path)
@@ -660,6 +737,52 @@ classdef SiSaGenericPlot < handle
         
         function generate_export_fig_cb(this, varargin)
             this.generate_export_fig('on');
+        end
+        
+        %% Import
+        
+        function load_diff_data_cb(this, varargin)
+            this.data_backup = this.data;
+            
+            path = tempdir;
+            name = 'sisa_temp.txt';
+            this.diff_data = dlmread([path name],',',1,0);
+            
+            plotdata = this.diff_data;
+            plotdata(:,2) = plotdata(:,2)*0.8;
+            
+            this.plot_raw_data(plotdata,true)
+        end
+        
+        function change_faktor_cb(this,caller, varargin)
+            
+            if strcmp(caller.Style,'slider')
+                this.h.faktor_edit.String = caller.Value;
+            elseif strcmp(caller.Style,'edit')
+                tmp = strrep(caller.String,',','.');
+                this.h.faktor_slider.Value = str2double(tmp);
+            end
+
+            plotdata = this.diff_data;
+            plotdata = plotdata(:,2)*this.h.faktor_slider.Value;
+            
+            this.data = this.data_backup-plotdata+50;
+            
+            
+            
+            this.plotdata();
+            this.plot_raw_data([this.x_data plotdata],true)
+            
+            
+            
+            
+            this.plot_raw_data([this.x_data this.data_backup], true)
+            
+            offset = mean(this.data(end-400:end));
+            this.plot_raw_data([this.x_data(1) offset;this.x_data(end) offset], 'k', 'linewidth',1.5)
+            
+            
+            
         end
     end
     

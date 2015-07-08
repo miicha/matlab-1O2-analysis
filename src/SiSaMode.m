@@ -76,8 +76,8 @@ classdef SiSaMode < GenericMode
                  { '$$f(t) = A\cdot \exp \left(\frac{t}{\tau_1}\right) + B\cdot \exp \left(\frac{t}{\tau_2}\right) + o$$', {'A', '\tau_1', '\tau_2', 'B', 'o'}, {'Counts', '$$\mu$$s', '$$\mu$$s', 'Counts', 'Counts'} }...
                  })
              
-         genericname;
-         savepath;
+%          genericname;
+%          savepath;
     end
     
     methods
