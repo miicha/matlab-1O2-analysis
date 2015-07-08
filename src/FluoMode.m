@@ -12,6 +12,11 @@ classdef FluoMode < GenericMode
     
     methods
         function this = FluoMode(parent, data, wavelengths, int_time)
+            if nargin < 3
+                wavelengths = 1:size(data, 5);
+                int_time = 100;
+            end                
+                
             this.p = parent;
             this.data = data;
             this.num_spec_points = size(data, 5);

@@ -175,8 +175,10 @@ classdef UI < handle
                         this.modes{1} = SiSaMode(this, double(reader.data.sisa));
                     end
                     if isfield(reader.data, 'fluo')
+                        'blub'
                         % open a fluorescence tab
-%                         this.modes{2} = FluoMode(this, double(reader.data.fluo),...
+                        this.modes{2} = FluoMode(this, double(reader.data.fluo));
+                                                       
 %                                                        reader.meta.fluo.x_achse,...
 %                                                        reader.meta.fluo.int_time);
                     end
