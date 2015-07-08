@@ -1245,20 +1245,15 @@ classdef SiSaMode < GenericMode
         end
         
         function disp_ov_sum_cb(this, varargin)
-            global debug_ob
-            debug_ob = this;
-            
-
             dimensionen = size(this.data);
             n = dimensionen(end);
             auswahl = find(this.overlays{this.current_ov});
             anzahl = length(auswahl);
 
             auswahl = repmat(this.overlays{this.current_ov},[1 1 1 1 n]);
-
-            global data
             
             tmp = this.data(auswahl);
+            data = zeros(n,anzahl);
             
             for i = 1:anzahl
                 data(:,i) =tmp(i:anzahl:n*anzahl);
