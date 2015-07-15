@@ -24,6 +24,8 @@ classdef SiSaGenericPlot < handle
         fit_info = true;
         diff_data;
         data_backup;
+        data_line_handle;
+        fit_line_handle;
     end
     
     properties (Access = private)
@@ -266,7 +268,7 @@ classdef SiSaGenericPlot < handle
             
             plot(this.x_data(1:(this.t_offset+this.t_zero)), datal(1:(this.t_offset+this.t_zero)),...
                                                                    '.-', 'Color', [.8 .8 1]);
-            plot(this.x_data(this.t_zero+(this.t_offset:this.t_end)), datal(this.t_zero+(this.t_offset:this.t_end)),...
+            this.data_line_handle = plot(this.x_data(this.t_zero+(this.t_offset:this.t_end)), datal(this.t_zero+(this.t_offset:this.t_end)),...
                                    'Marker', '.', 'Color', [.8 .8 1], 'MarkerEdgeColor', 'blue');
             plot(this.x_data(this.t_zero+this.t_end:end), datal(this.t_zero+this.t_end:end),...
                                    '.-', 'Color', [.8 .8 1]);
@@ -330,6 +332,7 @@ classdef SiSaGenericPlot < handle
 
             set(this.h.f,'CurrentAxes',this.h.axes)
             
+            % extrahierte SiSa-Daten Plotten
             if get(this.h.drpd, 'value') == 2 || get(this.h.drpd, 'value') == 3
                 tmp = keys(this.models);
                 sisamodel = this.models(tmp{1});
@@ -339,7 +342,7 @@ classdef SiSaGenericPlot < handle
                 hold off
             end
             hold on
-            plot(this.x_data,  fitdata, 'r', 'LineWidth', 1.5, 'HitTest', 'off');
+            this.fit_line_handle = plot(this.x_data,  fitdata, 'r', 'LineWidth', 1.5, 'HitTest', 'off');
             hold off
             
             set(this.h.f,'CurrentAxes',this.h.res);
@@ -367,6 +370,14 @@ classdef SiSaGenericPlot < handle
             % update UI
             for i = 1:this.n_param
                 str = sprintf('%1.2f', this.fit_params(i));
+                
+                if abs(this.fit_params(i) - this.model{2}(i)) < 1e-10 || abs(this.fit_params(i) - this.model{3}(i)) < 1e-10
+                    this.h.pe{i}.BackgroundColor = [0.8 0.4 0.4];
+                else
+                    this.h.pe{i}.BackgroundColor = [0.9400 0.9400 0.9400];
+                end
+                    
+                
                 set(this.h.pe{i}, 'string', str);
                 if this.fit_params_err(i) < this.fit_params(i)
                     str = sprintf('+-%1.2f', this.fit_params_err(i));   
@@ -782,6 +793,10 @@ classdef SiSaGenericPlot < handle
             
             offset = mean(this.data(end-400:end));
             this.plot_raw_data([this.x_data(1) offset;this.x_data(end) offset], 'k', 'linewidth',1.5)
+            
+            
+            uistack(this.data_line_handle,'top')
+            uistack(this.fit_line_handle,'top')
             
             
             
