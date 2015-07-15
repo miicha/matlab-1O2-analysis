@@ -294,7 +294,7 @@ classdef SiSaGenericPlot < handle
             end
         end
         
-        function plot_raw_data(this, data, add,varargin)
+        function plot_raw_data(this, data, add, varargin)
             if nargin < 3
                 add = false;
             end
@@ -302,19 +302,21 @@ classdef SiSaGenericPlot < handle
             set(this.h.f,'CurrentAxes',this.h.axes);
             if add
                 hold all
+            else
+                cla();
             end
             
             if ischar(add)
-                if nargin > 4 && mod(nargin-1,2) == 0
-                    plot(data(:,1), data(:,2),add,varargin{:})
+                if nargin > 4 && mod(nargin - 3, 2) == 0
+                    plot(data(:, 1), data(:, 2), add, varargin{:})
                 else
-                    plot(data(:,1), data(:,2), add)
+                    plot(data(:, 1), data(:, 2), add)
                 end
             else
-                if nargin > 4 && mod(nargin-1,2) == 0
-                    plot(data(:,1), data(:,2), varargin{:})
+                if nargin > 4 && mod(nargin - 3, 2) == 0
+                    plot(data(:, 1), data(:, 2), varargin{:})
                 else
-                    plot(data(:,1), data(:,2))
+                    plot(data(:, 1), data(:, 2))
                 end
             end
                         
@@ -755,7 +757,7 @@ classdef SiSaGenericPlot < handle
         function load_diff_data_cb(this, varargin)
             this.data_backup = this.data;
             
-            path = tempdir;
+            path = tempdir();
             name = 'sisa_temp.txt';
             this.diff_data = dlmread([path name],',',1,0);
             

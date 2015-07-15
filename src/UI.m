@@ -162,6 +162,8 @@ classdef UI < handle
                 FileType = 'scanning';
             end
             
+            FileType = lower(FileType);
+            
             switch FileType
                 case 'scanning'
                     reader = scanning_reader(filepath);
@@ -175,7 +177,6 @@ classdef UI < handle
                         this.modes{1} = SiSaMode(this, double(reader.data.sisa));
                     end
                     if isfield(reader.data, 'fluo')
-                        'blub'
                         % open a fluorescence tab
                         this.modes{2} = FluoMode(this, double(reader.data.fluo));
                                                        
