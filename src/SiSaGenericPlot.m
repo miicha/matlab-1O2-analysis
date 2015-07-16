@@ -24,8 +24,6 @@ classdef SiSaGenericPlot < handle
         fit_info = true;
         diff_data;
         data_backup;
-        data_line_handle;
-        fit_line_handle;
     end
     
     properties (Access = private)
@@ -222,7 +220,7 @@ classdef SiSaGenericPlot < handle
             set(this.h.faktor_slider, 'units', 'pixels',...
                             'style', 'slider',...
                             'position', [400 40 300 20],...
-                            'min', 0, 'max', 1.5,...
+                            'min', 0, 'max', 3.5,...
                             'SliderStep', [0.01 0.1],...
                             'value', 0.6,...
                             'callback', @this.change_faktor_cb,...
@@ -268,7 +266,7 @@ classdef SiSaGenericPlot < handle
             
             plot(this.x_data(1:(this.t_offset+this.t_zero)), datal(1:(this.t_offset+this.t_zero)),...
                                                                    '.-', 'Color', [.8 .8 1]);
-            this.data_line_handle = plot(this.x_data(this.t_zero+(this.t_offset:this.t_end)), datal(this.t_zero+(this.t_offset:this.t_end)),...
+            this.h.data_line = plot(this.x_data(this.t_zero+(this.t_offset:this.t_end)), datal(this.t_zero+(this.t_offset:this.t_end)),...
                                    'Marker', '.', 'Color', [.8 .8 1], 'MarkerEdgeColor', 'blue');
             plot(this.x_data(this.t_zero+this.t_end:end), datal(this.t_zero+this.t_end:end),...
                                    '.-', 'Color', [.8 .8 1]);
@@ -342,28 +340,34 @@ classdef SiSaGenericPlot < handle
                 hold off
             end
             hold on
-            this.fit_line_handle = plot(this.x_data,  fitdata, 'r', 'LineWidth', 1.5, 'HitTest', 'off');
+            this.h.fit_line = plot(this.x_data,  fitdata, 'r', 'LineWidth', 1.5, 'HitTest', 'off');
             hold off
             
+            
+            % Residuen plotten
             set(this.h.f,'CurrentAxes',this.h.res);
             
-            residues = (this.data(this.t_zero+(this.t_offset:this.t_end))-...
-                 fitdata(this.t_zero+(this.t_offset:this.t_end)))./...
-                 sqrt(1+this.data(this.t_zero+(this.t_offset:this.t_end)));
-            plot(this.x_data(this.t_zero+(this.t_offset:this.t_end)), residues, 'b.');
+            % im fitbereich
+            residues = this.data - fitdata;
+            tmp = this.data; 
+            tmp(tmp <= 0) = 1;
+            residues = residues./sqrt(tmp);
+            
+            plot(this.x_data(this.t_zero+(this.t_offset:this.t_end)),...
+                 residues(this.t_zero+(this.t_offset:this.t_end)), 'b.');
             
             hold on
+            % vor fitbereich
             plot(this.x_data(1:(this.t_offset+this.t_zero)),...
-                 (this.data(1:(this.t_offset+this.t_zero))-...
-                 fitdata(1:(this.t_offset+this.t_zero)))./...
-                 sqrt(1+this.data(1:(this.t_offset+this.t_zero))), '.', 'Color', [.8 .8 1]);
+                 residues(1:(this.t_offset+this.t_zero)), '.', 'Color', [.8 .8 1]);
+            % nach fitbereich
             plot(this.x_data((this.t_zero+this.t_end):end),...
-                 (this.data((this.t_zero+this.t_end):end)-...
-                 fitdata((this.t_zero+this.t_end):end))./...
-                 sqrt(1+this.data((this.t_zero+this.t_end):end)), '.', 'Color', [.8 .8 1]);
+                 residues((this.t_zero+this.t_end):end), '.', 'Color', [.8 .8 1]);
+            % nulllinie
             line([min(this.x_data)-1 max(this.x_data)+1], [0 0], 'Color', 'r', 'LineWidth', 1.5);
             xlim([min(this.x_data)-1 max(this.x_data)+1]);
-            m = max([abs(max(residues)) abs(min(residues))]);
+            m = max([abs(max(residues(this.t_zero+(this.t_offset:this.t_end)))),...
+                     abs(min(residues(this.t_zero+(this.t_offset:this.t_end))))]);
             ylim([-m m]);
             hold off
             
@@ -795,8 +799,10 @@ classdef SiSaGenericPlot < handle
             this.plot_raw_data([this.x_data(1) offset;this.x_data(end) offset], 'k', 'linewidth',1.5)
             
             
-            uistack(this.data_line_handle,'top')
-            uistack(this.fit_line_handle,'top')
+            uistack(this.h.data_line,'top')
+            if this.fitted
+                uistack(this.h.fit_line,'top')
+            end
             
             
             
