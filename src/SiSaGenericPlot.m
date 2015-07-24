@@ -24,6 +24,7 @@ classdef SiSaGenericPlot < handle
         fit_info = true;
         diff_data;
         data_backup;
+        plot_limits;
     end
     
     properties (Access = private)
@@ -62,10 +63,10 @@ classdef SiSaGenericPlot < handle
             minSize = [850 650];
             
             this.h.toolbar=findall( this.h.f,'type','uitoolbar');
-            this.h.xy_zoom = uipushtool(this.h.toolbar,'cdata',rand(16,16,3), ...
-                'tooltip','XY-Zoom', 'ClickedCallback',@this.xy_zoom) 
-            this.h.x_zoom = uipushtool(this.h.toolbar,'cdata',rand(16,16,3), ...
-                'tooltip','X-Zoom', 'ClickedCallback',@this.x_zoom)
+            this.h.xy_zoom = uitoggletool(this.h.toolbar,'cdata',rand(16,16,3), ...
+                'tooltip','XY-Zoom', 'OnCallback',@this.xy_zoom, 'OffCallback',@this.reset_zoom);
+            this.h.x_zoom = uitoggletool(this.h.toolbar,'cdata',rand(16,16,3), ...
+                'tooltip','X-Zoom', 'OnCallback',@this.x_zoom, 'OffCallback',@this.reset_zoom);
             
             this.h.axes = axes();
             this.h.res = axes();
@@ -105,7 +106,6 @@ classdef SiSaGenericPlot < handle
                      
             toolbar_pushtools = findall(this.h.toolbar, 'Type', 'uipushtool');
             toolbar_toggletools = findall(this.h.toolbar, 'Type', 'uitoggletool');
-
             set(findall(toolbar_pushtools, 'Tag', 'Plottools.PlottoolsOn'), 'visible', 'off');
             set(findall(toolbar_pushtools, 'Tag', 'Plottools.PlottoolsOff'), 'visible', 'off');
             set(findall(toolbar_pushtools, 'Tag', 'Standard.PrintFigure'), 'visible', 'off');
@@ -151,16 +151,22 @@ classdef SiSaGenericPlot < handle
                             'callback', @this.set_model);
                         
             set(this.h.pb, 'units', 'pixels',...
-                          'position', [62 35 50 28],...
+                          'position', [10 35 50 28],...
                           'string', 'Fitten',...
                           'FontSize', 9,...
                           'callback', @this.fit);
                       
             set(this.h.pb_glob, 'units', 'pixels',...
-                          'position', [113 35 98 28],...
+                          'position', [62 35 98 28],...
                           'string', 'globalisieren',...
                           'FontSize', 9,...
                           'callback', @this.globalize)
+                      
+%             set(this.h.pb_glob, 'units', 'pixels',...
+%                           'position', [113 35 98 28],...
+%                           'string', 'globalisieren',...
+%                           'FontSize', 9,...
+%                           'callback', @this.globalize)
                       
             set(this.h.gof, 'units', 'pixels',...
                            'style', 'text',...
@@ -428,15 +434,28 @@ classdef SiSaGenericPlot < handle
         end
         
         function xy_zoom(this, varargin)            
-            y_max = max(this.data);
-            this.h.axes.YLim = [0 y_max];
+            this.y_zoom()
             this.x_zoom()
+        end
+        
+        function y_zoom(this, varargin)            
+            y_max = max(this.data);
+            this.plot_limits.Y = this.h.axes.YLim;
+            this.h.axes.YLim = [0 y_max];
         end
         
         function x_zoom(this, varargin)
             x_min = this.t_zero*this.channel_width;
-            x_max = 5*this.t_zero*this.channel_width;            
+            x_max = 5*this.t_zero*this.channel_width;  
+            this.plot_limits.X = this.h.axes.XLim;
             this.h.axes.XLim = [-x_min x_max];
+        end
+        
+        function reset_zoom(this, varargin)            
+            this.h.axes.XLim = this.plot_limits.X;
+            if isfield(this.plot_limits, 'Y')
+                this.h.axes.YLim = this.plot_limits.Y;
+            end
         end
         
         function set_model(this, varargin)
