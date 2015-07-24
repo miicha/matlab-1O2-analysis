@@ -61,7 +61,11 @@ classdef SiSaGenericPlot < handle
             this.h.f = figure();
             minSize = [850 650];
             
-%             this.h.menu = uimenu(this.h.f);
+            this.h.toolbar=findall( this.h.f,'type','uitoolbar');
+            this.h.xy_zoom = uipushtool(this.h.toolbar,'cdata',rand(16,16,3), ...
+                'tooltip','XY-Zoom', 'ClickedCallback',@this.xy_zoom) 
+            this.h.x_zoom = uipushtool(this.h.toolbar,'cdata',rand(16,16,3), ...
+                'tooltip','X-Zoom', 'ClickedCallback',@this.x_zoom)
             
             this.h.axes = axes();
             this.h.res = axes();
@@ -70,7 +74,6 @@ classdef SiSaGenericPlot < handle
             this.h.fit_tab = uitab(this.h.tabs);
                 this.h.drpd = uicontrol(this.h.fit_tab);
                 this.h.pb = uicontrol(this.h.fit_tab);
-                this.h.x_zoom = uicontrol(this.h.fit_tab);
                 this.h.pb_glob = uicontrol(this.h.fit_tab);
                 this.h.gof = uicontrol(this.h.fit_tab);
                 this.h.param = uipanel(this.h.fit_tab);
@@ -90,18 +93,18 @@ classdef SiSaGenericPlot < handle
            
             scsize = get(0,'screensize');
             
+            figuresize = {1000, 710};
+            
             set(this.h.f, 'units', 'pixels',...
-                         'position', [scsize(3)-1050 scsize(4)-820 1000 710],...
+                         'position', [scsize(3)-1050 scsize(4)-820 figuresize{:}],...
                          'numbertitle', 'off',...
                          'resize', 'on',...
                          'menubar', 'none',...
                          'toolbar', 'figure',...
                          'ResizeFcn', @this.resize);
                      
-            toolbar_pushtools = findall(findall(this.h.f, 'Type', 'uitoolbar'),...
-                                                         'Type', 'uipushtool');
-            toolbar_toggletools = findall(findall(this.h.f, 'Type', 'uitoolbar'),...
-                                                    'Type', 'uitoggletool');
+            toolbar_pushtools = findall(this.h.toolbar, 'Type', 'uipushtool');
+            toolbar_toggletools = findall(this.h.toolbar, 'Type', 'uitoggletool');
 
             set(findall(toolbar_pushtools, 'Tag', 'Plottools.PlottoolsOn'), 'visible', 'off');
             set(findall(toolbar_pushtools, 'Tag', 'Plottools.PlottoolsOff'), 'visible', 'off');
@@ -152,12 +155,6 @@ classdef SiSaGenericPlot < handle
                           'string', 'Fitten',...
                           'FontSize', 9,...
                           'callback', @this.fit);
-                     
-            set(this.h.x_zoom, 'units', 'pixels',...
-                          'position', [10 35 50 28],...
-                          'string', 'X-Zoom',...
-                          'FontSize', 9,...
-                          'callback', @this.x_zoom);
                       
             set(this.h.pb_glob, 'units', 'pixels',...
                           'position', [113 35 98 28],...
@@ -430,17 +427,16 @@ classdef SiSaGenericPlot < handle
             this.plotdata();
         end
         
+        function xy_zoom(this, varargin)            
+            y_max = max(this.data);
+            this.h.axes.YLim = [0 y_max];
+            this.x_zoom()
+        end
+        
         function x_zoom(this, varargin)
             x_min = this.t_zero*this.channel_width;
-            
-            y_max = max(this.data);
-            
-            
-            x_max = 5*this.t_zero*this.channel_width;
-%             this.channel_width
-            
+            x_max = 5*this.t_zero*this.channel_width;            
             this.h.axes.XLim = [-x_min x_max];
-            this.h.axes.YLim = [0 y_max];
         end
         
         function set_model(this, varargin)
