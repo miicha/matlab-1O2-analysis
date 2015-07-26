@@ -1082,6 +1082,11 @@ classdef SiSaMode < GenericMode
             this.p.set_savepath(np);
         end
         
+        function A = corrected_amplitude(this, fit_params, phi)
+            A = fit_params(1)*(1-fit_params(3)/fit_params(2));
+            A = A/phi;
+        end
+        
         % mouseclicks
         function left_click_on_axes(this, index)
             if ~strcmp(this.p.fileinfo.path, '')

@@ -76,7 +76,9 @@ classdef SiSaGenericPlot < handle
                 this.h.drpd = uicontrol(this.h.fit_tab);
                 this.h.pb = uicontrol(this.h.fit_tab);
                 this.h.pb_glob = uicontrol(this.h.fit_tab);
+                this.h.pb_set_quant = uicontrol(this.h.fit_tab);
                 this.h.gof = uicontrol(this.h.fit_tab);
+                this.h.quant = uicontrol(this.h.fit_tab);
                 this.h.param = uipanel(this.h.fit_tab);
                 
             this.h.exp_tab = uitab(this.h.tabs);
@@ -162,17 +164,22 @@ classdef SiSaGenericPlot < handle
                           'FontSize', 9,...
                           'callback', @this.globalize)
                       
-%             set(this.h.pb_glob, 'units', 'pixels',...
-%                           'position', [113 35 98 28],...
-%                           'string', 'globalisieren',...
-%                           'FontSize', 9,...
-%                           'callback', @this.globalize)
+            set(this.h.pb_set_quant, 'units', 'pixels',...
+                          'position', [162 35 50 28],...
+                          'string', 'Phi',...
+                          'FontSize', 9,...
+                          'callback', @this.set_as_reference)
                       
             set(this.h.gof, 'units', 'pixels',...
                            'style', 'text',...
                            'FontSize', 9,...
                            'string', {'Chi^2/DoF:', num2str(this.chisq)},...
-                           'position', [223 10 62 45]);
+                           'position', [223 20 62 45]);
+            
+            set(this.h.quant, 'units', 'pixels',...
+                           'style', 'text',...
+                           'FontSize', 9,...
+                           'position', [223 10 80 15]);
                        
             set(this.h.param, 'units', 'pixels',...
                              'position', [300 5 620 65]);
@@ -243,7 +250,7 @@ classdef SiSaGenericPlot < handle
             jWindow.setMinimumSize(tmp);
             
             %% draw plot
-            this.generate_param();      
+            this.generate_param();
         end
         
         function set_window_name(this,name)
@@ -396,6 +403,7 @@ classdef SiSaGenericPlot < handle
             tmp = get(this.h.gof, 'string');
             tmp{2} = sprintf('%1.2f', this.chisq);
             set(this.h.gof, 'string', tmp);
+            this.read_and_calc_quant();
         end
         
         function fit(this, varargin)
@@ -455,6 +463,34 @@ classdef SiSaGenericPlot < handle
             this.h.axes.XLim = this.plot_limits.X;
             if isfield(this.plot_limits, 'Y')
                 this.h.axes.YLim = this.plot_limits.Y;
+            end
+        end
+        
+        function read_and_calc_quant(this, varargin)
+            
+            path = tempdir;
+            name = 'amplitude_phi.txt';
+            A = this.smode.corrected_amplitude(this.fit_params,1);
+            
+            try
+                quantum_yield = dlmread([path name]);
+                quantum_yield = round(A/quantum_yield*1000)/1000;
+                quantum_yield = ['Phi: ' num2str(quantum_yield)];
+                set(this.h.quant,'string', quantum_yield);
+            end
+        end
+        
+        function set_as_reference(this, varargin)
+            phi = inputdlg('Quantenausbeute der Referenz');
+            
+            if ~isempty(phi)
+                phi = str2double(strrep(phi,',','.'));
+
+                amplitude_phi = this.smode.corrected_amplitude(this.fit_params,phi);
+
+                path = tempdir;
+                name = 'amplitude_phi.txt';
+                dlmwrite([path name], amplitude_phi);
             end
         end
         
