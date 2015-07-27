@@ -265,6 +265,7 @@ classdef SiSaGenericPlot < handle
             realmax = max(datal)*1.5;
             m = max(datal((this.t_offset+this.t_zero):end));
             m = m*1.1;
+            mini = min(datal((this.t_offset+this.t_zero):end))*0.95;
             
             if this.t_end == 0
                 this.t_end = length(this.x_data) - this.t_zero - 1;
@@ -294,7 +295,7 @@ classdef SiSaGenericPlot < handle
             
 
             if ~realtime             
-                ylim([0 m]);
+                ylim([mini m]);
                 xlim([min(this.x_data)-1 max(this.x_data)+1]);
                 if this.fitted
                     this.plotfit();
