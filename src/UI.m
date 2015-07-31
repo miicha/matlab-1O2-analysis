@@ -215,10 +215,17 @@ classdef UI < handle
         
         function openDIFF(this)
             name = this.fileinfo.name;
+            
+            anz_str = num2str(length(name));
+            
             if iscell(name)
                 for i = 1:length(name)
                     this.fileinfo.size = [length(name), 1, 1];
                     d = dlmread([this.fileinfo.path name{i}]);
+                    
+                    if i == 1
+                        data = zeros(length(name),1,1,1, length(d));
+                    end
                     if i > 1
                         if length(d) > size(data, 5)
                             d = d(1:size(data, 5));
@@ -228,6 +235,9 @@ classdef UI < handle
                         end
                     end
                     data(i, 1, 1, 1,:) = d;
+                    if mod(i, 10) == 0
+                        this.update_infos(['    |    ' num2str(i) ' von ' anz_str ' eingelesen']);
+                    end
                 end
                 this.fileinfo.np = length(name);
             end
