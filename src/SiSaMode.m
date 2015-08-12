@@ -81,7 +81,7 @@ classdef SiSaMode < GenericMode
     end
     
     methods
-        function this = SiSaMode(parent, data)
+        function this = SiSaMode(parent, data, reader)
             this.p = parent;
             this.data = data;
             this.h.parent = parent.h.modepanel;
@@ -485,6 +485,16 @@ classdef SiSaMode < GenericMode
             % initialise here, so we can check whether a point is fitted or not
             s = num2cell(size(this.est_params));
             this.fit_chisq = nan(s{1:4});
+            
+            %% Hintergrundfarbe abhängig von Detektionswellenlänge
+            if isfield(reader.meta.sisa, 'Optik')
+                if reader.meta.sisa.Optik == 1270
+                    set(this.h.sisamode, 'background', [0.8 0.2 0.2]);
+                else
+                    set(this.h.sisamode, 'background', [0.2 0.2 0.8]);
+                end
+            end
+
         end
         
         function plot_array(this, varargin)

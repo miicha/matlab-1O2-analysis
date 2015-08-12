@@ -9,13 +9,8 @@ classdef InvivoMode < SiSaMode
     
     methods
         function this = InvivoMode(parent, data, evo_data, int_time, reader)
-            this@SiSaMode(parent, data);
-            if reader.meta.sisa.Optik == 1270
-                set(this.h.sisamode, 'background', [0.8 0.2 0.2]);
-            else
-                set(this.h.sisamode, 'background', [0.2 0.2 0.8]);
-            end
-
+            this@SiSaMode(parent, data, reader);
+            
             this.scale(4) = int_time;
             this.units{4} = 's';
             
