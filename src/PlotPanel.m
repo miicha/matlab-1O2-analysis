@@ -350,7 +350,7 @@ classdef PlotPanel < handle
                     'xticklabel', x_tick_label,...
                     'yticklabel', y_tick_label);
 
-            caxis([this.l_min this.l_max]);
+            caxis([this.l_min.(this.mode) this.l_max.(this.mode)]);
             colormap(this.cmap);
             c = colorbar();
             set(c, 'units', 'pixels');
