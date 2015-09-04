@@ -45,7 +45,7 @@ classdef FluoMode < GenericMode
                                 'highlightcolor', [.7 .7 .7],...
                                 'BackgroundColor', [.85 .85 .85]);
                             
-            this.plotpanel = FluoPanel(this, size(data));
+            this.plotpanel = FluoPanel(this, size(data), this.h.plotpanel);
             this.resize();
             this.plot_array();
         end

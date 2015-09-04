@@ -27,6 +27,9 @@ classdef PlotPanel < handle
         
         slices = {};
         
+        ticklabels;
+        tickvalues;
+        
         l_min; % maximum of the current parameter over all data points
         l_max; % minimum of the current parameter over all data points
         use_user_legend;
@@ -37,16 +40,25 @@ classdef PlotPanel < handle
     end
 
     methods
-        function this = PlotPanel(parent, dims, dimnames)
+        function this = PlotPanel(parent, dims, dimnames, gui_parent, ticklabels, tickvalues)
             this.p = parent;
-            this.h.parent = parent.h.plotpanel;
+            this.h.parent = gui_parent;
 
+            if nargin < 6
+                tickvalues = {[], [], [], []};
+                if nargin < 5
+                    ticklabels = {'', '', '', ''};
+                end
+            end
+            
             while length(dims) < 4
                 dims = [dims 1];
             end
 
             this.dims = dims;
-
+            this.ticklabels = ticklabels;
+            this.tickvalues = tickvalues;
+            
             this.dimnames = dimnames;
             this.ind = {':', ':', 1, 1};
             % fill the dimnames with defaults
@@ -85,10 +97,11 @@ classdef PlotPanel < handle
             set(this.h.axes, 'units', 'pixels',...
                            'position', [40 60 380 390],...
                            'Color', get(this.h.plotpanel, 'BackgroundColor'),...
-                           'xtick', [], 'ytick', [],...
-                           'XColor', get(this.h.plotpanel, 'BackgroundColor'),...
-                           'YColor', get(this.h.plotpanel, 'BackgroundColor'),...
                            'ButtonDownFcn', @this.aplot_click_cb);
+                       
+%                                                   'xtick', [], 'ytick', [],...
+%                            'XColor', get(this.h.plotpanel, 'BackgroundColor'),...
+%                            'YColor', get(this.h.plotpanel, 'BackgroundColor'),...
                        
             set(this.h.legend, 'units', 'pixels',...
                              'position', [40 12 400 20],...
@@ -260,6 +273,11 @@ classdef PlotPanel < handle
             for i = 1:length(this.slices)
                 this.slices{i}.plot_slice();
             end
+            
+            this.h.axes.XTickLabel = this.ticklabels{this.curr_dims(1)};
+            this.h.axes.YTickLabel = this.ticklabels{this.curr_dims(2)};
+            this.h.axes.XTick = this.tickvalues{this.curr_dims(1)};
+            this.h.axes.YTick = this.tickvalues{this.curr_dims(2)};
         end
 
         function fighandle = generate_export_fig(this, vis)
@@ -504,7 +522,7 @@ classdef PlotPanel < handle
             this.update_plot();
         end
 
-        function value = set_nth_val(this, dim, value)  
+        function value = set_nth_val(this, dim, value)
             if value > this.dims(this.curr_dims(dim))
                 value = this.dims(this.curr_dims(dim));
             elseif value < 1

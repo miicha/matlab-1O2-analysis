@@ -204,9 +204,15 @@ classdef UI < handle
                                                        reader.meta.fluo.x_achse,...
                                                        reader.meta.fluo.int_time);
                     end
-                    if isfield(reader.data, 'temp')
-                        % open a temperature tab
-                        this.modes{3} = TempMode(this, double(reader.data.temp));
+                    % open a meta tab
+                    if isfield(reader.data, 'temp') && isfield(reader.data, 'int')
+                        this.modes{3} = MetaMode(this, double(reader.data.temp), double(reader.data.int));
+                    elseif isfield(reader.data, 'temp')
+                        this.modes{3} = MetaMode(this, double(reader.data.temp), []);
+                    elseif isfield(reader.data, 'int')
+                        this.modes{3} = MetaMode(this, [], double(reader.data.int));
+                    else
+                        this.modes{3} = MetaMode(this, [], []);
                     end
             end
 
@@ -215,17 +221,10 @@ classdef UI < handle
         
         function openDIFF(this)
             name = this.fileinfo.name;
-            
-            anz_str = num2str(length(name));
-            
             if iscell(name)
                 for i = 1:length(name)
                     this.fileinfo.size = [length(name), 1, 1];
                     d = dlmread([this.fileinfo.path name{i}]);
-                    
-                    if i == 1
-                        data = zeros(length(name),1,1,1, length(d));
-                    end
                     if i > 1
                         if length(d) > size(data, 5)
                             d = d(1:size(data, 5));
@@ -235,9 +234,6 @@ classdef UI < handle
                         end
                     end
                     data(i, 1, 1, 1,:) = d;
-                    if mod(i, 10) == 0
-                        this.update_infos(['    |    ' num2str(i) ' von ' anz_str ' eingelesen']);
-                    end
                 end
                 this.fileinfo.np = length(name);
             end
