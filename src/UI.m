@@ -204,10 +204,51 @@ classdef UI < handle
                                                        reader.meta.fluo.x_achse,...
                                                        reader.meta.fluo.int_time);
                     end
-                    if isfield(reader.data, 'temp')
-                        % open a temperature tab
-                        this.modes{3} = TempMode(this, double(reader.data.temp));
+                    % open a meta tab
+                    if isfield(reader.data, 'temp') && isfield(reader.data, 'int')
+                        this.modes{3} = MetaMode(this, double(reader.data.temp), double(reader.data.int));
+                    elseif isfield(reader.data, 'temp')
+                        this.modes{3} = MetaMode(this, double(reader.data.temp), []);
+                    elseif isfield(reader.data, 'int')
+                        this.modes{3} = MetaMode(this, [], double(reader.data.int));
+                    else
+                        this.modes{3} = MetaMode(this, [], []);
                     end
+                case 'in-vivo-dual'
+                    reader = dual_reader(filepath, this);
+                    tmp = size(reader.data.sisa_1270.data);
+                    this.fileinfo.size = tmp(1:4);
+                    
+                    if isfield(reader.data, 'sisa_1211')
+                        % open a SiSa tab
+                        this.modes{1} = InvivoMode(this, double(reader.data.sisa_1211.data(1:tmp(1), 1:tmp(2), 1:tmp(3), 1:tmp(4), :)),...
+                                                         reader.data.sisa_1211.verlauf,...
+                                                         reader.meta.sisa.int_time, reader);
+                    end
+                    if isfield(reader.data, 'sisa_1270')
+                        % open a SiSa tab
+                        this.modes{2} = InvivoMode(this, double(reader.data.sisa_1270.data),...
+                                                         reader.data.sisa_1270.verlauf,...
+                                                         reader.meta.sisa.int_time, reader);
+                    end
+                    if isfield(reader.data, 'fluo')
+                        % open a fluorescence tab
+                        this.modes{3} = FluoMode(this, double(reader.data.fluo.data),...
+                                                       reader.meta.fluo.x_achse,...
+                                                       reader.meta.fluo.int_time);
+                    end
+                    % open a meta tab
+                    if isfield(reader.data, 'temp') && isfield(reader.data, 'int')
+                        this.modes{4} = MetaMode(this, double(reader.data.temp), double(reader.data.int));
+                    elseif isfield(reader.data, 'temp')
+                        this.modes{4} = MetaMode(this, double(reader.data.temp), []);
+                    elseif isfield(reader.data, 'int')
+                        this.modes{4} = MetaMode(this, [], double(reader.data.int));
+                    else
+                        this.modes{4} = MetaMode(this, [], []);
+                    end
+                otherwise
+                    warndlg(['Kann das Dateiformat ' FileType ' nicht öffnen!']);
             end
 
             this.data_read = true;
@@ -215,17 +256,10 @@ classdef UI < handle
         
         function openDIFF(this)
             name = this.fileinfo.name;
-            
-            anz_str = num2str(length(name));
-            
             if iscell(name)
                 for i = 1:length(name)
                     this.fileinfo.size = [length(name), 1, 1];
                     d = dlmread([this.fileinfo.path name{i}]);
-                    
-                    if i == 1
-                        data = zeros(length(name),1,1,1, length(d));
-                    end
                     if i > 1
                         if length(d) > size(data, 5)
                             d = d(1:size(data, 5));
@@ -235,9 +269,6 @@ classdef UI < handle
                         end
                     end
                     data(i, 1, 1, 1,:) = d;
-                    if mod(i, 10) == 0
-                        this.update_infos(['    |    ' num2str(i) ' von ' anz_str ' eingelesen']);
-                    end
                 end
                 this.fileinfo.np = length(name);
             end

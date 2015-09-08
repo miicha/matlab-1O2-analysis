@@ -1,9 +1,9 @@
 classdef FluoPanel < PlotPanel
 
     methods
-        function this = FluoPanel(parent, dims)
+        function this = FluoPanel(parent, dims, gui_parent)
             dimnames = {'x', 'y', 'z', 's', 'l'};
-            this@PlotPanel(parent, dims, dimnames);
+            this@PlotPanel(parent, dims, dimnames, gui_parent);
             
             this.h.d5_slider.Callback = @this.set_wl_cb;
             this.h.d5_edit.Callback = @this.set_wl_cb;          
