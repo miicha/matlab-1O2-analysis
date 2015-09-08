@@ -741,7 +741,6 @@ classdef SiSaMode < GenericMode
             
             for n = 1:prod(this.p.fileinfo.size)
                 [i,j,k,l] = ind2sub(this.p.fileinfo.size, n);
-           
                 d = this.data(i, j, k, l, :);
 
                 ps = SiSaMode.estimate_parameters_p(squeeze(d), this.model, this.t_zero, this.t_offset, this.channel_width);
