@@ -83,6 +83,9 @@ classdef SiSaMode < GenericMode
     
     methods
         function this = SiSaMode(parent, data, reader)
+            if nargin < 3
+                reader = struct();
+            end
             this.p = parent;
             this.data = data;
             this.h.parent = parent.h.modepanel;
@@ -460,7 +463,7 @@ classdef SiSaMode < GenericMode
             this.fit_chisq = nan(s{1:4});
             
             %% Hintergrundfarbe abhängig von Detektionswellenlänge
-            if isfield(reader.meta.sisa, 'Optik')
+            if isfield(reader, 'meta') && isfield(reader.meta, 'sisa') && isfield(reader.meta.sisa, 'Optik')
                 if reader.meta.sisa.Optik == 1270
                     set(this.h.sisamode, 'background', [0.8 0.2 0.2]);
                 else
