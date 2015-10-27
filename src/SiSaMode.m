@@ -57,7 +57,7 @@ classdef SiSaMode < GenericMode
                  {'A*(exp(-t/t1)-exp(-t/t2))+offset'...
                   'A*(exp(-t/t1)-exp(-t/t2))+B*exp(-t/t2)+offset'...
                   'A*(exp(-t/t1)-exp(-t/t2))+B*exp(-t/t1)+offset'...
-                  'A*(exp(-t/t1)+B*exp(-t/t2)+offset'...
+                  'A*exp(-t/t1)+B*exp(-t/t2)+offset'...
                  },...
                  {...
                     % function, lower bounds, upper bounds, names of arguments
@@ -92,7 +92,7 @@ classdef SiSaMode < GenericMode
             this.p = parent;
             this.data = data;
             
-            this.sisa_fit_info{1} = this.sisa_fit.get_fun_names();
+            this.sisa_fit_info = this.sisa_fit.get_model_info();
             
             this.h.parent = parent.h.modepanel;
             
@@ -323,11 +323,12 @@ classdef SiSaMode < GenericMode
 
             set(this.h.drpd, 'units', 'pixels',...
                            'style', 'popupmenu',...
-                           'string', this.sisa_fit_info{1},...
+                           'string', this.sisa_fit_info.model_names,...
                            'value', 1,...
                            'position', [15 205 220 15],...
                            'callback', @this.set_model_cb,...
-                           'BackgroundColor', [1 1 1]);
+                           'BackgroundColor', [1 1 1],...
+                           'FontSize', 9);
                        
             set(this.h.bounds, 'units', 'pixels',...
                              'position', [2 10 237 180],...
@@ -503,20 +504,19 @@ classdef SiSaMode < GenericMode
         end
         
         function set_model(this, number)
-%             t = keys(this.models);
-%             set(this.h.drpd, 'value', find(strcmp(t, str))); % set the model in the drpd
-            this.sisa_fit_info{1}
-            str = this.sisa_fit_info{1}{number}
-            t = this.models(str)
+            str = this.sisa_fit_info.model_names{number};
+            par_num = this.sisa_fit_info.par_num{number};
+            par_names = this.sisa_fit_info.par_names{number};
+            
             this.fit_params = nan(this.p.fileinfo.size(1), this.p.fileinfo.size(2),...
-                                this.p.fileinfo.size(3), this.p.fileinfo.size(4), length(t{4}));
-            this.l_max = nan(length(t{4}) + 1, 1);
-            this.l_min = nan(length(t{4}) + 1, 1);
+                                this.p.fileinfo.size(3), this.p.fileinfo.size(4), par_num);
+            this.l_max = nan(par_num + 1, 1);
+            this.l_min = nan(par_num + 1, 1);
             this.model = str;
             this.estimate_parameters();
             set(this.h.plttxt, 'visible', 'on');
             set(this.h.param, 'visible', 'on',...
-                            'string', [t{4}, 'Summe']);
+                            'string', [par_names, 'Summe']);
             this.plot_array();
         end
     
@@ -982,7 +982,7 @@ classdef SiSaMode < GenericMode
         end
         
         function generate_bounds(this)
-            m = this.models(this.model)
+            m = this.models(this.model);
             n = length(m{4});
             
             if  length(this.gstart) < n
