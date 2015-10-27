@@ -35,7 +35,7 @@ classdef SiSaMode < GenericMode
         fitted = false;
         cmap = 'summer';
         
-        sisafit;
+%         sisafit;
         
         % deprecated:
         model = '1. A*(exp(-t/t1)-exp(-t/t2))+offset';      % fit model, should be global  
@@ -47,14 +47,17 @@ classdef SiSaMode < GenericMode
 
         t_end;
         
+        sisa_fit = sisafit(1);
+        sisa_fit_info;
+        
         fix = {};
         gstart = [0 0 0 0];
         use_gstart = [0 0 0 0]';
         models = containers.Map(...
-                 {'1. A*(exp(-t/t1)-exp(-t/t2))+offset'...
-                  '2. A*(exp(-t/t1)-exp(-t/t2))+B*exp(-t/t2)+offset'...
-                  '3. A*(exp(-t/t1)-exp(-t/t2))+B*exp(-t/t1)+offset'...
-                  '4. A*(exp(-t/t1)+B*exp(-t/t2)+offset'...
+                 {'A*(exp(-t/t1)-exp(-t/t2))+offset'...
+                  'A*(exp(-t/t1)-exp(-t/t2))+B*exp(-t/t2)+offset'...
+                  'A*(exp(-t/t1)-exp(-t/t2))+B*exp(-t/t1)+offset'...
+                  'A*(exp(-t/t1)+B*exp(-t/t2)+offset'...
                  },...
                  {...
                     % function, lower bounds, upper bounds, names of arguments
@@ -65,10 +68,10 @@ classdef SiSaMode < GenericMode
                   })
                     
         models_latex = containers.Map(...
-                 {'1. A*(exp(-t/t1)-exp(-t/t2))+offset'...
-                  '2. A*(exp(-t/t1)-exp(-t/t2))+B*exp(-t/t2)+offset'...
-                  '3. A*(exp(-t/t1)-exp(-t/t2))+B*exp(-t/t1)+offset'...
-                  '4. A*(exp(-t/t1)+B*exp(-t/t2)+offset'...
+                 {'A*(exp(-t/t1)-exp(-t/t2))+offset'...
+                  'A*(exp(-t/t1)-exp(-t/t2))+B*exp(-t/t2)+offset'...
+                  'A*(exp(-t/t1)-exp(-t/t2))+B*exp(-t/t1)+offset'...
+                  'A*(exp(-t/t1)+B*exp(-t/t2)+offset'...
                  },...
                  {...
                  { '$$f(t) = A\cdot \left[\exp \left(- \frac{t}{\tau_1}\right) - \exp \left(- \frac{t}{\tau_2}\right) \right] + o$$', {'A', '\tau_1', '\tau_2', 'o'}, {'Counts', '$$\mu$$s', '$$\mu$$s', 'Counts'} }...
@@ -88,6 +91,9 @@ classdef SiSaMode < GenericMode
             end
             this.p = parent;
             this.data = data;
+            
+            this.sisa_fit_info{1} = this.sisa_fit.get_fun_names();
+            
             this.h.parent = parent.h.modepanel;
             
             this.scale = this.p.scale;
@@ -317,7 +323,7 @@ classdef SiSaMode < GenericMode
 
             set(this.h.drpd, 'units', 'pixels',...
                            'style', 'popupmenu',...
-                           'string', keys(this.models),...
+                           'string', this.sisa_fit_info{1},...
                            'value', 1,...
                            'position', [15 205 220 15],...
                            'callback', @this.set_model_cb,...
@@ -451,7 +457,9 @@ classdef SiSaMode < GenericMode
             set(this.h.tabs, 'visible', 'on');
             
             this.p.update_infos();
-            this.set_model('1. A*(exp(-t/t1)-exp(-t/t2))+offset');
+            
+            
+            this.set_model(1);
             this.estimate_parameters();
             this.change_overlay_cond_cb();
             this.plot_array();
@@ -494,11 +502,12 @@ classdef SiSaMode < GenericMode
             end
         end
         
-        function set_model(this, str)
-            t = keys(this.models);
-            set(this.h.drpd, 'value', find(strcmp(t, str))); % set the model in the drpd
-            
-            t = this.models(str);
+        function set_model(this, number)
+%             t = keys(this.models);
+%             set(this.h.drpd, 'value', find(strcmp(t, str))); % set the model in the drpd
+            this.sisa_fit_info{1}
+            str = this.sisa_fit_info{1}{number}
+            t = this.models(str)
             this.fit_params = nan(this.p.fileinfo.size(1), this.p.fileinfo.size(2),...
                                 this.p.fileinfo.size(3), this.p.fileinfo.size(4), length(t{4}));
             this.l_max = nan(length(t{4}) + 1, 1);
@@ -973,7 +982,7 @@ classdef SiSaMode < GenericMode
         end
         
         function generate_bounds(this)
-            m = this.models(this.model);
+            m = this.models(this.model)
             n = length(m{4});
             
             if  length(this.gstart) < n
@@ -1342,10 +1351,8 @@ classdef SiSaMode < GenericMode
         end
        
         % fitmodel from dropdown
-        function set_model_cb(this, varargin)
-            t = keys(this.models);
-            str = t{get(this.h.drpd, 'value')};
-            this.set_model(str);
+        function set_model_cb(this, varargin)            
+            this.set_model(get(this.h.drpd, 'value'));
         end 
         
         % colormap
@@ -1405,7 +1412,7 @@ classdef SiSaMode < GenericMode
         function [param] = estimate_parameters_p(data, model, t_zero, t_offset, cw)
             data = smooth(data, 'loess');
             switch model
-                case '1. A*(exp(-t/t1)-exp(-t/t2))+offset'
+                case 'A*(exp(-t/t1)-exp(-t/t2))+offset'
                     [A, t1] = max(data((t_zero + t_offset):end)); % Amplitude, first time
                     t1 = t1 + t_zero + t_offset;
                     param(1) = A;
@@ -1420,8 +1427,8 @@ classdef SiSaMode < GenericMode
                     catch
                         param(2) = 1;
                     end
-                case {'2. A*(exp(-t/t1)-exp(-t/t2))+B*exp(-t/t2)+offset',...
-                      '3. A*(exp(-t/t1)-exp(-t/t2))+B*exp(-t/t1)+offset'}
+                case {'A*(exp(-t/t1)-exp(-t/t2))+B*exp(-t/t2)+offset',...
+                      'A*(exp(-t/t1)-exp(-t/t2))+B*exp(-t/t1)+offset'}
                     [A, t1] = max(data((t_zero + t_offset):end)); % Amplitude, first time
                     t1 = t1 + t_zero + t_offset;
                     param(1) = A;
@@ -1437,7 +1444,7 @@ classdef SiSaMode < GenericMode
                     catch
                         param(2) = 1;
                     end
-                case '4. A*(exp(-t/t1)+B*exp(-t/t2)+offset'
+                case 'A*(exp(-t/t1)+B*exp(-t/t2)+offset'
                     [A, i] = max(data((t_zero + t_offset):end));
                     B = A/4;
                     t1 = find(abs(data <= round(A/2.7)));

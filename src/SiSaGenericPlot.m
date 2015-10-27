@@ -343,8 +343,7 @@ classdef SiSaGenericPlot < handle
             
             % extrahierte SiSa-Daten Plotten
             if get(this.h.drpd, 'value') == 2 || get(this.h.drpd, 'value') == 3
-                tmp = keys(this.models);
-                sisamodel = this.models(tmp{1});
+                sisamodel = this.models('A*(exp(-t/t1)-exp(-t/t2))+offset');
                 sisadata = sisamodel{1}(p{1}, p{2}, p{3}, p{5}, this.x_data);
                 hold on
                 plot(this.x_data,  sisadata, 'color', [1 0.6 0.2], 'LineWidth', 1.5, 'HitTest', 'off');
