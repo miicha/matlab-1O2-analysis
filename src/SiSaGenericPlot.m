@@ -342,7 +342,7 @@ classdef SiSaGenericPlot < handle
             set(this.h.f,'CurrentAxes',this.h.axes)
             
             % extrahierte SiSa-Daten Plotten
-            if get(this.h.drpd, 'value') == 2 || get(this.h.drpd, 'value') == 3
+            if get(this.h.drpd, 'value') == 1 || get(this.h.drpd, 'value') == 2
                 sisamodel = this.models('A*(exp(-t/t1)-exp(-t/t2))+offset');
                 sisadata = sisamodel{1}(p{1}, p{2}, p{3}, p{5}, this.x_data);
                 hold on

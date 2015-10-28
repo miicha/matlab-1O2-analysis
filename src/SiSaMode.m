@@ -39,6 +39,7 @@ classdef SiSaMode < GenericMode
         
         % deprecated:
         model = '1. A*(exp(-t/t1)-exp(-t/t2))+offset';      % fit model, should be global  
+        model_number = 1;
         
         channel_width = 20/1000;   % needs UI element
         t_offset = 25;   % excitation is over after t_offset channels after 
@@ -447,14 +448,17 @@ classdef SiSaMode < GenericMode
             this.t_end = length(this.data(1,1,1,1,:)) - this.t_zero;
             this.x_data = ((1:length(this.data(1, 1, 1, 1, :)))-this.t_zero)'*this.channel_width;
             
+            
+            
+            
             % UI stuff
-            t = keys(this.models);
-            t = this.models(t{get(this.h.drpd, 'value')});
-             
+            % folgende 3 Zeilen wahrscheinlich unnütz...
+            par_names = this.sisa_fit_info.par_names{this.model_number}
+            set(this.h.param, 'visible', 'on', 'string', [par_names, 'Summe']);
+            set(this.h.ov_drpd, 'string', [par_names, 'Summe']);
+            
             set(this.h.plttxt, 'visible', 'on');
             set(this.h.fit_est, 'visible', 'on');
-            set(this.h.param, 'visible', 'on', 'string', [t{4}, 'Summe']);
-            set(this.h.ov_drpd, 'string', [t{4}, 'Summe']);
             set(this.h.tabs, 'visible', 'on');
             
             this.p.update_infos();
@@ -504,6 +508,7 @@ classdef SiSaMode < GenericMode
         end
         
         function set_model(this, number)
+            this.model_number = number;
             str = this.sisa_fit_info.model_names{number};
             par_num = this.sisa_fit_info.par_num{number};
             par_names = this.sisa_fit_info.par_names{number};
@@ -543,8 +548,7 @@ classdef SiSaMode < GenericMode
         end
                
         function name = get_parname(this, index)
-            m = this.models(this.model);
-            fitpars = m{4};
+            fitpars = this.sisa_fit_info.par_names{this.model_number};
             if index > length(fitpars)
                 if this.disp_fit_params
                     name = 'Chi';
@@ -557,9 +561,9 @@ classdef SiSaMode < GenericMode
         end
 
         function generate_sel_vals(this)
-            m = this.models(this.model);
-            n = length(m{4});
-
+            par_names = this.sisa_fit_info.par_names{this.model_number};
+            
+            n = length(par_names);
             for i = 1:length(this.h.mean)
                 delete(this.h.mean{i});
                 delete(this.h.var{i});
@@ -581,7 +585,7 @@ classdef SiSaMode < GenericMode
                                                     'BackgroundColor', [1 1 1]);
                 this.h.par{i} = uicontrol(this.h.sel_values,  'units', 'pixels',...
                                                     'style', 'text',...
-                                                    'string', m{4}{i},...
+                                                    'string',par_names{i},...
                                                     'horizontalAlignment', 'left',...
                                                     'position', [15 155-i*23-14 40 20]);
             end
@@ -755,6 +759,7 @@ classdef SiSaMode < GenericMode
         end
 
         function estimate_parameters(this)
+            % ToDo in fit-tools auslagern
             n = this.models(this.model);
             this.est_params = zeros(this.p.fileinfo.size(1), this.p.fileinfo.size(2),...
                               this.p.fileinfo.size(3), this.p.fileinfo.size(4), length(n{2}));
@@ -817,23 +822,25 @@ classdef SiSaMode < GenericMode
             lt = 0;
             m = 1;
             n_pixel = prod(this.p.fileinfo.size);
+
+            % configure sisa-fit-tools
+            sf = sisafit(this.model_number);
+            sf.update('fixed',this.fix, 't0', this.t_zero, 'offset_t', this.t_zero + this.t_offset);
             
             for n = start:n_pixel
                 [i,j,k,l] = ind2sub(this.p.fileinfo.size, n);               
                 if this.overlays{this.current_ov}(i, j, k, l) || ~this.disp_ov
                     innertime = tic();
-
-                    y = squeeze(this.data(i, j, k, l, this.t_zero+(this.t_offset:this.t_end)));
-                    w = sqrt(y);
-                    w(w == 0) = 1;
-                    if ~isempty(g_par)
-                        start = this.est_params(i, j, k, l, :);
+                    y = squeeze(this.data(i, j, k, l, :));
+                    if ~isempty(g_par) % any parameter global startpoint?
+                        start = squeeze(this.est_params(i, j, k, l, :));
                         start(g_par) = this.gstart(g_par);
-                        [par, p_err, chi] = fitdata(this.models(this.model),...
-                            x, y, w, start, this.fix);
+                        sf.set_start(start);
+                        [par, p_err, chi] = sf.fit(y);
                     else
-                        [par, p_err, chi] = fitdata(this.models(this.model),...
-                            x, y, w, this.est_params(i, j, k, l, :), this.fix); 
+                        start = squeeze(this.est_params(i, j, k, l, :)); 
+                        sf.set_start(start);
+                        [par, p_err, chi] = sf.fit(y);
                     end
                     m = m + 1;
                     this.fit_params(i, j, k, l, :) = par;
@@ -862,6 +869,7 @@ classdef SiSaMode < GenericMode
                     return
                 end
             end
+            
             t = toc(outertime);
             this.p.update_infos(['   |   Daten global gefittet (' format_time(t) ').'])
             set(this.h.hold, 'visible', 'off');
@@ -874,7 +882,7 @@ classdef SiSaMode < GenericMode
             this.plot_array();
         end
         
-        function fit_all_par(this, start)
+        function fit_all_parallel(this, start)
             outertime = tic();
             this.p.update_infos('   |   Starte Parallel-Pool.')
             set(this.h.fit_par, 'visible', 'on');
@@ -1385,7 +1393,7 @@ classdef SiSaMode < GenericMode
             this.hold_f = false;
             this.cancel_f = false;
             if get(this.h.parallel, 'value')
-                this.fit_all_par(1);
+                this.fit_all_parallel(1);
             else
                 this.fit_all(1);
             end
@@ -1395,7 +1403,7 @@ classdef SiSaMode < GenericMode
             this.hold_f = false;
             set(this.h.hold, 'string', 'Fit anhalten', 'callback', @this.hold_fit_cb);
             if get(this.h.parallel, 'value')
-                this.fit_all_par(this.last_fitted + this.p.par_size);
+                this.fit_all_parallel(this.last_fitted + this.p.par_size);
             else
                 this.fit_all(this.last_fitted);
             end
