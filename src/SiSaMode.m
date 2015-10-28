@@ -767,9 +767,8 @@ classdef SiSaMode < GenericMode
             
             this.est_params = zeros(this.p.fileinfo.size(1), this.p.fileinfo.size(2),...
                               this.p.fileinfo.size(3), this.p.fileinfo.size(4), num_par);
-            lb = zeros(num_par, 1);
-            ub = ones(num_par, 1)*100;
-            tic
+            ub = zeros(num_par, 1);
+            lb = ones(num_par, 1)*100;
             curr_p = 0;
             for n = 1:prod(this.p.fileinfo.size)
                 [i,j,k,l] = ind2sub(this.p.fileinfo.size, n);
@@ -793,7 +792,6 @@ classdef SiSaMode < GenericMode
                     end
                 end
             end
-            toc
             this.data_sum = sum(this.data(:, :, :, :, (this.t_zero+this.t_offset):end), 5);
             this.fitted = false;
                           
@@ -841,6 +839,11 @@ classdef SiSaMode < GenericMode
                 if this.overlays{this.current_ov}(i, j, k, l) || ~this.disp_ov
                     innertime = tic();
                     y = squeeze(this.data(i, j, k, l, :));
+                    
+                    if n == 1
+                        set(this.h.fit_par, 'visible', 'on');
+                    end
+                
                     if sum(y) == 0
                         continue
                     end
@@ -865,9 +868,7 @@ classdef SiSaMode < GenericMode
                     this.p.update_infos(['   |   Fitte ' num2str(m) '/' num2str(ma) ' (sequentiell): '...
                                     format_time(lt/m*(ma-m)) ' verbleibend.'])
                 end
-                if n == 1
-                    set(this.h.fit_par, 'visible', 'on');
-                end
+                
                 if this.disp_fit_params
                     this.plot_array();
                 end

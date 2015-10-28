@@ -641,10 +641,14 @@ classdef SiSaGenericPlot < handle
                 par = this.est_params;
             end
             this.smode.set_gstart(par);
+            
+            % das sollte entfernt werden
             this.smode.t_offset = this.t_offset;
             this.smode.t_zero = this.t_zero;
             this.smode.x_data = this.x_data;
             this.smode.t_end = this.t_end;
+            % so sollte es sein, es fehlt aber noch t_end
+            this.smode.sisa_fit.update('t_0', this.t_zero, 'offset_t', this.t_zero + this.t_offset);
         end
         
         %% Export
