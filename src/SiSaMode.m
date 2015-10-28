@@ -508,6 +508,8 @@ classdef SiSaMode < GenericMode
         end
         
         function set_model(this, number)
+            this.sisa_fit = sisafit(number);
+            
             this.model_number = number;
             str = this.sisa_fit_info.model_names{number};
             par_num = this.sisa_fit_info.par_num{number};
@@ -760,20 +762,27 @@ classdef SiSaMode < GenericMode
 
         function estimate_parameters(this)
             % ToDo in fit-tools auslagern
-            n = this.models(this.model);
-            this.est_params = zeros(this.p.fileinfo.size(1), this.p.fileinfo.size(2),...
-                              this.p.fileinfo.size(3), this.p.fileinfo.size(4), length(n{2}));
-            ub = zeros(length(n{3}), 1);
-            lb = ones(length(n{2}), 1)*100;
+            sf = this.sisa_fit;
+            num_par = this.sisa_fit_info.par_num{sf.curr_fitfun};
             
+            this.est_params = zeros(this.p.fileinfo.size(1), this.p.fileinfo.size(2),...
+                              this.p.fileinfo.size(3), this.p.fileinfo.size(4), num_par);
+            lb = zeros(num_par, 1);
+            ub = ones(num_par, 1)*100;
+            tic
+            curr_p = 0;
             for n = 1:prod(this.p.fileinfo.size)
                 [i,j,k,l] = ind2sub(this.p.fileinfo.size, n);
-                d = this.data(i, j, k, l, :);
-
-                ps = SiSaMode.estimate_parameters_p(squeeze(d), this.model, this.t_zero, this.t_offset, this.channel_width);
+                d = squeeze(this.data(i, j, k, l, :));
+                if sum(d) == 0
+                    continue
+                end
+                curr_p = curr_p + 1;
+                sf.update('t0', this.t_zero, 'offset_t', this.t_zero + this.t_offset);
+                ps = sf.estimate(d);
                 this.est_params(i, j, k, l, :) = ps;
-                if mod(i, round(this.p.fileinfo.np/20)) == 0
-                    this.p.update_infos(['   |   Parameter abschätzen ' num2str(i) '/' num2str(this.p.fileinfo.np) '.']);
+                if mod(curr_p, round(this.p.fileinfo.np/20)) == 0
+                    this.p.update_infos(['   |   Parameter abschätzen ' num2str(curr_p) '/' num2str(this.p.fileinfo.np) '.']);
                 end
                 for m = 1:length(ps) % find biggest and smallest params
                     if ps(m) > ub(m)
@@ -784,6 +793,7 @@ classdef SiSaMode < GenericMode
                     end
                 end
             end
+            toc
             this.data_sum = sum(this.data(:, :, :, :, (this.t_zero+this.t_offset):end), 5);
             this.fitted = false;
                           
@@ -817,14 +827,13 @@ classdef SiSaMode < GenericMode
             end
             
             g_par = find(this.use_gstart);
-            x = this.x_data(this.t_zero + (this.t_offset:this.t_end));
             
             lt = 0;
             m = 1;
             n_pixel = prod(this.p.fileinfo.size);
 
             % configure sisa-fit-tools
-            sf = sisafit(this.model_number);
+            sf = this.sisa_fit;
             sf.update('fixed',this.fix, 't0', this.t_zero, 'offset_t', this.t_zero + this.t_offset);
             
             for n = start:n_pixel
@@ -832,6 +841,9 @@ classdef SiSaMode < GenericMode
                 if this.overlays{this.current_ov}(i, j, k, l) || ~this.disp_ov
                     innertime = tic();
                     y = squeeze(this.data(i, j, k, l, :));
+                    if sum(y) == 0
+                        continue
+                    end
                     if ~isempty(g_par) % any parameter global startpoint?
                         start = squeeze(this.est_params(i, j, k, l, :));
                         start(g_par) = this.gstart(g_par);
@@ -1417,58 +1429,6 @@ classdef SiSaMode < GenericMode
     end
     
     methods (Static = true)
-        function [param] = estimate_parameters_p(data, model, t_zero, t_offset, cw)
-            data = smooth(data, 'loess');
-            switch model
-                case 'A*(exp(-t/t1)-exp(-t/t2))+offset'
-                    [A, t1] = max(data((t_zero + t_offset):end)); % Amplitude, first time
-                    t1 = t1 + t_zero + t_offset;
-                    param(1) = A;
-                    param(3) = (t1-t_zero)*cw/2;
-                    param(4) = mean(data(end-100:end));
-                    data = data-param(4);
-                    A = A-param(4);
-                    t2 = find(abs(data <= round(A/2.7)));
-                    t2 = t2(t2 > t1);
-                    try
-                        param(2) = (t2(1) - t_zero)*cw;
-                    catch
-                        param(2) = 1;
-                    end
-                case {'A*(exp(-t/t1)-exp(-t/t2))+B*exp(-t/t2)+offset',...
-                      'A*(exp(-t/t1)-exp(-t/t2))+B*exp(-t/t1)+offset'}
-                    [A, t1] = max(data((t_zero + t_offset):end)); % Amplitude, first time
-                    t1 = t1 + t_zero + t_offset;
-                    param(1) = A;
-                    param(3) = (t1-t_zero)*cw/2;
-                    param(4) = A/4;
-                    param(5) = mean(data(end-100:end));
-                    data = data-param(5);
-                    A = A-param(5);
-                    t2 = find(abs(data <= round(A/2.7)));
-                    t2 = t2(t2 > t1);
-                    try
-                        param(2) = (t2(1) - t_zero)*cw;
-                    catch
-                        param(2) = 1;
-                    end
-                case 'A*(exp(-t/t1)+B*exp(-t/t2)+offset'
-                    [A, i] = max(data((t_zero + t_offset):end));
-                    B = A/4;
-                    t1 = find(abs(data <= round(A/2.7)));
-                    t1 = t1(t1>i+t_offset);
-                    if isempty(t1)
-                        t1 = 10/cw;
-                    end
-                    t2 = t1(1)/4;
-                    param(5) = mean(data(end-100:end));
-                    param(1) = A;
-                    param(2) = t1(1)*cw;
-                    param(3) = t2*cw;
-                    param(4) = B;
-                otherwise
-                    param = 50*ones(5, 1);
-            end
-        end
+       
     end
 end
