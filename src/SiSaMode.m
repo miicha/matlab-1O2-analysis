@@ -795,11 +795,9 @@ classdef SiSaMode < GenericMode
             this.data_sum = sum(this.data(:, :, :, :, (this.t_zero+this.t_offset):end), 5);
             this.fitted = false;
                           
-            % set bounds from estimated parameters
-            tmp = this.models(this.model);
-            tmp{3} = ub*1.5;
-            tmp{2} = lb*0.5;
-            this.models(this.model) = tmp;
+            % set bounds from estimated parameters            
+            this.sisa_fit.update('upper', ub*1.5, 'lower', lb*0.5);
+            
             this.gstart = (ub+lb)./2;
             
             this.generate_bounds();
@@ -1003,8 +1001,11 @@ classdef SiSaMode < GenericMode
         end
         
         function generate_bounds(this)
-            m = this.models(this.model);
-            n = length(m{4});
+            lb = this.sisa_fit.lower_bounds;
+            ub = this.sisa_fit.upper_bounds;
+            par_names = this.sisa_fit_info.par_names{this.sisa_fit.curr_fitfun};
+            n = length(par_names);
+
             
             if  length(this.gstart) < n
                 this.gstart = (m{2}(:)+m{3}(:))./2;
@@ -1031,20 +1032,20 @@ classdef SiSaMode < GenericMode
             for i = 1:n
                 this.h.n{i} = uicontrol(this.h.bounds,  'units', 'pixels',...
                                                     'style', 'text',...
-                                                    'string', m{4}{i},...
+                                                    'string', par_names{i},...
                                                     'horizontalAlignment', 'left',...
                                                     'position', [5 155-i*23-14 35 20]);
                                                 
                 this.h.lb{i} = uicontrol(this.h.bounds, 'units', 'pixels',...
                                                     'style', 'edit',...
-                                                    'string', sprintf('%1.2f', m{2}(i)),...
+                                                    'string', sprintf('%1.2f', lb(i)),...
                                                     'position', [40 155-i*23-10 45 20],...
                                                     'callback', @this.set_bounds_cb,...
                                                     'BackgroundColor', [1 1 1]);
                                                 
                 this.h.ub{i} = uicontrol(this.h.bounds, 'units', 'pixels',...
                                                     'style', 'edit',...
-                                                    'string', sprintf('%1.2f', m{3}(i)),...
+                                                    'string', sprintf('%1.2f',ub(i)),...
                                                     'position', [95 155-i*23-10 45 20],...
                                                     'callback', @this.set_bounds_cb,...
                                                     'BackgroundColor', [1 1 1]);
@@ -1058,7 +1059,7 @@ classdef SiSaMode < GenericMode
                                                 
                 this.h.fix{i} = uicontrol(this.h.bounds, 'units', 'pixels',...
                                                      'style', 'checkbox',...
-                                                     'value', ismember(m{4}(i), this.fix),...
+                                                     'value', ismember(par_names(i), this.fix),...
                                                      'position', [198 155-i*23-10 40 20],...
                                                      'callback', @this.set_param_fix_cb);
                                                  
@@ -1291,16 +1292,17 @@ classdef SiSaMode < GenericMode
         end
         
         function change_par_source_cb(this, varargin)
-            t = this.models(this.model);  
+            
+            par_names = this.sisa_fit_info.par_names{this.sisa_fit.curr_fitfun};
             ov = get(varargin{2}.OldValue, 'String');
             nv = get(varargin{2}.NewValue, 'String');
             if ~strcmp(ov, nv)
                 if strcmp(nv, get(this.h.fit_par, 'string'))
                     this.disp_fit_params = true;
-                    params = [t{4}, 'Chi^2'];
+                    params = [par_names, 'Chi^2'];
                 else
                     this.disp_fit_params = false;
-                    params = [t{4}, 'Summe'];
+                    params = [par_names, 'Summe'];
                 end
                 set(this.h.param, 'visible', 'on',...
                                 'string', params);
@@ -1385,12 +1387,14 @@ classdef SiSaMode < GenericMode
         
         % update bounds
         function set_bounds_cb(this, varargin)
-            m = this.models(this.model);
-            for i = 1:length(m{4});
-                m{2}(i) = str2double(get(this.h.lb{i}, 'string'));
-                m{3}(i) = str2double(get(this.h.ub{i}, 'string'));
+            num_par = this.sisa_fit_info.par_num{this.sisa_fit.curr_fitfun};
+            lb = zeros(num_par,1);
+            ub = lb;
+            for i = 1:num_par
+                lb(i) = str2double(get(this.h.lb{i}, 'string'));
+                ub(i) = str2double(get(this.h.ub{i}, 'string'));
             end
-            this.models(this.model) = m;
+            this.sisa_fit.update('upper', ub, 'lower', lb);
         end 
         
         function set_param_cb(this, varargin)
