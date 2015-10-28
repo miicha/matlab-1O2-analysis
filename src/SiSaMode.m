@@ -1227,8 +1227,7 @@ classdef SiSaMode < GenericMode
                 fit.params = this.fit_params;
                 fit.params_err = this.fit_params_err;
                 fit.chisq = this.fit_chisq;
-                tmp4 = this.models(this.model);
-                fit.model = tmp4{1};
+                fit.model = this.sisa_fit_info.model_names{this.sisa_fit.curr_fitfun};
                 fit.t_zero = this.t_zero;
                 save([path file], 'fit');
             end
@@ -1338,8 +1337,8 @@ classdef SiSaMode < GenericMode
                 
         % fix parameter checkbox
         function set_param_fix_cb(this, varargin)
-            m = this.models(this.model);
-            n = length(m{4});
+            par_names = this.sisa_fit_info.par_names{this.sisa_fit.curr_fitfun};
+            n = length(par_names);
             index = 0;
             this.fix = {};
             for i = 1:n
@@ -1354,7 +1353,7 @@ classdef SiSaMode < GenericMode
                         set(this.h.fix{i}, 'value', 0);
                         return;
                     end
-                    this.fix{index} = m{4}{i};
+                    this.fix{index} = par_names{i};
                 end
             end
             this.set_gstart_cb();
