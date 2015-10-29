@@ -914,13 +914,11 @@ classdef SiSaMode < GenericMode
             % initialize the local, linearily indexed arrays
             ov = reshape(this.overlays{this.current_ov}, numel(this.overlays{this.current_ov}), 1);
             d_ov = this.disp_ov;
-            t_length = size(this.data, 5) - (this.t_offset + this.t_zero) + 1;
-            d = reshape(this.data(:, :, :, :, this.t_zero+(this.t_offset:this.t_end)), n_pixel, 1, t_length);
+            t_length = size(this.data, 5);
+            d = reshape(this.data, n_pixel, 1, t_length);
            
-            m = this.models(this.model);
-            parcount = length(m{2});
+            parcount = this.sisa_fit_info.par_num{this.sisa_fit.curr_fitfun};
             e_pars = reshape(this.est_params, prod(this.p.fileinfo.size), 1, parcount);
-            f = this.fix;
             f_pars = reshape(this.fit_params, prod(this.p.fileinfo.size), parcount);
             f_pars_e = reshape(this.fit_params_err, prod(this.p.fileinfo.size), parcount);
             f_chisq = reshape(this.fit_chisq, prod(this.p.fileinfo.size), 1);
@@ -933,8 +931,9 @@ classdef SiSaMode < GenericMode
             inner_upper = this.p.par_size-1;
 
             lt = 0;
+            sf = this.sisa_fit;
+            sf.update('fixed',this.fix, 't0', this.t_zero, 'offset_t', this.t_zero + this.t_offset);
             
-            x = this.x_data(this.t_zero+(this.t_offset:this.t_end));
             for n = start:this.p.par_size:n_pixel
                 if n == start
                     this.p.update_infos(['   |   Fitte ' num2str(start) '/' num2str(prod(this.p.fileinfo.size)) ' (parallel).'])
@@ -947,17 +946,17 @@ classdef SiSaMode < GenericMode
                 parfor i = 0:inner_upper
                     if (ov(n+i) || ~d_ov)
                         y = squeeze(d(n+i, :))';
-                        if isnan(y(1))
+                        if sum(y) == 0
                             continue;
                         end
-                        w = sqrt(y);
-                        w(w == 0) = 1;
                         if ~isempty(g_par)
                             tmp = e_pars(n+i, :);
                             tmp(g_par) = global_start(g_par);
-                            [par, p_err, chi] = fitdata(m, x, y, w, tmp, f);
+                            sf.set_start(tmp);
+                            [par, p_err, chi] = sf.fit(y);
                         else
-                            [par, p_err, chi] = fitdata(m, x, y, w, e_pars(n+i, :), f); 
+                            sf.set_start(e_pars(n+i, :));
+                            [par, p_err, chi] = sf.fit(y);
                         end
                         f_pars(n+i, :) = par;
                         f_pars_e(n+i, :) = p_err;
@@ -1320,15 +1319,18 @@ classdef SiSaMode < GenericMode
         
         % change global start point
         function set_gstart_cb(this, varargin)
-            m = this.models(this.model);
-            tmp = zeros(size(m{2}));
-            for i = 1:length(m{4});
+            par_num = this.sisa_fit_info.par_num{this.sisa_fit.curr_fitfun};
+            ub = this.sisa_fit.upper_bounds;
+            lb = this.sisa_fit.lower_bounds;
+            
+            tmp = zeros(par_num,1);
+            for i = 1:par_num;
                 tmp(i) = str2double(get(this.h.st{i}, 'string'));
-                if tmp(i) < m{2}(i)
-                    tmp(i) = m{2}(i);
+                if tmp(i) < lb(i)
+                    tmp(i) = lb(i);
                 end
-                if tmp(i) > m{3}(i)
-                    tmp(i) = m{3}(i);
+                if tmp(i) > ub(i)
+                    tmp(i) = ub(i);
                 end
                 set(this.h.st{i}, 'string', tmp(i))
             end
@@ -1361,8 +1363,7 @@ classdef SiSaMode < GenericMode
         
         % global SP checkbox
         function set_param_glob_cb(this, varargin)
-            m = this.models(this.model);
-            n = length(m{4});
+            n = this.sisa_fit_info.par_num{this.sisa_fit.curr_fitfun};
             g = zeros(n,1);
             for i = 1:n
                 if get(this.h.gst{i}, 'value') == 1
