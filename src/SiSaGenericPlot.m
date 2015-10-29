@@ -25,6 +25,8 @@ classdef SiSaGenericPlot < handle
         diff_data;
         data_backup;
         plot_limits;
+        model_number = 1;
+        sisa_fit;
     end
     
     properties (Access = private)
@@ -37,11 +39,13 @@ classdef SiSaGenericPlot < handle
             this.smode = smode;                % keep refs to the memory in which
                                         % the UI object is saved
             this.models = smode.models;
+            
             if smode.model
                 this.model = this.models(smode.model);
             end
 
-
+            this.model_number = this.smode.model_number;
+            this.sisa_fit = sisafit(this.model_number);
             
             this.x_data = this.smode.x_data;
             

@@ -509,6 +509,7 @@ classdef SiSaMode < GenericMode
         
         function set_model(this, number)
             this.sisa_fit = sisafit(number);
+            this.sisa_fit.update('cw', double(this.channel_width));
             
             this.model_number = number;
             str = this.sisa_fit_info.model_names{number};
