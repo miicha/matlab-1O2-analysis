@@ -27,6 +27,7 @@ classdef SiSaGenericPlot < handle
         plot_limits;
         model_number = 1;
         sisa_fit;
+        sisa_fit_info;
     end
     
     properties (Access = private)
@@ -45,7 +46,8 @@ classdef SiSaGenericPlot < handle
             end
 
             this.model_number = this.smode.model_number;
-            this.sisa_fit = sisafit(this.model_number);
+            this.sisa_fit_info = this.smode.sisa_fit_info;
+            this.sisa_fit = this.smode.sisa_fit.copy;
             
             this.x_data = this.smode.x_data;
             
@@ -150,8 +152,8 @@ classdef SiSaGenericPlot < handle
             
             set(this.h.drpd, 'units', 'pixels',...
                             'style', 'popupmenu',...
-                            'string', keys(this.models),...
-                            'value', find(strcmp(keys(this.models), this.model_str)),...
+                            'string', this.sisa_fit_info.model_names,...
+                            'value', this.model_number,...
                             'position', [10 5 200 27],...
                             'FontSize', 9,...
                             'callback', @this.set_model);
@@ -346,7 +348,7 @@ classdef SiSaGenericPlot < handle
             set(this.h.f,'CurrentAxes',this.h.axes)
             
             % extrahierte SiSa-Daten Plotten
-            if get(this.h.drpd, 'value') == 1 || get(this.h.drpd, 'value') == 2
+            if get(this.h.drpd, 'value') == 2 || get(this.h.drpd, 'value') == 3
                 sisamodel = this.models('A*(exp(-t/t1)-exp(-t/t2))+offset');
                 sisadata = sisamodel{1}(p{1}, p{2}, p{3}, p{5}, this.x_data);
                 hold on
@@ -411,32 +413,21 @@ classdef SiSaGenericPlot < handle
         end
         
         function fit(this, varargin)
-            x = this.x_data(this.t_zero+(this.t_offset:this.t_end));
-            y = this.data(this.t_zero+(this.t_offset:this.t_end));
-            w = sqrt(y);
-            w(w == 0) = 1;
-
-            ind  = 0;
-            fix = {};
-            start = zeros(this.n_param, 1);
+            fix = zeros(this.n_param,1);
+            start = fix;
             for i = 1:this.n_param
                 start(i) = str2double(get(this.h.pe{i}, 'string'));
-                if get(this.h.pc{i}, 'value')
-                    ind = ind + 1;
-                    fix{ind} = this.model{4}{i};
-                end
-            end
+                fix(i) = get(this.h.pc{i}, 'value');
+            end            
             
-            if ind == this.n_param
+            if sum(fix) == this.n_param
                 msgbox('Kann ohne freie Parameter nicht fitten.', 'Fehler','modal');
                 return;
             end
             
-            tmp = this.smode.models(this.model_str);
-            this.model{2} = tmp{2};
-            this.model{3} = tmp{3};
-
-            [p, p_err, chi] = fitdata(this.model, x, y, w, start, fix);
+            this.sisa_fit.update('start',start,'fixed',fix);
+            
+            [p, p_err, chi] = this.sisa_fit.fit(this.data);
             
             this.fit_params = p;
             this.fit_params_err = p_err;
@@ -506,7 +497,9 @@ classdef SiSaGenericPlot < handle
             this.n_param = length(tmp{2});
             this.model = this.models(n);
             this.model_str = n;
-            this.est_params = SiSaMode.estimate_parameters_p(this.data, n, this.t_zero, this.t_offset, this.channel_width);
+%             this.est_params = SiSaMode.estimate_parameters_p(this.data, n, this.t_zero, this.t_offset, this.channel_width);
+            this.est_params = this.sisa_fit.estimate(this.data);
+            this.est_params
             this.generate_param();
         end
         
