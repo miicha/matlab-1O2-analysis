@@ -444,8 +444,8 @@ classdef SiSaMode < GenericMode
             
             % find mean of t_0
             [~, I] = max(this.data, [], 5);
-            t_0 = round(mean(mean(mean(mean(I)))))
-            end_ch = length(this.data(1,1,1,1,:))
+            t_0 = ceil(mean(mean(mean(mean(I)))));
+            end_ch = length(this.data(1,1,1,1,:));
             
             this.sisa_fit.update('t0',t_0, 'end_chan', end_ch);
             
@@ -514,8 +514,9 @@ classdef SiSaMode < GenericMode
         end
         
         function set_model(this, number)
-            this.sisa_fit = sisafit(number);
-            this.sisa_fit.update('cw', double(this.channel_width));
+            tmp = sisafit(number);
+            tmp.copy_data(this.sisa_fit);
+            this.sisa_fit = tmp;
             
             this.h.drpd.Value = number;
             

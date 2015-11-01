@@ -4,14 +4,10 @@ classdef SiSaGenericPlot < handle
     
     properties
         data;
-        x_data;
         smode;
         fitted = false;
         chisq;              % chisquared
         n_param;
-        t_offset;
-        t_zero;
-        t_end;
         channel_width;
         est_params;         % estimated parameters
         model_str;
@@ -43,13 +39,6 @@ classdef SiSaGenericPlot < handle
             this.sisa_fit_info = this.smode.sisa_fit_info;
             this.sisa_fit = this.smode.sisa_fit.copy;
             
-            this.x_data = this.sisa_fit.x_axis;
-            this.n_param = this.sisa_fit.par_num;
-            
-            this.t_zero = this.sisa_fit.t_0;
-            
-            this.t_offset = this.sisa_fit.offset_time;%-this.t_zero;
-            this.t_end = this.sisa_fit.end_channel;%-this.t_zero;
             this.channel_width = this.sisa_fit.cw;
             
             this.est_params = rand(this.n_param,1);
@@ -262,14 +251,10 @@ classdef SiSaGenericPlot < handle
             end
             datal = this.data;
             realmax = max(datal)*1.5;
-            m = max(datal((this.t_offset+this.t_zero):end));
+            m = max(datal(this.sisa_fit.offset_time:end));
             m = m*1.1;
-            mini = min(datal((this.t_offset+this.t_zero):end))*0.95;
-            
-            if this.t_end == 0
-                this.t_end = length(this.x_data) - this.t_zero - 1;
-            end
-            
+            mini = min(datal(this.sisa_fit.offset_time:end))*0.95;
+           
             set(this.h.f,'CurrentAxes',this.h.axes)
             cla
             hold on
@@ -565,7 +550,7 @@ classdef SiSaGenericPlot < handle
             else
                 set(this.h.param, 'visible', 'on');
                 pP = get(this.h.param, 'position');
-                pP(3) = 45+(this.n_param-1)*100+45+10;
+                pP(3) = 45+(this.sisa_fit.par_num-1)*100+45+10;
                 set(this.h.param, 'position', pP);
             end
         end
