@@ -268,25 +268,26 @@ classdef SiSaGenericPlot < handle
             x_fit = x_ges(this.sisa_fit.offset_time:this.sisa_fit.end_channel);
             y_fit = datal(this.sisa_fit.offset_time:this.sisa_fit.end_channel);
             
-%             x_after = 
-%             y_after = 
+            x_after = x_ges(this.sisa_fit.end_channel:end);
+            y_after = datal(this.sisa_fit.end_channel:end);
             
             plot(x_before, y_before, '.-', 'Color', [.8 .8 1]);
             this.h.data_line = plot(x_fit, y_fit, 'Marker', '.', 'Color', [.8 .8 1], 'MarkerEdgeColor', 'blue');
             
-            plot(this.x_data(this.t_zero+this.t_end:end), datal(this.t_zero+this.t_end:end),...
-                                   '.-', 'Color', [.8 .8 1]);
+            plot(x_after, y_after, '.-', 'Color', [.8 .8 1]);
             
             this.h.zeroline = line([0 0], [0 realmax], 'Color', [.7 0 .5],... 
                       'ButtonDownFcn', @this.plot_click, 'LineWidth', 1.2, 'LineStyle', '--',...
                       'Tag', 'line');
                   
 %                   this.t_offset*this.channel_width
-                  
-            this.h.offsetline = line([this.t_offset this.t_offset]*this.channel_width,...
+            offset_line = this.sisa_fit.offset_time-this.sisa_fit.t_0;
+            this.h.offsetline = line([offset_line offset_line]*this.channel_width,...
                 [0 realmax], 'Color', [0 .6 .5], 'ButtonDownFcn', @this.plot_click, 'LineWidth', 1.2,...
                 'LineStyle', '-.', 'Tag', 'line');
-            this.h.endline = line([this.t_end this.t_end]*this.channel_width,...
+            
+            end_line = this.sisa_fit.end_channel-this.sisa_fit.t_0;
+            this.h.endline = line([end_line end_line]*this.channel_width,...
                 [0 realmax], 'Color', [0 .8 .8], 'ButtonDownFcn', @this.plot_click, 'LineWidth', 1.2,...
                 'LineStyle', '-.', 'Tag', 'line');
             hold off
@@ -294,7 +295,7 @@ classdef SiSaGenericPlot < handle
 
             if ~realtime             
                 ylim([mini m]);
-                xlim([min(this.x_data)-1 max(this.x_data)+1]);
+                xlim([min(x_ges)-1 max(x_ges)+1]);
                 if this.fitted
                     this.plotfit();
                 end
@@ -452,8 +453,8 @@ classdef SiSaGenericPlot < handle
         end
         
         function x_zoom(this, varargin)
-            x_min = this.t_zero*this.channel_width;
-            x_max = 5*this.t_zero*this.channel_width;  
+            x_min = this.sisa_fit.t_0*this.channel_width;
+            x_max = 5*this.sisa_fit.t_0*this.channel_width;  
             this.plot_limits.X = this.h.axes.XLim;
             this.h.axes.XLim = [-x_min x_max];
         end
@@ -581,13 +582,13 @@ classdef SiSaGenericPlot < handle
             this.current_draggable = 'offs';
             cpoint = get(this.h.axes, 'CurrentPoint');
             cpoint = cpoint(1, 1);
+            x_axis = this.sisa_fit.get_x_axis;
             if cpoint/this.sisa_fit.cw < 0.01
                 cpoint = 0.01;
-            elseif this.t_zero+cpoint/this.channel_width >= length(this.x_data)-10
+            elseif this.sisa_fit.t_0+cpoint/this.sisa_fit.cw >= length(x_axis)-10
                 cpoint = (length(this.x_data)-this.t_zero-1)*this.sisa_fit.cw;
             end
-            this.t_offset = round(cpoint/this.sisa_fit.cw);
-            this.sisa_fit.update('offset',round(cpoint/this.sisa_fit.cw));
+            this.sisa_fit.update('offset',round(cpoint/this.sisa_fit.cw+this.sisa_fit.t_0));
             this.plotdata(true)
         end
         
@@ -595,13 +596,13 @@ classdef SiSaGenericPlot < handle
             this.current_draggable = 'end';
             cpoint = get(this.h.axes, 'CurrentPoint');
             cpoint = cpoint(1, 1);
-            if cpoint > this.x_data(end)
-                cpoint = this.x_data(end);
-            elseif cpoint < (this.t_offset)*this.sisa_fit.cw
-                cpoint = (this.t_offset + 1)*this.sisa_fit.cw;
+            x_axis = this.sisa_fit.get_x_axis();
+            if cpoint > x_axis(end)
+                cpoint = x_axis(end);
+            elseif cpoint < (this.sisa_fit.offset_time-this.sisa_fit.t_0)*this.sisa_fit.cw
+                cpoint = (this.sisa_fit.offset_time-this.sisa_fit.t_0 + 1)*this.sisa_fit.cw;
             end
-            this.t_end = round(cpoint/this.sisa_fit.cw);
-            this.sisa_fit.update('end',round(cpoint/this.sisa_fit.cw));
+            this.sisa_fit.update('end',round(cpoint/this.sisa_fit.cw + this.sisa_fit.t_0));
             this.plotdata(true)
         end
         
@@ -609,23 +610,29 @@ classdef SiSaGenericPlot < handle
             if strcmp(this.current_draggable, 'zero')
                 cpoint = get(this.h.axes, 'CurrentPoint');
                 cpoint = cpoint(1, 1);
-                t = this.t_zero + round(cpoint/this.sisa_fit.cw);
+                t = this.sisa_fit.t_0 + round(cpoint/this.sisa_fit.cw);
                 n = length(this.data);
 
-                if t <= 0
+                
+                t_offset = this.sisa_fit.offset_time - this.sisa_fit.t_0;
+                t_end = this.sisa_fit.end_channel - this.sisa_fit.t_0;
+                
+                
+                if t <= 0 % t_0 muss mindestens im ersten kanal sein
                     t = 1;
-                elseif t + this.t_offset >= n - 1
-                    t = n - this.t_offset - 2;
-                elseif t + this.t_end >= n
-                    this.t_end = n - t;
+                elseif t + t_offset >= n - 1 % t_0 darf maximal 2 kanäle vor ende - offset sein
+                    t = n - t_offset - 2;
+                elseif t + t_end >= n        % 
+                    t_end = n - t;
                 end
                 % end line sticks to the end
-                if this.t_end == n - this.t_zero
-                    this.t_end = n - t;
+                if t_end == n - this.sisa_fit.t_0
+                    t_end = n - t;
                 end
-                this.sisa_fit.update('t0', t);
-                this.t_zero = t;
-                this.x_data = ((1:n)-t)'*this.sisa_fit.cw;
+                t_offset = t + t_offset;
+                t_end = t + t_end;
+                
+                this.sisa_fit.update('t0', t, 'offset',t_offset, 'end', t_end);
             end
             this.current_draggable = 'none';
             set(this.h.f, 'WindowButtonMotionFcn', '');
