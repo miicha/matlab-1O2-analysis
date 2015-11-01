@@ -447,7 +447,7 @@ classdef SiSaMode < GenericMode
             t_0 = ceil(mean(mean(mean(mean(I)))));
             end_ch = length(this.data(1,1,1,1,:));
             
-            this.sisa_fit.update('t0',t_0, 'end_chan', end_ch);
+            this.sisa_fit.update('t0',t_0, 'offset',t_0+25, 'end_chan', end_ch);
             
             this.sisa_fit
             

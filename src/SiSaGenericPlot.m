@@ -415,7 +415,8 @@ classdef SiSaGenericPlot < handle
         end
         
         function fit(this, varargin)
-            fix = zeros(this.n_param,1);
+            n_param = this.sisa_fit.par_num;
+            fix = zeros(n_param,1);
             start = fix;
             for i = 1:this.n_param
                 start(i) = str2double(get(this.h.pe{i}, 'string'));
