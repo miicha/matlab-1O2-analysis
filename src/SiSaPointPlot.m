@@ -23,6 +23,8 @@ classdef SiSaPointPlot < SiSaGenericPlot
             
             this.est_params = this.sisa_fit.estimate(this.data);
             this.generate_param();
+            
+            this.x_data = this.sisa_fit.x_axis;
              
             if length(smode.p.fileinfo.name) > 1
                 name = smode.p.fileinfo.name{this.cp(1)};

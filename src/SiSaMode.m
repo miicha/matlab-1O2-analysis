@@ -444,11 +444,14 @@ classdef SiSaMode < GenericMode
             
             % find mean of t_0
             [~, I] = max(this.data, [], 5);
-            this.t_zero = round(mean(mean(mean(mean(I)))));
-            this.t_end = length(this.data(1,1,1,1,:)) - this.t_zero;
-            this.x_data = ((1:length(this.data(1, 1, 1, 1, :)))-this.t_zero)'*this.channel_width;
+            t_0 = round(mean(mean(mean(mean(I)))))
+            end_ch = length(this.data(1,1,1,1,:))
             
+            this.sisa_fit.update('t0',t_0, 'end_chan', end_ch);
             
+            this.sisa_fit
+            
+            this.x_data = this.sisa_fit.get_x_axis();
             
             
             % UI stuff
@@ -466,6 +469,9 @@ classdef SiSaMode < GenericMode
             
             this.set_model(1);
             this.estimate_parameters();
+            
+            this.x_data = this.sisa_fit.get_x_axis();
+            
             this.change_overlay_cond_cb();
             this.plot_array();
             
@@ -780,7 +786,7 @@ classdef SiSaMode < GenericMode
                     continue
                 end
                 curr_p = curr_p + 1;
-                sf.update('t0', this.t_zero, 'offset_t', this.t_zero + this.t_offset);
+%                 sf.update('t0', this.t_zero, 'offset_t', this.t_zero + this.t_offset);
                 ps = sf.estimate(d);
                 this.est_params(i, j, k, l, :) = ps;
                 if mod(curr_p, round(this.p.fileinfo.np/20)) == 0
@@ -833,7 +839,7 @@ classdef SiSaMode < GenericMode
 
             % configure sisa-fit-tools
             sf = this.sisa_fit;
-            sf.update('fixed',this.fix, 't0', this.t_zero, 'offset_t', this.t_zero + this.t_offset);
+            sf.update('fixed',this.fix);%, 't0', this.t_zero, 'offset_t', this.t_zero + this.t_offset);
             
             for n = start:n_pixel
                 [i,j,k,l] = ind2sub(this.p.fileinfo.size, n);               
@@ -935,7 +941,7 @@ classdef SiSaMode < GenericMode
 
             lt = 0;
             sf = this.sisa_fit;
-            sf.update('fixed',this.fix, 't0', this.t_zero, 'offset_t', this.t_zero + this.t_offset);
+            sf.update('fixed',this.fix);%, 't0', this.t_zero, 'offset_t', this.t_zero + this.t_offset);
             
             for n = start:this.p.par_size:n_pixel
                 if n == start
