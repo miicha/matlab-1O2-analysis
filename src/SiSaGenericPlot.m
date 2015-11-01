@@ -6,8 +6,6 @@ classdef SiSaGenericPlot < handle
         data;
         x_data;
         smode;
-        models;
-        model;
         fitted = false;
         chisq;              % chisquared
         n_param;
@@ -28,6 +26,7 @@ classdef SiSaGenericPlot < handle
         model_number = 1;
         sisa_fit;
         sisa_fit_info;
+        res;
     end
     
     properties (Access = private)
@@ -38,28 +37,22 @@ classdef SiSaGenericPlot < handle
         function this = SiSaGenericPlot(smode)            
             %% get data from main UI
             this.smode = smode;                % keep refs to the memory in which
-                                        % the UI object is saved
-            this.models = smode.models;
-            
-            if smode.model
-                this.model = this.models(smode.model);
-            end
+                                               % the UI object is saved
 
             this.model_number = this.smode.model_number;
             this.sisa_fit_info = this.smode.sisa_fit_info;
             this.sisa_fit = this.smode.sisa_fit.copy;
+
+            this.x_data = this.smode.x_data;   % unnötig???
             
-            this.x_data = this.smode.x_data;
-            
-            tmp = smode.models(smode.model);
-            this.n_param = length(tmp{2});
+            this.n_param = this.sisa_fit.par_num;
             this.t_offset = smode.t_offset;
             this.t_zero = smode.t_zero;
             this.t_end = smode.t_end;
 
             this.channel_width = smode.channel_width;
             
-            this.est_params = rand(length(tmp{2}),1);
+            this.est_params = rand(this.n_param,1);
 
             this.model_str = smode.model;
             
@@ -342,15 +335,24 @@ classdef SiSaGenericPlot < handle
         end
         
         function plotfit(this)
-            p = num2cell(this.fit_params);
-            fitdata = this.model{1}(p{:}, this.x_data);
-
+            p = this.fit_params;
+            
+            if isempty(this.sisa_fit.x_axis)
+                this.sisa_fit.estimate(this.data);
+            end
+            
+            fitdata = this.sisa_fit.eval(this.fit_params, this.sisa_fit.x_axis);
             set(this.h.f,'CurrentAxes',this.h.axes)
             
             % extrahierte SiSa-Daten Plotten
-            if get(this.h.drpd, 'value') == 2 || get(this.h.drpd, 'value') == 3
-                sisamodel = this.models('A*(exp(-t/t1)-exp(-t/t2))+offset');
-                sisadata = sisamodel{1}(p{1}, p{2}, p{3}, p{5}, this.x_data);
+            if get(this.h.drpd, 'value') == 2 || get(this.h.drpd, 'value') == 3 || get(this.h.drpd, 'value') == 4
+                sisamodel = sisafit(1);
+                sisamodel.copy_data(this.sisa_fit);
+                if get(this.h.drpd, 'value') == 4
+                    sisadata = sisamodel.eval([p(1:3); p(6)], this.x_data);
+                else
+                    sisadata = sisamodel.eval([p(1:3); p(5)], this.x_data);
+                end
                 hold on
                 plot(this.x_data,  sisadata, 'color', [1 0.6 0.2], 'LineWidth', 1.5, 'HitTest', 'off');
                 hold off
@@ -391,7 +393,7 @@ classdef SiSaGenericPlot < handle
             for i = 1:this.n_param
                 str = sprintf('%1.2f', this.fit_params(i));
                 
-                if abs(this.fit_params(i) - this.model{2}(i)) < 1e-4 || abs(this.fit_params(i) - this.model{3}(i)) < 1e-4
+                if length(this.smode.sisa_fit.lower_bounds) == this.n_param && (abs(this.fit_params(i) - this.smode.sisa_fit.lower_bounds(i)) < 1e-4 || abs(this.fit_params(i) - this.smode.sisa_fit.upper_bounds(i)) < 1e-4)
                     this.h.pe{i}.BackgroundColor = [0.8 0.4 0.4];
                 else
                     this.h.pe{i}.BackgroundColor = [0.9400 0.9400 0.9400];
@@ -425,9 +427,12 @@ classdef SiSaGenericPlot < handle
                 return;
             end
             
+            if length(this.smode.sisa_fit.lower_bounds) == length(start)
+                this.sisa_fit.update('lower,',this.smode.sisa_fit.lower_bounds, 'upper', this.smode.sisa_fit.upper_bounds);
+            end                
             this.sisa_fit.update('start',start,'fixed',fix);
             
-            [p, p_err, chi] = this.sisa_fit.fit(this.data);
+            [p, p_err, chi, this.res] = this.sisa_fit.fit(this.data);
             
             this.fit_params = p;
             this.fit_params_err = p_err;
@@ -490,16 +495,13 @@ classdef SiSaGenericPlot < handle
         end
         
         function set_model(this, varargin)
-            m = keys(this.models);
-            n = m{get(this.h.drpd, 'value')};
-            tmp = this.models(n);
             this.fitted = false;
-            this.n_param = length(tmp{2});
-            this.model = this.models(n);
-            this.model_str = n;
-%             this.est_params = SiSaMode.estimate_parameters_p(this.data, n, this.t_zero, this.t_offset, this.channel_width);
+            tmp = sisafit(get(this.h.drpd, 'value'));
+            tmp.copy_data(this.sisa_fit);
+            this.sisa_fit = tmp;
+            
             this.est_params = this.sisa_fit.estimate(this.data);
-            this.est_params
+            this.n_param = this.sisa_fit.par_num;
             this.generate_param();
         end
         
@@ -522,10 +524,11 @@ classdef SiSaGenericPlot < handle
             this.h.pe = cell(this.n_param, 1);
             this.h.pd = cell(this.n_param, 1);
             this.h.pc = cell(this.n_param, 1);
+            par_names = this.sisa_fit.parnames;
             for i = 1:this.n_param
                  this.h.pt{i} = uicontrol(this.h.param, 'units', 'pixels',...
                                                       'style', 'text',...
-                                                      'string', this.model{4}{i},...
+                                                      'string', par_names{i},...
                                                       'HorizontalAlignment', 'left',...
                                                       'FontSize', 9,...
                                                       'position', [10+(i-1)*100 40 41 20]);
@@ -628,9 +631,9 @@ classdef SiSaGenericPlot < handle
             this.plotdata();
         end
         
-        function globalize(this, varargin)
-            if ~strcmp(this.model_str, this.smode.model)
-                this.smode.set_model(this.model_str);
+        function globalize(this, varargin)  
+            if this.sisa_fit.curr_fitfun ~= this.smode.sisa_fit.curr_fitfun
+                this.smode.set_model(this.sisa_fit.curr_fitfun);
             end
             if this.fitted
                 par = this.fit_params;
@@ -638,14 +641,7 @@ classdef SiSaGenericPlot < handle
                 par = this.est_params;
             end
             this.smode.set_gstart(par);
-            
-            % das sollte entfernt werden
-            this.smode.t_offset = this.t_offset;
-            this.smode.t_zero = this.t_zero;
-            this.smode.x_data = this.x_data;
-            this.smode.t_end = this.t_end;
-            % so sollte es sein, es fehlt aber noch t_end
-            this.smode.sisa_fit.update('t_0', this.t_zero, 'offset_t', this.t_zero + this.t_offset);
+            this.smode.sisa_fit.copy_data(this.sisa_fit);
         end
         
         %% Export
@@ -786,11 +782,11 @@ classdef SiSaGenericPlot < handle
         function generate_fit_info_ov(this)
             ax = this.h.plot_pre.Children(2);
             axes(ax);
-            latex_model = this.smode.models_latex(this.model_str);
-            m_names = latex_model{2};
-            m_units = latex_model{3};
-            func = latex_model{1};
+            m_names = this.sisa_fit.tex_parnames;
+            m_units = this.sisa_fit.tex_units;  
+            func = this.sisa_fit.tex_func;
             str{1} = func;
+            
             for i = 1:length(this.fit_params)
                 err = roundsig(this.fit_params_err(i), 2);
                 par = roundsig(this.fit_params(i), floor(log10(this.fit_params(i)/this.fit_params_err(i))) + 1);

@@ -511,6 +511,8 @@ classdef SiSaMode < GenericMode
             this.sisa_fit = sisafit(number);
             this.sisa_fit.update('cw', double(this.channel_width));
             
+            this.h.drpd.Value = number;
+            
             this.model_number = number;
             str = this.sisa_fit_info.model_names{number};
             par_num = this.sisa_fit_info.par_num{number};
