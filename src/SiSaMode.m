@@ -468,7 +468,6 @@ classdef SiSaMode < GenericMode
             
             
             this.set_model(1);
-            this.estimate_parameters();
             
             this.x_data = this.sisa_fit.get_x_axis();
             
