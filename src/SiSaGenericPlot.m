@@ -238,7 +238,7 @@ classdef SiSaGenericPlot < handle
             jWindow.setMinimumSize(tmp);
             
             %% draw plot
-            this.generate_param();
+%             this.generate_param();
         end
         
         function set_window_name(this,name)
@@ -371,21 +371,27 @@ classdef SiSaGenericPlot < handle
             tmp(tmp <= 0) = 1;
             residues = residues./sqrt(tmp);
             
-            plot(this.x_data(this.t_zero+(this.t_offset:this.t_end)),...
-                 residues(this.t_zero+(this.t_offset:this.t_end)), 'b.');
+            x_ges = this.sisa_fit.get_x_axis();
+            x_before = x_ges(1:this.sisa_fit.offset_time);
+            y_before = residues(1:this.sisa_fit.offset_time);
+            
+            x_res = x_ges(this.sisa_fit.offset_time:this.sisa_fit.end_channel);
+            y_res = residues(this.sisa_fit.offset_time:this.sisa_fit.end_channel);
+            
+            x_after = x_ges(this.sisa_fit.end_channel:end);
+            y_after = residues(this.sisa_fit.end_channel:end);
+            
+            plot(x_res,y_res, 'b.');
             
             hold on
             % vor fitbereich
-            plot(this.x_data(1:(this.t_offset+this.t_zero)),...
-                 residues(1:(this.t_offset+this.t_zero)), '.', 'Color', [.8 .8 1]);
+            plot(x_before,y_before, '.', 'Color', [.8 .8 1]);
             % nach fitbereich
-            plot(this.x_data((this.t_zero+this.t_end):end),...
-                 residues((this.t_zero+this.t_end):end), '.', 'Color', [.8 .8 1]);
+            plot(x_after,y_after, '.', 'Color', [.8 .8 1]);
             % nulllinie
-            line([min(this.x_data)-1 max(this.x_data)+1], [0 0], 'Color', 'r', 'LineWidth', 1.5);
-            xlim([min(this.x_data)-1 max(this.x_data)+1]);
-            m = max([abs(max(residues(this.t_zero+(this.t_offset:this.t_end)))),...
-                     abs(min(residues(this.t_zero+(this.t_offset:this.t_end))))]);
+            line([min(x_ges)-1 max(x_ges)+1], [0 0], 'Color', 'r', 'LineWidth', 1.5);
+            xlim([min(x_ges)-1 max(x_ges)+1]);
+            m = max([abs(max(y_res)), abs(min(y_res))]);
             ylim([-m m]);
             hold off
             
@@ -526,7 +532,7 @@ classdef SiSaGenericPlot < handle
             this.h.pd = cell(this.n_param, 1);
             this.h.pc = cell(this.n_param, 1);
             par_names = this.sisa_fit.parnames;
-            for i = 1:this.n_param
+            for i = 1:this.sisa_fit.par_num
                  this.h.pt{i} = uicontrol(this.h.param, 'units', 'pixels',...
                                                       'style', 'text',...
                                                       'string', par_names{i},...
@@ -547,8 +553,8 @@ classdef SiSaGenericPlot < handle
                                                       'string', 'fix',...
                                                       'position', [10+(i-1)*100 5 50 15]); 
             end
-            if this.n_param == 0
-                set(this.h.param, 'visible', 'off');
+            if this.sisa_fit.par_num == 0
+%                 set(this.h.param, 'visible', 'off');
             else
                 set(this.h.param, 'visible', 'on');
                 pP = get(this.h.param, 'position');
