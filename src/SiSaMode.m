@@ -839,7 +839,7 @@ classdef SiSaMode < GenericMode
 
             % configure sisa-fit-tools
             sf = this.sisa_fit;
-            sf.update('fixed',this.fix);%, 't0', this.t_zero, 'offset_t', this.t_zero + this.t_offset);
+            sf.update('fixed',this.fix,'start',this.gstart);%, 't0', this.t_zero, 'offset_t', this.t_zero + this.t_offset);
             
             for n = start:n_pixel
                 [i,j,k,l] = ind2sub(this.p.fileinfo.size, n);               
@@ -941,7 +941,7 @@ classdef SiSaMode < GenericMode
 
             lt = 0;
             sf = this.sisa_fit;
-            sf.update('fixed',this.fix);%, 't0', this.t_zero, 'offset_t', this.t_zero + this.t_offset);
+            sf.update('fixed',this.fix,'start',this.gstart);%, 't0', this.t_zero, 'offset_t', this.t_zero + this.t_offset);
             
             for n = start:this.p.par_size:n_pixel
                 if n == start
