@@ -7,10 +7,7 @@ classdef SiSaGenericPlot < handle
         smode;
         fitted = false;
         chisq;              % chisquared
-        n_param;
-        channel_width;
         est_params;         % estimated parameters
-        model_str;
         h = struct();       % handles
         fit_params;         % fitted parameters
         fit_params_err;     % ertimated errors of fitted parameters
@@ -19,7 +16,6 @@ classdef SiSaGenericPlot < handle
         diff_data;
         data_backup;
         plot_limits;
-        model_number = 1;
         sisa_fit;
         sisa_fit_info;
         res;
@@ -35,15 +31,10 @@ classdef SiSaGenericPlot < handle
             this.smode = smode;                % keep refs to the memory in which
                                                % the UI object is saved
 
-            this.model_number = this.smode.model_number;
             this.sisa_fit_info = this.smode.sisa_fit_info;
             this.sisa_fit = this.smode.sisa_fit.copy;
             
-            this.channel_width = this.sisa_fit.cw;
-            
-            this.est_params = rand(this.n_param,1);
-
-            this.model_str = smode.model;
+            this.est_params = rand(this.sisa_fit.par_num,1);
             
             %% initialize UI objects
             
@@ -135,7 +126,7 @@ classdef SiSaGenericPlot < handle
             set(this.h.drpd, 'units', 'pixels',...
                             'style', 'popupmenu',...
                             'string', this.sisa_fit_info.model_names,...
-                            'value', this.model_number,...
+                            'value', this.smode.model_number,...
                             'position', [10 5 200 27],...
                             'FontSize', 9,...
                             'callback', @this.set_model);
@@ -279,15 +270,14 @@ classdef SiSaGenericPlot < handle
             this.h.zeroline = line([0 0], [0 realmax], 'Color', [.7 0 .5],... 
                       'ButtonDownFcn', @this.plot_click, 'LineWidth', 1.2, 'LineStyle', '--',...
                       'Tag', 'line');
-                  
-%                   this.t_offset*this.channel_width
+
             offset_line = this.sisa_fit.offset_time-this.sisa_fit.t_0;
-            this.h.offsetline = line([offset_line offset_line]*this.channel_width,...
+            this.h.offsetline = line([offset_line offset_line]*this.sisa_fit.cw,...
                 [0 realmax], 'Color', [0 .6 .5], 'ButtonDownFcn', @this.plot_click, 'LineWidth', 1.2,...
                 'LineStyle', '-.', 'Tag', 'line');
             
             end_line = this.sisa_fit.end_channel-this.sisa_fit.t_0;
-            this.h.endline = line([end_line end_line]*this.channel_width,...
+            this.h.endline = line([end_line end_line]*this.sisa_fit.cw,...
                 [0 realmax], 'Color', [0 .8 .8], 'ButtonDownFcn', @this.plot_click, 'LineWidth', 1.2,...
                 'LineStyle', '-.', 'Tag', 'line');
             hold off
@@ -396,10 +386,10 @@ classdef SiSaGenericPlot < handle
             hold off
             
             % update UI
-            for i = 1:this.n_param
+            for i = 1:this.sisa_fit.par_num
                 str = sprintf('%1.2f', this.fit_params(i));
                 
-                if length(this.smode.sisa_fit.lower_bounds) == this.n_param && (abs(this.fit_params(i) - this.smode.sisa_fit.lower_bounds(i)) < 1e-4 || abs(this.fit_params(i) - this.smode.sisa_fit.upper_bounds(i)) < 1e-4)
+                if length(this.smode.sisa_fit.lower_bounds) == this.sisa_fit.par_num && (abs(this.fit_params(i) - this.smode.sisa_fit.lower_bounds(i)) < 1e-4 || abs(this.fit_params(i) - this.smode.sisa_fit.upper_bounds(i)) < 1e-4)
                     this.h.pe{i}.BackgroundColor = [0.8 0.4 0.4];
                 else
                     this.h.pe{i}.BackgroundColor = [0.9400 0.9400 0.9400];
@@ -422,14 +412,14 @@ classdef SiSaGenericPlot < handle
         
         function fit(this, varargin)
             n_param = this.sisa_fit.par_num;
-            fix = zeros(n_param,1);
+            fix = zeros(this.sisa_fit.par_num,1);
             start = fix;
-            for i = 1:this.n_param
+            for i = 1:this.sisa_fit.par_num
                 start(i) = str2double(get(this.h.pe{i}, 'string'));
                 fix(i) = get(this.h.pc{i}, 'value');
             end            
             
-            if sum(fix) == this.n_param
+            if sum(fix) == this.sisa_fit.par_num
                 msgbox('Kann ohne freie Parameter nicht fitten.', 'Fehler','modal');
                 return;
             end
@@ -460,8 +450,8 @@ classdef SiSaGenericPlot < handle
         end
         
         function x_zoom(this, varargin)
-            x_min = this.sisa_fit.t_0*this.channel_width;
-            x_max = 5*this.sisa_fit.t_0*this.channel_width;  
+            x_min = this.sisa_fit.t_0*this.sisa_fit.cw;
+            x_max = 5*this.sisa_fit.t_0*this.sisa_fit.cw;  
             this.plot_limits.X = this.h.axes.XLim;
             this.h.axes.XLim = [-x_min x_max];
         end
@@ -508,7 +498,6 @@ classdef SiSaGenericPlot < handle
             this.sisa_fit = tmp;
             
             this.est_params = this.sisa_fit.estimate(this.data);
-            this.n_param = this.sisa_fit.par_num;
             this.generate_param();
         end
         
@@ -527,10 +516,10 @@ classdef SiSaGenericPlot < handle
             end           
             clear('this.h.pe', 'this.h.pd', 'this.h.pc', 'this.h.pt');
 
-            this.h.pt = cell(this.n_param, 1);
-            this.h.pe = cell(this.n_param, 1);
-            this.h.pd = cell(this.n_param, 1);
-            this.h.pc = cell(this.n_param, 1);
+            this.h.pt = cell(this.sisa_fit.par_num, 1);
+            this.h.pe = cell(this.sisa_fit.par_num, 1);
+            this.h.pd = cell(this.sisa_fit.par_num, 1);
+            this.h.pc = cell(this.sisa_fit.par_num, 1);
             par_names = this.sisa_fit.parnames;
             for i = 1:this.sisa_fit.par_num
                  this.h.pt{i} = uicontrol(this.h.param, 'units', 'pixels',...
