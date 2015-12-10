@@ -25,8 +25,8 @@ classdef TempMode < GenericMode
                                 'BackgroundColor', [.85 .85 .85]);
             
 
-
-            this.plotpanel = PlotPanel(this);
+            dims = size(data);
+            this.plotpanel = PlotPanel(this, dims(1:4), {'x', 'y', 'z', 's'}, this.h.plotpanel);
 
             this.resize();
             this.plot_array();
@@ -57,6 +57,10 @@ classdef TempMode < GenericMode
             pP = get(this.h.plotpanel, 'Position');
             pP(3:4) = [(mP(3)-pP(1))-10 (mP(4)-pP(2))-10];
             set(this.h.plotpanel, 'Position', pP);
+        end
+        
+        function destroy(this, children_only)
+            delete(this);
         end
     end
 end

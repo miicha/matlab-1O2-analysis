@@ -171,20 +171,28 @@ classdef UI < handle
                     for i = 1:length(fn)
                         this.fileinfo.(fn{i}) = reader.meta.fileinfo.(fn{i});
                     end
-                    
+                    i = 1;
                     if isfield(reader.data, 'sisa')
                         % open a SiSa tab
-                        this.modes{1} = SiSaMode(this, double(reader.data.sisa), reader);
+                        this.modes{i} = SiSaMode(this, double(reader.data.sisa), reader);
+                        i = i + 1;
                     end
                     if isfield(reader.data, 'fluo')
                         % open a fluorescence tab
-                        this.modes{2} = FluoMode(this, double(reader.data.fluo),...                                                       
+                        this.modes{i} = FluoMode(this, double(reader.data.fluo),...                                                       
                                                        reader.meta.fluo.x_achse,...
                                                        reader.meta.fluo.int_time);
+                        i = i + 1;
                     end
                     if isfield(reader.data, 'temp')
                         % open a temperature tab
-                        this.modes{3} = TempMode(this, double(reader.data.temp));
+                        this.modes{i} = TempMode(this, double(reader.data.temp));
+                        i = i + 1;
+                    end
+                    
+                    if isfield(reader.data, 'laserpower')
+                        % open a temperature tab
+                        this.modes{i} = LaserMode(this, reader.data.laserpower);
                     end
                     
                 case 'in-vivo'
@@ -192,60 +200,68 @@ classdef UI < handle
                     tmp = size(reader.data.sisa.data);
                     this.fileinfo.size = tmp(1:4);
                     
+                    i = 1;
                     if isfield(reader.data, 'sisa')
                         % open a SiSa tab
-                        this.modes{1} = InvivoMode(this, double(reader.data.sisa.data),...
+                        this.modes{i} = InvivoMode(this, double(reader.data.sisa.data),...
                                                          reader.data.sisa.verlauf,...
                                                          reader.meta.sisa.int_time, reader);
+                        i = i + 1;
                     end
                     if isfield(reader.data, 'fluo')
                         % open a fluorescence tab
-                        this.modes{2} = FluoMode(this, double(reader.data.fluo.data),...
+                        this.modes{i} = FluoMode(this, double(reader.data.fluo.data),...
                                                        reader.meta.fluo.x_achse,...
                                                        reader.meta.fluo.int_time);
+                        i = i + 1;
                     end
                     % open a meta tab
                     if isfield(reader.data, 'temp') && isfield(reader.data, 'int')
-                        this.modes{3} = MetaMode(this, double(reader.data.temp), double(reader.data.int));
+                        this.modes{i} = MetaMode(this, double(reader.data.temp), double(reader.data.int));
                     elseif isfield(reader.data, 'temp')
-                        this.modes{3} = MetaMode(this, double(reader.data.temp), []);
+                        this.modes{i} = MetaMode(this, double(reader.data.temp), []);
                     elseif isfield(reader.data, 'int')
-                        this.modes{3} = MetaMode(this, [], double(reader.data.int));
+                        this.modes{i} = MetaMode(this, [], double(reader.data.int));
                     else
-                        this.modes{3} = MetaMode(this, [], []);
+                        this.modes{i} = MetaMode(this, [], []);
                     end
+                    i = i + 1;
                 case 'in-vivo-dual'
                     reader = dual_reader(filepath, this);
                     tmp = size(reader.data.sisa_1270.data);
                     this.fileinfo.size = tmp(1:4);
                     
+                    i = 1;
                     if isfield(reader.data, 'sisa_1211')
                         % open a SiSa tab
-                        this.modes{1} = InvivoMode(this, double(reader.data.sisa_1211.data(1:tmp(1), 1:tmp(2), 1:tmp(3), 1:tmp(4), :)),...
+                        this.modes{i} = InvivoMode(this, double(reader.data.sisa_1211.data(1:tmp(1), 1:tmp(2), 1:tmp(3), 1:tmp(4), :)),...
                                                          reader.data.sisa_1211.verlauf,...
                                                          reader.meta.sisa.int_time, reader);
+                        i = i + 1;
                     end
                     if isfield(reader.data, 'sisa_1270')
                         % open a SiSa tab
-                        this.modes{2} = InvivoMode(this, double(reader.data.sisa_1270.data),...
+                        this.modes{i} = InvivoMode(this, double(reader.data.sisa_1270.data),...
                                                          reader.data.sisa_1270.verlauf,...
                                                          reader.meta.sisa.int_time, reader);
+                        i = i + 1;
                     end
                     if isfield(reader.data, 'fluo')
                         % open a fluorescence tab
-                        this.modes{3} = FluoMode(this, double(reader.data.fluo.data),...
+                        this.modes{i} = FluoMode(this, double(reader.data.fluo.data),...
                                                        reader.meta.fluo.x_achse,...
                                                        reader.meta.fluo.int_time);
+                        i = i + 1;
                     end
                     % open a meta tab
                     if isfield(reader.data, 'temp') && isfield(reader.data, 'int')
-                        this.modes{4} = MetaMode(this, double(reader.data.temp), double(reader.data.int));
+                        this.modes{i} = MetaMode(this, double(reader.data.temp), double(reader.data.int));
                     elseif isfield(reader.data, 'temp')
-                        this.modes{4} = MetaMode(this, double(reader.data.temp), []);
+                        this.modes{i} = MetaMode(this, double(reader.data.temp), []);
                     elseif isfield(reader.data, 'int')
-                        this.modes{4} = MetaMode(this, [], double(reader.data.int));
+                        this.modes{i} = MetaMode(this, [], double(reader.data.int));
                     else
-                        this.modes{4} = MetaMode(this, [], []);
+                        this.modes{i} = MetaMode(this, [], []);
                     end
                 otherwise
                     warndlg(['Kann das Dateiformat ' FileType ' nicht öffnen!']);
