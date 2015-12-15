@@ -72,8 +72,10 @@ classdef SinglePlot < handle
             end
             xmin = min(min(this.xdata));
             xmax = max(max(this.xdata));
+            xmax = xmax + eps(xmax);
             ymin = min(min(this.ydata));
             ymax = max(max(this.ydata));
+            ymax = ymax + eps(ymax);
             
             xlim([xmin-(xmax-xmin)/30 xmax+(xmax-xmin)/30])
             ylim([ymin-(ymax-ymin)/30 ymax+(ymax-ymin)/30])

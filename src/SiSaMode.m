@@ -28,8 +28,6 @@ classdef SiSaMode < GenericMode
         
         disp_fit_params = 0;
         
-        scale;
-        units;
         d_name;
         
         fitted = false;

@@ -477,7 +477,8 @@ classdef PlotPanel < handle
 
         function calculate_legend(this, data)
             this.l_min.(this.mode) = min(min(min(min(data))));
-            this.l_max.(this.mode) = max(max(max(max(data))));
+            lmax = max(max(max(max(data))));
+            this.l_max.(this.mode) = lmax + eps(lmax);
         end
 
         function update_sliders(this)

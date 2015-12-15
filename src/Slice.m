@@ -30,7 +30,7 @@ classdef Slice < handle
             this.color = color;
 
             [x, y] = this.p.get_xy_dims();
-            axes(this.p.h.axes)
+            axes(this.p.h.axes);
             hold on
             this.h.p1 = plot(point_1{x}, point_1{y}, 'o', 'color', this.color, 'markerfacecolor', this.color,...
                  'markeredgecolor', 'k', 'ButtonDownFcn', @this.update_point_1_cb);

@@ -6,8 +6,6 @@ classdef FluoMode < GenericMode
         num_spec_points;
         current_spec_point = 1;
         wavelengths;
-        scale;
-        units;
     end
     
     methods

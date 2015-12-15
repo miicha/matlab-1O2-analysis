@@ -8,6 +8,12 @@ classdef LaserMode < GenericMode
             data(data == 0) = nan;
             this.data = data;
             
+            this.scale = this.p.scale;
+            this.units = this.p.units;
+            
+            this.units{5} = 'mW';
+            this.scale(5) = 1;
+            
             this.h.parent = parent.h.modepanel;
             
             this.h.lasermode = uitab(this.h.parent);
@@ -60,6 +66,10 @@ classdef LaserMode < GenericMode
         
         function destroy(this, children_only)
             delete(this);
+        end
+        
+        function data = get_data(this)
+            data = this.data(:, :, :, :, :);
         end
     end
 end
