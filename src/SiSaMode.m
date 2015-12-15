@@ -190,7 +190,7 @@ classdef SiSaMode < GenericMode
                               'visible', 'on',...
                               'FontSize', 9,...
                               'BackgroundColor', get(this.h.plotpanel, 'BackgroundColor'),...
-                              'string', 'abgeschätzt',...
+                              'string', 'abgeschÃ¤tzt',...
                               'horizontalAlignment', 'left',...
                               'position', [10 1 100 17],...
                               'parent', this.h.fit_est);
@@ -236,7 +236,7 @@ classdef SiSaMode < GenericMode
                        
             set(this.h.parallel, 'units', 'pixels',...
                             'style', 'checkbox',...
-                            'string', 'parallel Fitten? (keine Interaktivität!)',...
+                            'string', 'parallel Fitten? (keine InteraktivitÃ¤t!)',...
                             'tooltipString', 'Dauert am Anfang ein bisschen. Keine Fortschrittsanzeige!',...
                             'position', [2 35 200 15]);
                         
@@ -449,13 +449,10 @@ classdef SiSaMode < GenericMode
             
             this.sisa_fit.update('t0',t_0, 'offset',t_0+25, 'end_chan', end_ch);
             
-            this.sisa_fit
-            
             this.x_data = this.sisa_fit.get_x_axis();
             
-            
             % UI stuff
-            % folgende 3 Zeilen wahrscheinlich unnütz...
+            % folgende 3 Zeilen wahrscheinlich unnÃ¼tz...
             par_names = this.sisa_fit_info.par_names{this.model_number}
             set(this.h.param, 'visible', 'on', 'string', [par_names, 'Summe']);
             set(this.h.ov_drpd, 'string', [par_names, 'Summe']);
@@ -480,7 +477,7 @@ classdef SiSaMode < GenericMode
             s = num2cell(size(this.est_params));
             this.fit_chisq = nan(s{1:4});
             
-            %% Hintergrundfarbe abhängig von Detektionswellenlänge
+            %% Hintergrundfarbe abhÃ¤ngig von DetektionswellenlÃ¤nge
             if isfield(reader, 'meta') && isfield(reader.meta, 'sisa') && isfield(reader.meta.sisa, 'Optik')
                 if reader.meta.sisa.Optik == 1270
                     set(this.h.sisamode, 'background', [0.8 0.2 0.2]);
@@ -790,7 +787,7 @@ classdef SiSaMode < GenericMode
                 ps = sf.estimate(d);
                 this.est_params(i, j, k, l, :) = ps;
                 if mod(curr_p, round(this.p.fileinfo.np/20)) == 0
-                    this.p.update_infos(['   |   Parameter abschätzen ' num2str(curr_p) '/' num2str(this.p.fileinfo.np) '.']);
+                    this.p.update_infos(['   |   Parameter abschÃ¤tzen ' num2str(curr_p) '/' num2str(this.p.fileinfo.np) '.']);
                 end
                 for m = 1:length(ps) % find biggest and smallest params
                     if ps(m) > ub(m)
@@ -1168,12 +1165,12 @@ classdef SiSaMode < GenericMode
     methods (Access = private)       
         %% Callbacks:
         function load_ext_data_cb(this, varargin)
-            [name, filepath] = uigetfile({[this.p.openpath '*.fit']}, 'Dateien auswählen');
+            [name, filepath] = uigetfile({[this.p.openpath '*.fit']}, 'Dateien auswÃ¤hlen');
             if (~ischar(name) && ~iscell(name)) || ~ischar(filepath) % no file selected
                 return
             end
             
-            single = questdlg('Einzeln (bei gleichen Datensätzen) oder den Mittelwert abziehen?',...
+            single = questdlg('Einzeln (bei gleichen DatensÃ¤tzen) oder den Mittelwert abziehen?',...
                               '', 'erste', 'einzeln', 'mittelwert', 'einzeln');
             this.p.openpath = filepath;
             loaded = load([filepath name], '-mat');
