@@ -14,13 +14,16 @@ classdef SiSaPointPlot < SiSaGenericPlot
             %% get data from main UI
             
             this.cp = point;
-            
-            if ~isnan(this.smode.fit_chisq(this.cp(1), this.cp(2), this.cp(3), this.cp(4)))
+            if ~isnan(this.smode.fit_params(this.cp(1), this.cp(2), this.cp(3), this.cp(4)))
                 this.fitted = true;
             end
             
             
             this.getdata();
+            
+            this.est_params = this.sisa_fit.estimate(this.data);
+            this.generate_param();
+            
              
             if length(smode.p.fileinfo.name) > 1
                 name = smode.p.fileinfo.name{this.cp(1)};
@@ -35,7 +38,6 @@ classdef SiSaPointPlot < SiSaGenericPlot
         function getdata(this, ~)
             this.chisq = 0;
             this.data = squeeze(this.smode.data(this.cp(1), this.cp(2), this.cp(3), this.cp(4), :));
-            this.x_data = this.smode.x_data;
             if this.fitted
                 this.chisq =  squeeze(this.smode.fit_chisq(this.cp(1), this.cp(2), this.cp(3), this.cp(4), :));
                 this.fit_params = squeeze(this.smode.fit_params(this.cp(1), this.cp(2), this.cp(3), this.cp(4), :));

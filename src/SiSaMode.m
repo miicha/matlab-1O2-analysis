@@ -35,10 +35,11 @@ classdef SiSaMode < GenericMode
         fitted = false;
         cmap = 'summer';
         
-        sisafit;
+%         sisafit;
         
         % deprecated:
         model = '1. A*(exp(-t/t1)-exp(-t/t2))+offset';      % fit model, should be global  
+        model_number = 1;
         
         channel_width = 20/1000;   % needs UI element
         t_offset = 25;   % excitation is over after t_offset channels after 
@@ -47,14 +48,17 @@ classdef SiSaMode < GenericMode
 
         t_end;
         
+        sisa_fit = sisafit(1);
+        sisa_fit_info;
+        
         fix = {};
         gstart = [0 0 0 0];
         use_gstart = [0 0 0 0]';
         models = containers.Map(...
-                 {'1. A*(exp(-t/t1)-exp(-t/t2))+offset'...
-                  '2. A*(exp(-t/t1)-exp(-t/t2))+B*exp(-t/t2)+offset'...
-                  '3. A*(exp(-t/t1)-exp(-t/t2))+B*exp(-t/t1)+offset'...
-                  '4. A*(exp(-t/t1)+B*exp(-t/t2)+offset'...
+                 {'A*(exp(-t/t1)-exp(-t/t2))+offset'...
+                  'A*(exp(-t/t1)-exp(-t/t2))+B*exp(-t/t2)+offset'...
+                  'A*(exp(-t/t1)-exp(-t/t2))+B*exp(-t/t1)+offset'...
+                  'A*exp(-t/t1)+B*exp(-t/t2)+offset'...
                  },...
                  {...
                     % function, lower bounds, upper bounds, names of arguments
@@ -65,10 +69,10 @@ classdef SiSaMode < GenericMode
                   })
                     
         models_latex = containers.Map(...
-                 {'1. A*(exp(-t/t1)-exp(-t/t2))+offset'...
-                  '2. A*(exp(-t/t1)-exp(-t/t2))+B*exp(-t/t2)+offset'...
-                  '3. A*(exp(-t/t1)-exp(-t/t2))+B*exp(-t/t1)+offset'...
-                  '4. A*(exp(-t/t1)+B*exp(-t/t2)+offset'...
+                 {'A*(exp(-t/t1)-exp(-t/t2))+offset'...
+                  'A*(exp(-t/t1)-exp(-t/t2))+B*exp(-t/t2)+offset'...
+                  'A*(exp(-t/t1)-exp(-t/t2))+B*exp(-t/t1)+offset'...
+                  'A*(exp(-t/t1)+B*exp(-t/t2)+offset'...
                  },...
                  {...
                  { '$$f(t) = A\cdot \left[\exp \left(- \frac{t}{\tau_1}\right) - \exp \left(- \frac{t}{\tau_2}\right) \right] + o$$', {'A', '\tau_1', '\tau_2', 'o'}, {'Counts', '$$\mu$$s', '$$\mu$$s', 'Counts'} }...
@@ -88,6 +92,9 @@ classdef SiSaMode < GenericMode
             end
             this.p = parent;
             this.data = data;
+            
+            this.sisa_fit_info = this.sisa_fit.get_model_info();
+            
             this.h.parent = parent.h.modepanel;
             
             this.scale = this.p.scale;
@@ -317,11 +324,12 @@ classdef SiSaMode < GenericMode
 
             set(this.h.drpd, 'units', 'pixels',...
                            'style', 'popupmenu',...
-                           'string', keys(this.models),...
+                           'string', this.sisa_fit_info.model_names,...
                            'value', 1,...
                            'position', [15 205 220 15],...
                            'callback', @this.set_model_cb,...
-                           'BackgroundColor', [1 1 1]);
+                           'BackgroundColor', [1 1 1],...
+                           'FontSize', 9);
                        
             set(this.h.bounds, 'units', 'pixels',...
                              'position', [2 10 237 180],...
@@ -436,23 +444,33 @@ classdef SiSaMode < GenericMode
             
             % find mean of t_0
             [~, I] = max(this.data, [], 5);
-            this.t_zero = round(mean(mean(mean(mean(I)))));
-            this.t_end = length(this.data(1,1,1,1,:)) - this.t_zero;
-            this.x_data = ((1:length(this.data(1, 1, 1, 1, :)))-this.t_zero)'*this.channel_width;
+            t_0 = ceil(mean(mean(mean(mean(I)))));
+            end_ch = length(this.data(1,1,1,1,:));
+            
+            this.sisa_fit.update('t0',t_0, 'offset',t_0+25, 'end_chan', end_ch);
+            
+            this.sisa_fit
+            
+            this.x_data = this.sisa_fit.get_x_axis();
+            
             
             % UI stuff
-            t = keys(this.models);
-            t = this.models(t{get(this.h.drpd, 'value')});
-             
+            % folgende 3 Zeilen wahrscheinlich unnütz...
+            par_names = this.sisa_fit_info.par_names{this.model_number}
+            set(this.h.param, 'visible', 'on', 'string', [par_names, 'Summe']);
+            set(this.h.ov_drpd, 'string', [par_names, 'Summe']);
+            
             set(this.h.plttxt, 'visible', 'on');
             set(this.h.fit_est, 'visible', 'on');
-            set(this.h.param, 'visible', 'on', 'string', [t{4}, 'Summe']);
-            set(this.h.ov_drpd, 'string', [t{4}, 'Summe']);
             set(this.h.tabs, 'visible', 'on');
             
             this.p.update_infos();
-            this.set_model('1. A*(exp(-t/t1)-exp(-t/t2))+offset');
-            this.estimate_parameters();
+            
+            
+            this.set_model(1);
+            
+            this.x_data = this.sisa_fit.get_x_axis();
+            
             this.change_overlay_cond_cb();
             this.plot_array();
             
@@ -494,20 +512,27 @@ classdef SiSaMode < GenericMode
             end
         end
         
-        function set_model(this, str)
-            t = keys(this.models);
-            set(this.h.drpd, 'value', find(strcmp(t, str))); % set the model in the drpd
+        function set_model(this, number)
+            tmp = sisafit(number);
+            tmp.copy_data(this.sisa_fit);
+            this.sisa_fit = tmp;
             
-            t = this.models(str);
+            this.h.drpd.Value = number;
+            
+            this.model_number = number;
+            str = this.sisa_fit_info.model_names{number};
+            par_num = this.sisa_fit_info.par_num{number};
+            par_names = this.sisa_fit_info.par_names{number};
+            
             this.fit_params = nan(this.p.fileinfo.size(1), this.p.fileinfo.size(2),...
-                                this.p.fileinfo.size(3), this.p.fileinfo.size(4), length(t{4}));
-            this.l_max = nan(length(t{4}) + 1, 1);
-            this.l_min = nan(length(t{4}) + 1, 1);
+                                this.p.fileinfo.size(3), this.p.fileinfo.size(4), par_num);
+            this.l_max = nan(par_num + 1, 1);
+            this.l_min = nan(par_num + 1, 1);
             this.model = str;
             this.estimate_parameters();
             set(this.h.plttxt, 'visible', 'on');
             set(this.h.param, 'visible', 'on',...
-                            'string', [t{4}, 'Summe']);
+                            'string', [par_names, 'Summe']);
             this.plot_array();
         end
     
@@ -534,8 +559,7 @@ classdef SiSaMode < GenericMode
         end
                
         function name = get_parname(this, index)
-            m = this.models(this.model);
-            fitpars = m{4};
+            fitpars = this.sisa_fit_info.par_names{this.model_number};
             if index > length(fitpars)
                 if this.disp_fit_params
                     name = 'Chi';
@@ -548,9 +572,9 @@ classdef SiSaMode < GenericMode
         end
 
         function generate_sel_vals(this)
-            m = this.models(this.model);
-            n = length(m{4});
-
+            par_names = this.sisa_fit_info.par_names{this.model_number};
+            
+            n = length(par_names);
             for i = 1:length(this.h.mean)
                 delete(this.h.mean{i});
                 delete(this.h.var{i});
@@ -572,7 +596,7 @@ classdef SiSaMode < GenericMode
                                                     'BackgroundColor', [1 1 1]);
                 this.h.par{i} = uicontrol(this.h.sel_values,  'units', 'pixels',...
                                                     'style', 'text',...
-                                                    'string', m{4}{i},...
+                                                    'string',par_names{i},...
                                                     'horizontalAlignment', 'left',...
                                                     'position', [15 155-i*23-14 40 20]);
             end
@@ -746,20 +770,27 @@ classdef SiSaMode < GenericMode
         end
 
         function estimate_parameters(this)
-            n = this.models(this.model);
-            this.est_params = zeros(this.p.fileinfo.size(1), this.p.fileinfo.size(2),...
-                              this.p.fileinfo.size(3), this.p.fileinfo.size(4), length(n{2}));
-            ub = zeros(length(n{3}), 1);
-            lb = ones(length(n{2}), 1)*100;
+            % ToDo in fit-tools auslagern
+            sf = this.sisa_fit;
+            num_par = this.sisa_fit_info.par_num{sf.curr_fitfun};
             
+            this.est_params = zeros(this.p.fileinfo.size(1), this.p.fileinfo.size(2),...
+                              this.p.fileinfo.size(3), this.p.fileinfo.size(4), num_par);
+            ub = zeros(num_par, 1);
+            lb = ones(num_par, 1)*100;
+            curr_p = 0;
             for n = 1:prod(this.p.fileinfo.size)
                 [i,j,k,l] = ind2sub(this.p.fileinfo.size, n);
-                d = this.data(i, j, k, l, :);
-
-                ps = SiSaMode.estimate_parameters_p(squeeze(d), this.model, this.t_zero, this.t_offset, this.channel_width);
+                d = squeeze(this.data(i, j, k, l, :));
+                if sum(d) == 0
+                    continue
+                end
+                curr_p = curr_p + 1;
+%                 sf.update('t0', this.t_zero, 'offset_t', this.t_zero + this.t_offset);
+                ps = sf.estimate(d);
                 this.est_params(i, j, k, l, :) = ps;
-                if mod(i, round(this.p.fileinfo.np/20)) == 0
-                    this.p.update_infos(['   |   Parameter abschätzen ' num2str(i) '/' num2str(this.p.fileinfo.np) '.']);
+                if mod(curr_p, round(this.p.fileinfo.np/20)) == 0
+                    this.p.update_infos(['   |   Parameter abschätzen ' num2str(curr_p) '/' num2str(this.p.fileinfo.np) '.']);
                 end
                 for m = 1:length(ps) % find biggest and smallest params
                     if ps(m) > ub(m)
@@ -773,11 +804,9 @@ classdef SiSaMode < GenericMode
             this.data_sum = sum(this.data(:, :, :, :, (this.t_zero+this.t_offset):end), 5);
             this.fitted = false;
                           
-            % set bounds from estimated parameters
-            tmp = this.models(this.model);
-            tmp{3} = ub*1.5;
-            tmp{2} = lb*0.5;
-            this.models(this.model) = tmp;
+            % set bounds from estimated parameters            
+            this.sisa_fit.update('upper', ub*1.5, 'lower', lb*0.5);
+            
             this.gstart = (ub+lb)./2;
             
             this.generate_bounds();
@@ -803,28 +832,37 @@ classdef SiSaMode < GenericMode
             end
             
             g_par = find(this.use_gstart);
-            x = this.x_data(this.t_zero + (this.t_offset:this.t_end));
             
             lt = 0;
             m = 1;
             n_pixel = prod(this.p.fileinfo.size);
+
+            % configure sisa-fit-tools
+            sf = this.sisa_fit;
+            sf.update('fixed',this.fix,'start',this.gstart);%, 't0', this.t_zero, 'offset_t', this.t_zero + this.t_offset);
             
             for n = start:n_pixel
                 [i,j,k,l] = ind2sub(this.p.fileinfo.size, n);               
                 if this.overlays{this.current_ov}(i, j, k, l) || ~this.disp_ov
                     innertime = tic();
-
-                    y = squeeze(this.data(i, j, k, l, this.t_zero+(this.t_offset:this.t_end)));
-                    w = sqrt(y);
-                    w(w == 0) = 1;
-                    if ~isempty(g_par)
-                        start = this.est_params(i, j, k, l, :);
+                    y = squeeze(this.data(i, j, k, l, :));
+                    
+                    if n == 1
+                        set(this.h.fit_par, 'visible', 'on');
+                    end
+                
+                    if sum(y) == 0
+                        continue
+                    end
+                    if ~isempty(g_par) % any parameter global startpoint?
+                        start = squeeze(this.est_params(i, j, k, l, :));
                         start(g_par) = this.gstart(g_par);
-                        [par, p_err, chi] = fitdata(this.models(this.model),...
-                            x, y, w, start, this.fix);
+                        sf.set_start(start);
+                        [par, p_err, chi] = sf.fit(y);
                     else
-                        [par, p_err, chi] = fitdata(this.models(this.model),...
-                            x, y, w, this.est_params(i, j, k, l, :), this.fix); 
+                        start = squeeze(this.est_params(i, j, k, l, :)); 
+                        sf.set_start(start);
+                        [par, p_err, chi] = sf.fit(y);
                     end
                     m = m + 1;
                     this.fit_params(i, j, k, l, :) = par;
@@ -837,9 +875,7 @@ classdef SiSaMode < GenericMode
                     this.p.update_infos(['   |   Fitte ' num2str(m) '/' num2str(ma) ' (sequentiell): '...
                                     format_time(lt/m*(ma-m)) ' verbleibend.'])
                 end
-                if n == 1
-                    set(this.h.fit_par, 'visible', 'on');
-                end
+                
                 if this.disp_fit_params
                     this.plot_array();
                 end
@@ -853,6 +889,7 @@ classdef SiSaMode < GenericMode
                     return
                 end
             end
+            
             t = toc(outertime);
             this.p.update_infos(['   |   Daten global gefittet (' format_time(t) ').'])
             set(this.h.hold, 'visible', 'off');
@@ -865,7 +902,7 @@ classdef SiSaMode < GenericMode
             this.plot_array();
         end
         
-        function fit_all_par(this, start)
+        function fit_all_parallel(this, start)
             outertime = tic();
             this.p.update_infos('   |   Starte Parallel-Pool.')
             set(this.h.fit_par, 'visible', 'on');
@@ -886,13 +923,11 @@ classdef SiSaMode < GenericMode
             % initialize the local, linearily indexed arrays
             ov = reshape(this.overlays{this.current_ov}, numel(this.overlays{this.current_ov}), 1);
             d_ov = this.disp_ov;
-            t_length = size(this.data, 5) - (this.t_offset + this.t_zero) + 1;
-            d = reshape(this.data(:, :, :, :, this.t_zero+(this.t_offset:this.t_end)), n_pixel, 1, t_length);
+            t_length = size(this.data, 5);
+            d = reshape(this.data, n_pixel, 1, t_length);
            
-            m = this.models(this.model);
-            parcount = length(m{2});
+            parcount = this.sisa_fit_info.par_num{this.sisa_fit.curr_fitfun};
             e_pars = reshape(this.est_params, prod(this.p.fileinfo.size), 1, parcount);
-            f = this.fix;
             f_pars = reshape(this.fit_params, prod(this.p.fileinfo.size), parcount);
             f_pars_e = reshape(this.fit_params_err, prod(this.p.fileinfo.size), parcount);
             f_chisq = reshape(this.fit_chisq, prod(this.p.fileinfo.size), 1);
@@ -905,8 +940,9 @@ classdef SiSaMode < GenericMode
             inner_upper = this.p.par_size-1;
 
             lt = 0;
+            sf = this.sisa_fit;
+            sf.update('fixed',this.fix,'start',this.gstart);%, 't0', this.t_zero, 'offset_t', this.t_zero + this.t_offset);
             
-            x = this.x_data(this.t_zero+(this.t_offset:this.t_end));
             for n = start:this.p.par_size:n_pixel
                 if n == start
                     this.p.update_infos(['   |   Fitte ' num2str(start) '/' num2str(prod(this.p.fileinfo.size)) ' (parallel).'])
@@ -919,17 +955,17 @@ classdef SiSaMode < GenericMode
                 parfor i = 0:inner_upper
                     if (ov(n+i) || ~d_ov)
                         y = squeeze(d(n+i, :))';
-                        if isnan(y(1))
+                        if sum(y) == 0
                             continue;
                         end
-                        w = sqrt(y);
-                        w(w == 0) = 1;
                         if ~isempty(g_par)
                             tmp = e_pars(n+i, :);
                             tmp(g_par) = global_start(g_par);
-                            [par, p_err, chi] = fitdata(m, x, y, w, tmp, f);
+                            sf.set_start(tmp);
+                            [par, p_err, chi] = sf.fit(y);
                         else
-                            [par, p_err, chi] = fitdata(m, x, y, w, e_pars(n+i, :), f); 
+                            sf.set_start(e_pars(n+i, :));
+                            [par, p_err, chi] = sf.fit(y);
                         end
                         f_pars(n+i, :) = par;
                         f_pars_e(n+i, :) = p_err;
@@ -973,8 +1009,11 @@ classdef SiSaMode < GenericMode
         end
         
         function generate_bounds(this)
-            m = this.models(this.model);
-            n = length(m{4});
+            lb = this.sisa_fit.lower_bounds;
+            ub = this.sisa_fit.upper_bounds;
+            par_names = this.sisa_fit_info.par_names{this.sisa_fit.curr_fitfun};
+            n = length(par_names);
+
             
             if  length(this.gstart) < n
                 this.gstart = (m{2}(:)+m{3}(:))./2;
@@ -1001,20 +1040,20 @@ classdef SiSaMode < GenericMode
             for i = 1:n
                 this.h.n{i} = uicontrol(this.h.bounds,  'units', 'pixels',...
                                                     'style', 'text',...
-                                                    'string', m{4}{i},...
+                                                    'string', par_names{i},...
                                                     'horizontalAlignment', 'left',...
                                                     'position', [5 155-i*23-14 35 20]);
                                                 
                 this.h.lb{i} = uicontrol(this.h.bounds, 'units', 'pixels',...
                                                     'style', 'edit',...
-                                                    'string', sprintf('%1.2f', m{2}(i)),...
+                                                    'string', sprintf('%1.2f', lb(i)),...
                                                     'position', [40 155-i*23-10 45 20],...
                                                     'callback', @this.set_bounds_cb,...
                                                     'BackgroundColor', [1 1 1]);
                                                 
                 this.h.ub{i} = uicontrol(this.h.bounds, 'units', 'pixels',...
                                                     'style', 'edit',...
-                                                    'string', sprintf('%1.2f', m{3}(i)),...
+                                                    'string', sprintf('%1.2f',ub(i)),...
                                                     'position', [95 155-i*23-10 45 20],...
                                                     'callback', @this.set_bounds_cb,...
                                                     'BackgroundColor', [1 1 1]);
@@ -1028,7 +1067,7 @@ classdef SiSaMode < GenericMode
                                                 
                 this.h.fix{i} = uicontrol(this.h.bounds, 'units', 'pixels',...
                                                      'style', 'checkbox',...
-                                                     'value', ismember(m{4}(i), this.fix),...
+                                                     'value', ismember(par_names(i), this.fix),...
                                                      'position', [198 155-i*23-10 40 20],...
                                                      'callback', @this.set_param_fix_cb);
                                                  
@@ -1196,8 +1235,7 @@ classdef SiSaMode < GenericMode
                 fit.params = this.fit_params;
                 fit.params_err = this.fit_params_err;
                 fit.chisq = this.fit_chisq;
-                tmp4 = this.models(this.model);
-                fit.model = tmp4{1};
+                fit.model = this.sisa_fit_info.model_names{this.sisa_fit.curr_fitfun};
                 fit.t_zero = this.t_zero;
                 save([path file], 'fit');
             end
@@ -1261,16 +1299,17 @@ classdef SiSaMode < GenericMode
         end
         
         function change_par_source_cb(this, varargin)
-            t = this.models(this.model);  
+            
+            par_names = this.sisa_fit_info.par_names{this.sisa_fit.curr_fitfun};
             ov = get(varargin{2}.OldValue, 'String');
             nv = get(varargin{2}.NewValue, 'String');
             if ~strcmp(ov, nv)
                 if strcmp(nv, get(this.h.fit_par, 'string'))
                     this.disp_fit_params = true;
-                    params = [t{4}, 'Chi^2'];
+                    params = [par_names, 'Chi^2'];
                 else
                     this.disp_fit_params = false;
-                    params = [t{4}, 'Summe'];
+                    params = [par_names, 'Summe'];
                 end
                 set(this.h.param, 'visible', 'on',...
                                 'string', params);
@@ -1289,15 +1328,18 @@ classdef SiSaMode < GenericMode
         
         % change global start point
         function set_gstart_cb(this, varargin)
-            m = this.models(this.model);
-            tmp = zeros(size(m{2}));
-            for i = 1:length(m{4});
+            par_num = this.sisa_fit_info.par_num{this.sisa_fit.curr_fitfun};
+            ub = this.sisa_fit.upper_bounds;
+            lb = this.sisa_fit.lower_bounds;
+            
+            tmp = zeros(par_num,1);
+            for i = 1:par_num;
                 tmp(i) = str2double(get(this.h.st{i}, 'string'));
-                if tmp(i) < m{2}(i)
-                    tmp(i) = m{2}(i);
+                if tmp(i) < lb(i)
+                    tmp(i) = lb(i);
                 end
-                if tmp(i) > m{3}(i)
-                    tmp(i) = m{3}(i);
+                if tmp(i) > ub(i)
+                    tmp(i) = ub(i);
                 end
                 set(this.h.st{i}, 'string', tmp(i))
             end
@@ -1306,8 +1348,8 @@ classdef SiSaMode < GenericMode
                 
         % fix parameter checkbox
         function set_param_fix_cb(this, varargin)
-            m = this.models(this.model);
-            n = length(m{4});
+            par_names = this.sisa_fit_info.par_names{this.sisa_fit.curr_fitfun};
+            n = length(par_names);
             index = 0;
             this.fix = {};
             for i = 1:n
@@ -1322,7 +1364,7 @@ classdef SiSaMode < GenericMode
                         set(this.h.fix{i}, 'value', 0);
                         return;
                     end
-                    this.fix{index} = m{4}{i};
+                    this.fix{index} = par_names{i};
                 end
             end
             this.set_gstart_cb();
@@ -1330,8 +1372,7 @@ classdef SiSaMode < GenericMode
         
         % global SP checkbox
         function set_param_glob_cb(this, varargin)
-            m = this.models(this.model);
-            n = length(m{4});
+            n = this.sisa_fit_info.par_num{this.sisa_fit.curr_fitfun};
             g = zeros(n,1);
             for i = 1:n
                 if get(this.h.gst{i}, 'value') == 1
@@ -1342,10 +1383,8 @@ classdef SiSaMode < GenericMode
         end
        
         % fitmodel from dropdown
-        function set_model_cb(this, varargin)
-            t = keys(this.models);
-            str = t{get(this.h.drpd, 'value')};
-            this.set_model(str);
+        function set_model_cb(this, varargin)            
+            this.set_model(get(this.h.drpd, 'value'));
         end 
         
         % colormap
@@ -1357,12 +1396,14 @@ classdef SiSaMode < GenericMode
         
         % update bounds
         function set_bounds_cb(this, varargin)
-            m = this.models(this.model);
-            for i = 1:length(m{4});
-                m{2}(i) = str2double(get(this.h.lb{i}, 'string'));
-                m{3}(i) = str2double(get(this.h.ub{i}, 'string'));
+            num_par = this.sisa_fit_info.par_num{this.sisa_fit.curr_fitfun};
+            lb = zeros(num_par,1);
+            ub = lb;
+            for i = 1:num_par
+                lb(i) = str2double(get(this.h.lb{i}, 'string'));
+                ub(i) = str2double(get(this.h.ub{i}, 'string'));
             end
-            this.models(this.model) = m;
+            this.sisa_fit.update('upper', ub, 'lower', lb);
         end 
         
         function set_param_cb(this, varargin)
@@ -1378,7 +1419,7 @@ classdef SiSaMode < GenericMode
             this.hold_f = false;
             this.cancel_f = false;
             if get(this.h.parallel, 'value')
-                this.fit_all_par(1);
+                this.fit_all_parallel(1);
             else
                 this.fit_all(1);
             end
@@ -1388,7 +1429,7 @@ classdef SiSaMode < GenericMode
             this.hold_f = false;
             set(this.h.hold, 'string', 'Fit anhalten', 'callback', @this.hold_fit_cb);
             if get(this.h.parallel, 'value')
-                this.fit_all_par(this.last_fitted + this.p.par_size);
+                this.fit_all_parallel(this.last_fitted + this.p.par_size);
             else
                 this.fit_all(this.last_fitted);
             end
@@ -1402,58 +1443,6 @@ classdef SiSaMode < GenericMode
     end
     
     methods (Static = true)
-        function [param] = estimate_parameters_p(data, model, t_zero, t_offset, cw)
-            data = smooth(data, 'loess');
-            switch model
-                case '1. A*(exp(-t/t1)-exp(-t/t2))+offset'
-                    [A, t1] = max(data((t_zero + t_offset):end)); % Amplitude, first time
-                    t1 = t1 + t_zero + t_offset;
-                    param(1) = A;
-                    param(3) = (t1-t_zero)*cw/2;
-                    param(4) = mean(data(end-100:end));
-                    data = data-param(4);
-                    A = A-param(4);
-                    t2 = find(abs(data <= round(A/2.7)));
-                    t2 = t2(t2 > t1);
-                    try
-                        param(2) = (t2(1) - t_zero)*cw;
-                    catch
-                        param(2) = 1;
-                    end
-                case {'2. A*(exp(-t/t1)-exp(-t/t2))+B*exp(-t/t2)+offset',...
-                      '3. A*(exp(-t/t1)-exp(-t/t2))+B*exp(-t/t1)+offset'}
-                    [A, t1] = max(data((t_zero + t_offset):end)); % Amplitude, first time
-                    t1 = t1 + t_zero + t_offset;
-                    param(1) = A;
-                    param(3) = (t1-t_zero)*cw/2;
-                    param(4) = A/4;
-                    param(5) = mean(data(end-100:end));
-                    data = data-param(5);
-                    A = A-param(5);
-                    t2 = find(abs(data <= round(A/2.7)));
-                    t2 = t2(t2 > t1);
-                    try
-                        param(2) = (t2(1) - t_zero)*cw;
-                    catch
-                        param(2) = 1;
-                    end
-                case '4. A*(exp(-t/t1)+B*exp(-t/t2)+offset'
-                    [A, i] = max(data((t_zero + t_offset):end));
-                    B = A/4;
-                    t1 = find(abs(data <= round(A/2.7)));
-                    t1 = t1(t1>i+t_offset);
-                    if isempty(t1)
-                        t1 = 10/cw;
-                    end
-                    t2 = t1(1)/4;
-                    param(5) = mean(data(end-100:end));
-                    param(1) = A;
-                    param(2) = t1(1)*cw;
-                    param(3) = t2*cw;
-                    param(4) = B;
-                otherwise
-                    param = 50*ones(5, 1);
-            end
-        end
+       
     end
 end

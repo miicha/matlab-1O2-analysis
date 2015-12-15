@@ -4,19 +4,10 @@ classdef SiSaGenericPlot < handle
     
     properties
         data;
-        x_data;
         smode;
-        models;
-        model;
         fitted = false;
         chisq;              % chisquared
-        n_param;
-        t_offset;
-        t_zero;
-        t_end;
-        channel_width;
         est_params;         % estimated parameters
-        model_str;
         h = struct();       % handles
         fit_params;         % fitted parameters
         fit_params_err;     % ertimated errors of fitted parameters
@@ -25,6 +16,9 @@ classdef SiSaGenericPlot < handle
         diff_data;
         data_backup;
         plot_limits;
+        sisa_fit;
+        sisa_fit_info;
+        res;
     end
     
     properties (Access = private)
@@ -35,27 +29,12 @@ classdef SiSaGenericPlot < handle
         function this = SiSaGenericPlot(smode)            
             %% get data from main UI
             this.smode = smode;                % keep refs to the memory in which
-                                        % the UI object is saved
-            this.models = smode.models;
-            if smode.model
-                this.model = this.models(smode.model);
-            end
+                                               % the UI object is saved
 
-
+            this.sisa_fit_info = this.smode.sisa_fit_info;
+            this.sisa_fit = this.smode.sisa_fit.copy;
             
-            this.x_data = this.smode.x_data;
-            
-            tmp = smode.models(smode.model);
-            this.n_param = length(tmp{2});
-            this.t_offset = smode.t_offset;
-            this.t_zero = smode.t_zero;
-            this.t_end = smode.t_end;
-
-            this.channel_width = smode.channel_width;
-            
-            this.est_params = rand(length(tmp{2}),1);
-
-            this.model_str = smode.model;
+            this.est_params = rand(this.sisa_fit.par_num,1);
             
             %% initialize UI objects
             
@@ -146,8 +125,8 @@ classdef SiSaGenericPlot < handle
             
             set(this.h.drpd, 'units', 'pixels',...
                             'style', 'popupmenu',...
-                            'string', keys(this.models),...
-                            'value', find(strcmp(keys(this.models), this.model_str)),...
+                            'string', this.sisa_fit_info.model_names,...
+                            'value', this.smode.model_number,...
                             'position', [10 5 200 27],...
                             'FontSize', 9,...
                             'callback', @this.set_model);
@@ -250,7 +229,7 @@ classdef SiSaGenericPlot < handle
             jWindow.setMinimumSize(tmp);
             
             %% draw plot
-            this.generate_param();
+%             this.generate_param();
         end
         
         function set_window_name(this,name)
@@ -263,32 +242,42 @@ classdef SiSaGenericPlot < handle
             end
             datal = this.data;
             realmax = max(datal)*1.5;
-            m = max(datal((this.t_offset+this.t_zero):end));
+            m = max(datal(this.sisa_fit.offset_time:end));
             m = m*1.1;
-            mini = min(datal((this.t_offset+this.t_zero):end))*0.95;
-            
-            if this.t_end == 0
-                this.t_end = length(this.x_data) - this.t_zero - 1;
-            end
-            
+            mini = min(datal(this.sisa_fit.offset_time:end))*0.95;
+           
             set(this.h.f,'CurrentAxes',this.h.axes)
             cla
             hold on
             
-            plot(this.x_data(1:(this.t_offset+this.t_zero)), datal(1:(this.t_offset+this.t_zero)),...
-                                                                   '.-', 'Color', [.8 .8 1]);
-            this.h.data_line = plot(this.x_data(this.t_zero+(this.t_offset:this.t_end)), datal(this.t_zero+(this.t_offset:this.t_end)),...
-                                   'Marker', '.', 'Color', [.8 .8 1], 'MarkerEdgeColor', 'blue');
-            plot(this.x_data(this.t_zero+this.t_end:end), datal(this.t_zero+this.t_end:end),...
-                                   '.-', 'Color', [.8 .8 1]);
+            
+            
+            x_ges = this.sisa_fit.get_x_axis();
+            x_before = x_ges(1:this.sisa_fit.offset_time);
+            y_before = datal(1:this.sisa_fit.offset_time);
+            
+            x_fit = x_ges(this.sisa_fit.offset_time:this.sisa_fit.end_channel);
+            y_fit = datal(this.sisa_fit.offset_time:this.sisa_fit.end_channel);
+            
+            x_after = x_ges(this.sisa_fit.end_channel:end);
+            y_after = datal(this.sisa_fit.end_channel:end);
+            
+            plot(x_before, y_before, '.-', 'Color', [.8 .8 1]);
+            this.h.data_line = plot(x_fit, y_fit, 'Marker', '.', 'Color', [.8 .8 1], 'MarkerEdgeColor', 'blue');
+            
+            plot(x_after, y_after, '.-', 'Color', [.8 .8 1]);
             
             this.h.zeroline = line([0 0], [0 realmax], 'Color', [.7 0 .5],... 
                       'ButtonDownFcn', @this.plot_click, 'LineWidth', 1.2, 'LineStyle', '--',...
                       'Tag', 'line');
-            this.h.offsetline = line([this.t_offset this.t_offset]*this.channel_width,...
+
+            offset_line = this.sisa_fit.offset_time-this.sisa_fit.t_0;
+            this.h.offsetline = line([offset_line offset_line]*this.sisa_fit.cw,...
                 [0 realmax], 'Color', [0 .6 .5], 'ButtonDownFcn', @this.plot_click, 'LineWidth', 1.2,...
                 'LineStyle', '-.', 'Tag', 'line');
-            this.h.endline = line([this.t_end this.t_end]*this.channel_width,...
+            
+            end_line = this.sisa_fit.end_channel-this.sisa_fit.t_0;
+            this.h.endline = line([end_line end_line]*this.sisa_fit.cw,...
                 [0 realmax], 'Color', [0 .8 .8], 'ButtonDownFcn', @this.plot_click, 'LineWidth', 1.2,...
                 'LineStyle', '-.', 'Tag', 'line');
             hold off
@@ -296,7 +285,7 @@ classdef SiSaGenericPlot < handle
 
             if ~realtime             
                 ylim([mini m]);
-                xlim([min(this.x_data)-1 max(this.x_data)+1]);
+                xlim([min(x_ges)-1 max(x_ges)+1]);
                 if this.fitted
                     this.plotfit();
                 end
@@ -336,22 +325,30 @@ classdef SiSaGenericPlot < handle
         end
         
         function plotfit(this)
-            p = num2cell(this.fit_params);
-            fitdata = this.model{1}(p{:}, this.x_data);
-
+            p = this.fit_params;
+            
+            if isempty(this.sisa_fit.x_axis)
+                this.sisa_fit.estimate(this.data);
+            end
+            
+            fitdata = this.sisa_fit.eval(this.fit_params, this.sisa_fit.x_axis);
             set(this.h.f,'CurrentAxes',this.h.axes)
             
             % extrahierte SiSa-Daten Plotten
-            if get(this.h.drpd, 'value') == 2 || get(this.h.drpd, 'value') == 3
-                tmp = keys(this.models);
-                sisamodel = this.models(tmp{1});
-                sisadata = sisamodel{1}(p{1}, p{2}, p{3}, p{5}, this.x_data);
+            if get(this.h.drpd, 'value') == 2 || get(this.h.drpd, 'value') == 3 || get(this.h.drpd, 'value') == 4
+                sisamodel = sisafit(1);
+                sisamodel.copy_data(this.sisa_fit);
+                if get(this.h.drpd, 'value') == 4
+                    sisadata = sisamodel.eval([p(1:3); p(6)], this.sisa_fit.x_axis);
+                else
+                    sisadata = sisamodel.eval([p(1:3); p(5)], this.sisa_fit.x_axis);
+                end
                 hold on
-                plot(this.x_data,  sisadata, 'color', [1 0.6 0.2], 'LineWidth', 1.5, 'HitTest', 'off');
+                plot(this.sisa_fit.x_axis,  sisadata, 'color', [1 0.6 0.2], 'LineWidth', 1.5, 'HitTest', 'off');
                 hold off
             end
             hold on
-            this.h.fit_line = plot(this.x_data,  fitdata, 'r', 'LineWidth', 1.5, 'HitTest', 'off');
+            this.h.fit_line = plot(this.sisa_fit.x_axis,  fitdata, 'r', 'LineWidth', 1.5, 'HitTest', 'off');
             hold off
             
             
@@ -364,29 +361,35 @@ classdef SiSaGenericPlot < handle
             tmp(tmp <= 0) = 1;
             residues = residues./sqrt(tmp);
             
-            plot(this.x_data(this.t_zero+(this.t_offset:this.t_end)),...
-                 residues(this.t_zero+(this.t_offset:this.t_end)), 'b.');
+            x_ges = this.sisa_fit.get_x_axis();
+            x_before = x_ges(1:this.sisa_fit.offset_time);
+            y_before = residues(1:this.sisa_fit.offset_time);
+            
+            x_res = x_ges(this.sisa_fit.offset_time:this.sisa_fit.end_channel);
+            y_res = residues(this.sisa_fit.offset_time:this.sisa_fit.end_channel);
+            
+            x_after = x_ges(this.sisa_fit.end_channel:end);
+            y_after = residues(this.sisa_fit.end_channel:end);
+            
+            plot(x_res,y_res, 'b.');
             
             hold on
             % vor fitbereich
-            plot(this.x_data(1:(this.t_offset+this.t_zero)),...
-                 residues(1:(this.t_offset+this.t_zero)), '.', 'Color', [.8 .8 1]);
+            plot(x_before,y_before, '.', 'Color', [.8 .8 1]);
             % nach fitbereich
-            plot(this.x_data((this.t_zero+this.t_end):end),...
-                 residues((this.t_zero+this.t_end):end), '.', 'Color', [.8 .8 1]);
+            plot(x_after,y_after, '.', 'Color', [.8 .8 1]);
             % nulllinie
-            line([min(this.x_data)-1 max(this.x_data)+1], [0 0], 'Color', 'r', 'LineWidth', 1.5);
-            xlim([min(this.x_data)-1 max(this.x_data)+1]);
-            m = max([abs(max(residues(this.t_zero+(this.t_offset:this.t_end)))),...
-                     abs(min(residues(this.t_zero+(this.t_offset:this.t_end))))]);
+            line([min(x_ges)-1 max(x_ges)+1], [0 0], 'Color', 'r', 'LineWidth', 1.5);
+            xlim([min(x_ges)-1 max(x_ges)+1]);
+            m = max([abs(max(y_res)), abs(min(y_res))]);
             ylim([-m m]);
             hold off
             
             % update UI
-            for i = 1:this.n_param
+            for i = 1:this.sisa_fit.par_num
                 str = sprintf('%1.2f', this.fit_params(i));
                 
-                if abs(this.fit_params(i) - this.model{2}(i)) < 1e-4 || abs(this.fit_params(i) - this.model{3}(i)) < 1e-4
+                if length(this.smode.sisa_fit.lower_bounds) == this.sisa_fit.par_num && (abs(this.fit_params(i) - this.smode.sisa_fit.lower_bounds(i)) < 1e-4 || abs(this.fit_params(i) - this.smode.sisa_fit.upper_bounds(i)) < 1e-4)
                     this.h.pe{i}.BackgroundColor = [0.8 0.4 0.4];
                 else
                     this.h.pe{i}.BackgroundColor = [0.9400 0.9400 0.9400];
@@ -408,32 +411,25 @@ classdef SiSaGenericPlot < handle
         end
         
         function fit(this, varargin)
-            x = this.x_data(this.t_zero+(this.t_offset:this.t_end));
-            y = this.data(this.t_zero+(this.t_offset:this.t_end));
-            w = sqrt(y);
-            w(w == 0) = 1;
-
-            ind  = 0;
-            fix = {};
-            start = zeros(this.n_param, 1);
-            for i = 1:this.n_param
+            n_param = this.sisa_fit.par_num;
+            fix = zeros(this.sisa_fit.par_num,1);
+            start = fix;
+            for i = 1:this.sisa_fit.par_num
                 start(i) = str2double(get(this.h.pe{i}, 'string'));
-                if get(this.h.pc{i}, 'value')
-                    ind = ind + 1;
-                    fix{ind} = this.model{4}{i};
-                end
-            end
+                fix(i) = get(this.h.pc{i}, 'value');
+            end            
             
-            if ind == this.n_param
+            if sum(fix) == this.sisa_fit.par_num
                 msgbox('Kann ohne freie Parameter nicht fitten.', 'Fehler','modal');
                 return;
             end
             
-            tmp = this.smode.models(this.model_str);
-            this.model{2} = tmp{2};
-            this.model{3} = tmp{3};
-
-            [p, p_err, chi] = fitdata(this.model, x, y, w, start, fix);
+            if length(this.smode.sisa_fit.lower_bounds) == length(start)
+                this.sisa_fit.update('lower,',this.smode.sisa_fit.lower_bounds, 'upper', this.smode.sisa_fit.upper_bounds);
+            end                
+            this.sisa_fit.update('start',start,'fixed',fix);
+            
+            [p, p_err, chi, this.res] = this.sisa_fit.fit(this.data);
             
             this.fit_params = p;
             this.fit_params_err = p_err;
@@ -454,8 +450,8 @@ classdef SiSaGenericPlot < handle
         end
         
         function x_zoom(this, varargin)
-            x_min = this.t_zero*this.channel_width;
-            x_max = 5*this.t_zero*this.channel_width;  
+            x_min = this.sisa_fit.t_0*this.sisa_fit.cw;
+            x_max = 5*this.sisa_fit.t_0*this.sisa_fit.cw;  
             this.plot_limits.X = this.h.axes.XLim;
             this.h.axes.XLim = [-x_min x_max];
         end
@@ -496,14 +492,12 @@ classdef SiSaGenericPlot < handle
         end
         
         function set_model(this, varargin)
-            m = keys(this.models);
-            n = m{get(this.h.drpd, 'value')};
-            tmp = this.models(n);
             this.fitted = false;
-            this.n_param = length(tmp{2});
-            this.model = this.models(n);
-            this.model_str = n;
-            this.est_params = SiSaMode.estimate_parameters_p(this.data, n, this.t_zero, this.t_offset, this.channel_width);
+            tmp = sisafit(get(this.h.drpd, 'value'));
+            tmp.copy_data(this.sisa_fit);
+            this.sisa_fit = tmp;
+            
+            this.est_params = this.sisa_fit.estimate(this.data);
             this.generate_param();
         end
         
@@ -522,14 +516,15 @@ classdef SiSaGenericPlot < handle
             end           
             clear('this.h.pe', 'this.h.pd', 'this.h.pc', 'this.h.pt');
 
-            this.h.pt = cell(this.n_param, 1);
-            this.h.pe = cell(this.n_param, 1);
-            this.h.pd = cell(this.n_param, 1);
-            this.h.pc = cell(this.n_param, 1);
-            for i = 1:this.n_param
+            this.h.pt = cell(this.sisa_fit.par_num, 1);
+            this.h.pe = cell(this.sisa_fit.par_num, 1);
+            this.h.pd = cell(this.sisa_fit.par_num, 1);
+            this.h.pc = cell(this.sisa_fit.par_num, 1);
+            par_names = this.sisa_fit.parnames;
+            for i = 1:this.sisa_fit.par_num
                  this.h.pt{i} = uicontrol(this.h.param, 'units', 'pixels',...
                                                       'style', 'text',...
-                                                      'string', this.model{4}{i},...
+                                                      'string', par_names{i},...
                                                       'HorizontalAlignment', 'left',...
                                                       'FontSize', 9,...
                                                       'position', [10+(i-1)*100 40 41 20]);
@@ -547,12 +542,12 @@ classdef SiSaGenericPlot < handle
                                                       'string', 'fix',...
                                                       'position', [10+(i-1)*100 5 50 15]); 
             end
-            if this.n_param == 0
-                set(this.h.param, 'visible', 'off');
+            if this.sisa_fit.par_num == 0
+%                 set(this.h.param, 'visible', 'off');
             else
                 set(this.h.param, 'visible', 'on');
                 pP = get(this.h.param, 'position');
-                pP(3) = 45+(this.n_param-1)*100+45+10;
+                pP(3) = 45+(this.sisa_fit.par_num-1)*100+45+10;
                 set(this.h.param, 'position', pP);
             end
         end
@@ -583,12 +578,13 @@ classdef SiSaGenericPlot < handle
             this.current_draggable = 'offs';
             cpoint = get(this.h.axes, 'CurrentPoint');
             cpoint = cpoint(1, 1);
-            if cpoint/this.channel_width < 0.01
+            x_axis = this.sisa_fit.get_x_axis;
+            if cpoint/this.sisa_fit.cw < 0.01
                 cpoint = 0.01;
-            elseif this.t_zero+cpoint/this.channel_width >= length(this.x_data)-10
-                cpoint = (length(this.x_data)-this.t_zero-1)*this.channel_width;
+            elseif this.sisa_fit.t_0+cpoint/this.sisa_fit.cw >= length(x_axis)-10
+                cpoint = (length(this.x_data)-this.t_zero-1)*this.sisa_fit.cw;
             end
-            this.t_offset = round(cpoint/this.channel_width);
+            this.sisa_fit.update('offset',round(cpoint/this.sisa_fit.cw+this.sisa_fit.t_0));
             this.plotdata(true)
         end
         
@@ -596,12 +592,13 @@ classdef SiSaGenericPlot < handle
             this.current_draggable = 'end';
             cpoint = get(this.h.axes, 'CurrentPoint');
             cpoint = cpoint(1, 1);
-            if cpoint > this.x_data(end)
-                cpoint = this.x_data(end);
-            elseif cpoint < (this.t_offset)*this.channel_width
-                cpoint = (this.t_offset + 1)*this.channel_width;
+            x_axis = this.sisa_fit.get_x_axis();
+            if cpoint > x_axis(end)
+                cpoint = x_axis(end);
+            elseif cpoint < (this.sisa_fit.offset_time-this.sisa_fit.t_0)*this.sisa_fit.cw
+                cpoint = (this.sisa_fit.offset_time-this.sisa_fit.t_0 + 1)*this.sisa_fit.cw;
             end
-            this.t_end = round(cpoint/this.channel_width);
+            this.sisa_fit.update('end',round(cpoint/this.sisa_fit.cw + this.sisa_fit.t_0));
             this.plotdata(true)
         end
         
@@ -609,22 +606,29 @@ classdef SiSaGenericPlot < handle
             if strcmp(this.current_draggable, 'zero')
                 cpoint = get(this.h.axes, 'CurrentPoint');
                 cpoint = cpoint(1, 1);
-                t = this.t_zero + round(cpoint/this.channel_width);
+                t = this.sisa_fit.t_0 + round(cpoint/this.sisa_fit.cw);
                 n = length(this.data);
 
-                if t <= 0
+                
+                t_offset = this.sisa_fit.offset_time - this.sisa_fit.t_0;
+                t_end = this.sisa_fit.end_channel - this.sisa_fit.t_0;
+                
+                
+                if t <= 0 % t_0 muss mindestens im ersten kanal sein
                     t = 1;
-                elseif t + this.t_offset >= n - 1
-                    t = n - this.t_offset - 2;
-                elseif t + this.t_end >= n
-                    this.t_end = n - t;
+                elseif t + t_offset >= n - 1 % t_0 darf maximal 2 kanäle vor ende - offset sein
+                    t = n - t_offset - 2;
+                elseif t + t_end >= n        % 
+                    t_end = n - t;
                 end
                 % end line sticks to the end
-                if this.t_end == n - this.t_zero
-                    this.t_end = n - t;
+                if t_end == n - this.sisa_fit.t_0
+                    t_end = n - t;
                 end
-                this.t_zero = t;
-                this.x_data = ((1:n)-t)'*this.channel_width;
+                t_offset = t + t_offset;
+                t_end = t + t_end;
+                
+                this.sisa_fit.update('t0', t, 'offset',t_offset, 'end', t_end);
             end
             this.current_draggable = 'none';
             set(this.h.f, 'WindowButtonMotionFcn', '');
@@ -632,9 +636,9 @@ classdef SiSaGenericPlot < handle
             this.plotdata();
         end
         
-        function globalize(this, varargin)
-            if ~strcmp(this.model_str, this.smode.model)
-                this.smode.set_model(this.model_str);
+        function globalize(this, varargin)  
+            if this.sisa_fit.curr_fitfun ~= this.smode.sisa_fit.curr_fitfun
+                this.smode.set_model(this.sisa_fit.curr_fitfun);
             end
             if this.fitted
                 par = this.fit_params;
@@ -642,10 +646,7 @@ classdef SiSaGenericPlot < handle
                 par = this.est_params;
             end
             this.smode.set_gstart(par);
-            this.smode.t_offset = this.t_offset;
-            this.smode.t_zero = this.t_zero;
-            this.smode.x_data = this.x_data;
-            this.smode.t_end = this.t_end;
+            this.smode.sisa_fit.copy_data(this.sisa_fit);
         end
         
         %% Export
@@ -786,11 +787,11 @@ classdef SiSaGenericPlot < handle
         function generate_fit_info_ov(this)
             ax = this.h.plot_pre.Children(2);
             axes(ax);
-            latex_model = this.smode.models_latex(this.model_str);
-            m_names = latex_model{2};
-            m_units = latex_model{3};
-            func = latex_model{1};
+            m_names = this.sisa_fit.tex_parnames;
+            m_units = this.sisa_fit.tex_units;  
+            func = this.sisa_fit.tex_func;
             str{1} = func;
+            
             for i = 1:length(this.fit_params)
                 err = roundsig(this.fit_params_err(i), 2);
                 par = roundsig(this.fit_params(i), floor(log10(this.fit_params(i)/this.fit_params_err(i))) + 1);
