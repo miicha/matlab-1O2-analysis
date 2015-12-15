@@ -453,7 +453,7 @@ classdef SiSaMode < GenericMode
             
             % UI stuff
             % folgende 3 Zeilen wahrscheinlich unnütz...
-            par_names = this.sisa_fit_info.par_names{this.model_number}
+            par_names = this.sisa_fit_info.par_names{this.model_number};
             set(this.h.param, 'visible', 'on', 'string', [par_names, 'Summe']);
             set(this.h.ov_drpd, 'string', [par_names, 'Summe']);
             
