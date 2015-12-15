@@ -26,7 +26,7 @@ classdef TempMode < GenericMode
             
 
             dims = size(data);
-            this.plotpanel = PlotPanel(this, dims(1:4), {'x', 'y', 'z', 's'}, this.h.plotpanel);
+            this.plotpanel = PlotPanel(this, dims, {'x', 'y', 'z', 's'}, this.h.plotpanel);
 
             this.resize();
             this.plot_array();
@@ -61,6 +61,10 @@ classdef TempMode < GenericMode
         
         function destroy(this, children_only)
             delete(this);
+        end
+        
+        function data = get_data(this)
+            data = this.data(:, :, :, :, :);
         end
     end
 end
