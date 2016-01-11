@@ -467,7 +467,7 @@ classdef SiSaGenericPlot < handle
             
             path = tempdir;
             name = 'amplitude_phi.txt';
-            A = this.smode.corrected_amplitude(this.fit_params,1);
+            A = this.smode.corrected_amplitude(this.fit_params, 1);
             
             try
                 quantum_yield = dlmread([path name]);

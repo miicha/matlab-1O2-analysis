@@ -12,6 +12,7 @@ classdef SiSaMode < GenericMode
         fit_chisq;
         est_params;
         last_fitted;
+        int_time;
         
         overlays = {};  % 1 is always the automatically generated overlay,
                         % additional overlays can be added
@@ -88,6 +89,14 @@ classdef SiSaMode < GenericMode
             if nargin < 3
                 reader = struct();
             end
+            if isfield(reader, 'sisa')
+                if isfield(reader.meta.sisa, 'int_time')
+                    this.int_time = reader.meta.sisa.int_time;
+                else
+                    this.int_time = this.p.scale(4)*ones(size(data(:, :, :, :, 1)));
+                end
+            end
+            
             this.p = parent;
             this.data = data;
             
@@ -527,7 +536,7 @@ classdef SiSaMode < GenericMode
             this.estimate_parameters();
             set(this.h.plttxt, 'visible', 'on');
             set(this.h.param, 'visible', 'on',...
-                            'string', [par_names, 'Summe']);
+                            'string', [par_names, 'A_korr', 'Summe']);
             this.plot_array();
         end
     
@@ -1112,8 +1121,8 @@ classdef SiSaMode < GenericMode
             if nargin < 3
                 phi = 1;
             end
-            if ndims(fit_params) > 1
-                A = fit_params(:, :, :, :, 1).*(1-fit_params(:, :, :, :, 3)./fit_params(:, :, :, :, 2));
+            if ndims(fit_params) == 5
+                A = fit_params(:, :, :, :, 1).*(1 - fit_params(:, :, :, :, 3)./fit_params(:, :, :, :, 2));
             else
                 A = fit_params(1)*(1-fit_params(3)/fit_params(2));
             end
