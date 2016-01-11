@@ -450,9 +450,9 @@ classdef SiSaMode < GenericMode
             this.x_data = this.sisa_fit.get_x_axis();
             
             % UI stuff
-            % folgende 3 Zeilen wahrscheinlich unnütz...
+            % folgende 3 Zeilen wahrscheinlich unn�tz...
             par_names = this.sisa_fit_info.par_names{this.model_number};
-            set(this.h.param, 'visible', 'on', 'string', [par_names, 'Summe']);
+            set(this.h.param, 'visible', 'on', 'string', [par_names, 'A_korr', 'Summe']);
             set(this.h.ov_drpd, 'string', [par_names, 'Summe']);
             
             set(this.h.plttxt, 'visible', 'on');
@@ -475,7 +475,7 @@ classdef SiSaMode < GenericMode
             s = num2cell(size(this.est_params));
             this.fit_chisq = nan(s{1:4});
             
-            %% Hintergrundfarbe abhängig von Detektionswellenlänge
+            %% Hintergrundfarbe abh�ngig von Detektionswellenlänge
             if isfield(reader, 'meta') && isfield(reader.meta, 'sisa') && isfield(reader.meta.sisa, 'Optik')
                 if reader.meta.sisa.Optik == 1270
                     set(this.h.sisamode, 'background', [0.8 0.2 0.2]);
@@ -555,7 +555,10 @@ classdef SiSaMode < GenericMode
                
         function name = get_parname(this, index)
             fitpars = this.sisa_fit_info.par_names{this.model_number};
-            if index > length(fitpars)
+            if index == length(fitpars + 1)
+                name = 'A_korr';
+                return
+            elseif index > length(fitpars)
                 if this.disp_fit_params
                     name = 'Chi';
                 else
@@ -709,6 +712,8 @@ classdef SiSaMode < GenericMode
             if this.disp_fit_params
                 switch param
                     case length(this.est_params(1, 1, 1, 1, :)) + 1
+                        plot_data = this.corrected_amplitude(this.fit_params);
+                    case length(this.est_params(1, 1, 1, 1, :)) + 2
                         plot_data = this.fit_chisq;
                     otherwise
                         plot_data = this.fit_params(:, :, :, :, param);
@@ -716,6 +721,8 @@ classdef SiSaMode < GenericMode
             else
                 switch param
                     case length(this.est_params(1, 1, 1, 1, :)) + 1
+                        plot_data = this.corrected_amplitude(this.est_params);
+                    case length(this.est_params(1, 1, 1, 1, :)) + 2
                         plot_data = this.data_sum;
                     otherwise
                         plot_data = this.est_params(:, :, :, :, param);
@@ -1102,8 +1109,15 @@ classdef SiSaMode < GenericMode
         end
         
         function A = corrected_amplitude(this, fit_params, phi)
-            A = fit_params(1)*(1-fit_params(3)/fit_params(2));
-            A = A/phi;
+            if nargin < 3
+                phi = 1;
+            end
+            if ndims(fit_params) > 1
+                A = fit_params(:, :, :, :, 1).*(1-fit_params(:, :, :, :, 3)./fit_params(:, :, :, :, 2));
+            else
+                A = fit_params(1)*(1-fit_params(3)/fit_params(2));
+            end
+            A = abs(A/phi);
         end
         
         % mouseclicks
@@ -1294,20 +1308,19 @@ classdef SiSaMode < GenericMode
         end
         
         function change_par_source_cb(this, varargin)
-            
             par_names = this.sisa_fit_info.par_names{this.sisa_fit.curr_fitfun};
             ov = get(varargin{2}.OldValue, 'String');
             nv = get(varargin{2}.NewValue, 'String');
             if ~strcmp(ov, nv)
                 if strcmp(nv, get(this.h.fit_par, 'string'))
                     this.disp_fit_params = true;
-                    params = [par_names, 'Chi^2'];
+                    params = [par_names, 'A_korr', 'Chi^2'];
                 else
                     this.disp_fit_params = false;
-                    params = [par_names, 'Summe'];
+                    params = [par_names, 'A_korr', 'Summe'];
                 end
                 set(this.h.param, 'visible', 'on',...
-                                'string', params);
+                                  'string', params);
                 
                 this.generate_mean();
                 if (this.fitted || this.hold_f || this.cancel_f)
