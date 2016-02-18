@@ -12,7 +12,7 @@ classdef SiSaMode < GenericMode
         fit_chisq;
         est_params;
         last_fitted;
-        int_time;
+        int_time = 5;
         
         overlays = {};  % 1 is always the automatically generated overlay,
                         % additional overlays can be added
@@ -82,19 +82,20 @@ classdef SiSaMode < GenericMode
              
 %          genericname;
 %          savepath;
+        reader;
     end
     
     methods
         function this = SiSaMode(parent, data, reader)
+            this.reader = reader;
             if nargin < 3
                 reader = struct();
             end
-            if isfield(reader, 'sisa')
-                if isfield(reader.meta.sisa, 'int_time')
-                    this.int_time = reader.meta.sisa.int_time;
-                else
-                    this.int_time = this.p.scale(4)*ones(size(data(:, :, :, :, 1)));
-                end
+
+            if isfield(reader.meta.sisa, 'int_time')
+                this.int_time = reader.meta.sisa.int_time/1000;
+            else
+                this.int_time = this.p.scale(4)*ones(size(data(:, :, :, :, 1)));
             end
             
             this.p = parent;
@@ -106,6 +107,7 @@ classdef SiSaMode < GenericMode
             
             this.scale = this.p.scale;
             this.units = this.p.units;
+            this.scale(end) = mean(mean(mean(mean(this.int_time))));
             this.d_name = {'x', 'y', 'z', 'sa'};
             
             this.read_channel_width();
@@ -736,6 +738,20 @@ classdef SiSaMode < GenericMode
                     otherwise
                         plot_data = this.est_params(:, :, :, :, param);
                 end
+            end
+        end
+        
+        function [plot_data, param] = get_errs(this)
+            param = this.current_param;
+            
+            if this.disp_fit_params
+                if param <= length(this.est_params(1, 1, 1, 1, :))
+                    plot_data = this.fit_params_err(:, :, :, :, param);
+                else
+                    plot_data = nan(size(this.fit_params_err(:, :, :, :, 1)));
+                end
+            else
+                plot_data = nan(size(this.fit_params_err(:, :, :, :, 1)));
             end
         end
         

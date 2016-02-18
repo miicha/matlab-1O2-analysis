@@ -107,11 +107,14 @@ classdef Slice < handle
 
         function open_slice_plot(this)
             d = this.p.get_data();
+            dd = this.p.get_errs();
             tmp = this.p.get_slice();
             d = squeeze(d(tmp{:}));
+            dd = squeeze(dd(tmp{:}));
             
             if this.p.transpose
                 d = d';
+                dd = dd';
             end
             
             x_1 = this.point_1{this.p.curr_dims(1)};
@@ -128,6 +131,7 @@ classdef Slice < handle
             transp = false;
             if abs(m) > 1 % guarantees that x_2 - x_1 > y_2 - y_1
                 d = d';
+                dd = dd';
                 m = (this.point_2{this.p.curr_dims(1)}-this.point_1{this.p.curr_dims(1)})/...
                     (this.point_2{this.p.curr_dims(2)}-this.point_1{this.p.curr_dims(2)});
                 b = this.point_1{this.p.curr_dims(1)} - m*this.point_1{this.p.curr_dims(2)};
@@ -156,6 +160,7 @@ classdef Slice < handle
                     continue
                 end
                 plot_vec(x_i) = d(i, l(i));
+                plot_vec_err(x_i) = dd(i, l(i));
                 if x_i == 1
                     x_vec(1) = x_1;
                     continue
@@ -194,7 +199,7 @@ classdef Slice < handle
                 x_vec = 1:length(x_vec);
             end
             
-            SinglePlot(x_vec, plot_vec, fullfile(this.p.p.p.savepath, this.p.p.p.genericname),...
+            SinglePlot(x_vec, plot_vec, plot_vec_err, fullfile(this.p.p.p.savepath, this.p.p.p.genericname),...
                        'xlabel', x_label);
         end
 

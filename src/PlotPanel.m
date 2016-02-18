@@ -420,6 +420,10 @@ classdef PlotPanel < handle
         function data = get_data(this)
             data = this.p.get_data();
         end
+        
+        function data = get_errs(this)
+            data = this.p.get_errs();
+        end
 
         function create_slice(this, index)
             color = rand(1, 3);

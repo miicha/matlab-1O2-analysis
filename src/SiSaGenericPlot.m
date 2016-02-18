@@ -381,7 +381,7 @@ classdef SiSaGenericPlot < handle
             % nulllinie
             line([min(x_ges)-1 max(x_ges)+1], [0 0], 'Color', 'r', 'LineWidth', 1.5);
             xlim([min(x_ges)-1 max(x_ges)+1]);
-            m = max([abs(max(y_res)), abs(min(y_res))]);
+            m = mean(abs(y_res))*8;
             ylim([-m m]);
             hold off
             
@@ -738,8 +738,8 @@ classdef SiSaGenericPlot < handle
             % save the plot and close the figure
             set(this.h.plot_pre, 'PaperUnits', 'points');
             set(this.h.plot_pre, 'PaperSize', [x_pix+80 y_pix+80]/1.5);
-            set(this.h.plot_pre, 'PaperPosition', [10 0 x_pix+80 y_pix+80]/1.5);
-            print(this.h.plot_pre, '-dpdf', '-r600', path);
+            set(this.h.plot_pre, 'PaperPosition', [25 0 x_pix+80 y_pix+80]/1.5);
+            print(this.h.plot_pre, '-dpdf', '-r300', path);
             close(this.h.plot_pre)
         end
 
@@ -766,10 +766,10 @@ classdef SiSaGenericPlot < handle
                 ax_res = copyobj(this.h.res, this.h.plot_pre);
                 xlabel(ax_res, 'Zeit [µs]')
                 ylabel(ax_res, 'norm. Residuen [Counts]')
-                set(ax_res, 'position', [50, 50, 1000, 150]);
-                set(ax, 'position', [50 250 1000 450]);
+                set(ax_res, 'position', [70, 50, 1000, 150]);
+                set(ax, 'position', [70 250 1000 450]);
             else
-                set(ax, 'position', [50 50 1000 650]);
+                set(ax, 'position', [70 50 1000 650]);
             end
             
             plotobjs = ax.Children;

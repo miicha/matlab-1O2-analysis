@@ -25,19 +25,24 @@ classdef SinglePlot < handle
     properties
         xdata;
         ydata;
+        ydata_err;
         plot_args;
         defpath;
         h;
     end
     
     methods
-        function this = SinglePlot(xdata, ydata, defpath, varargin)
+        function this = SinglePlot(xdata, ydata, ydata_err, defpath, varargin)
             if nargin < 3
                 defpath = '';
             end
 
             this.xdata = xdata;
             this.ydata = ydata;
+            if isempty(ydata_err)
+                ydata_err = zeros(size(ydata));
+            end
+            this.ydata_err = ydata_err;
             this.defpath = defpath;
             
             this.plot_args = varargin;
@@ -65,7 +70,7 @@ classdef SinglePlot < handle
         
         function plot(this)
             axes(this.h.axes);
-            this.h.p = plot(this.xdata, this.ydata);
+            this.h.p = errorbar(this.xdata, this.ydata, this.ydata_err);
             
             for i = 1:2:length(this.plot_args)
                 plt_props_handler(this.h.axes, this.plot_args{i}, this.plot_args{i+1});
@@ -131,12 +136,14 @@ classdef SinglePlot < handle
                 if sy(1) == 1 || sy(2) == 1
                     if sy(1) < sy(2)
                         y = this.ydata';
+                        yerr = this.ydata_err';
                     else
                         y = this.ydata;
+                        yerr = this.ydata_err;
                     end
-                    fprintf(fid, 'x,y\n');
+                    fprintf(fid, 'x,y,err\n');
                     fclose(fid);
-                    dlmwrite(path, [x y], '-append');
+                    dlmwrite(path, [x y yerr], '-append');
 
                 else % multiple sets of y values
                     fprintf(fid, 'x,');
