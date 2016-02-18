@@ -28,6 +28,13 @@ classdef FluoPanel < PlotPanel
                 set_nth_val_cb@PlotPanel(this, caller, varargin{:})
             end
         end
+        
+        function calculate_legend(this, data)
+            plot_data = squeeze(data(this.ind{:}));
+            this.l_min.(this.mode) = min(min(min(min(plot_data))));
+            lmax = max(max(max(max(plot_data))));
+            this.l_max.(this.mode) = lmax + eps(lmax);
+        end
             
     end
     

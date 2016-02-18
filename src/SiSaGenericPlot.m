@@ -402,7 +402,7 @@ classdef SiSaGenericPlot < handle
                 else 
                     str = '+-NaN';   
                 end
-                set(this.h.pd{i}, 'string', str);
+                set(this.h.pd{i}, 'string', str,'tooltipString', '95% Konfidenz');
             end
             tmp = get(this.h.gof, 'string');
             tmp{2} = sprintf('%1.2f', this.chisq);
