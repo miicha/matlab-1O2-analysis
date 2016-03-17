@@ -582,7 +582,7 @@ classdef SiSaGenericPlot < handle
             if cpoint/this.sisa_fit.cw < 0.01
                 cpoint = 0.01;
             elseif this.sisa_fit.t_0+cpoint/this.sisa_fit.cw >= length(x_axis)-10
-                cpoint = (length(this.x_data)-this.t_zero-1)*this.sisa_fit.cw;
+                cpoint = (length(this.sisa_fit.get_x_axis)-this.t_zero-1)*this.sisa_fit.cw;
             end
             this.sisa_fit.update('offset',round(cpoint/this.sisa_fit.cw+this.sisa_fit.t_0));
             this.plotdata(true)
@@ -680,15 +680,15 @@ classdef SiSaGenericPlot < handle
         function save_data(this, path)
             fid = fopen(path, 'w');
             
-            sx = size(this.x_data);
+            sx = size(this.sisa_fit.get_x_axis);
             sy = size(this.data);
             
             % only one set of x values
             if sx(1) == 1 || sx(2) == 1
                 if sx(1) < sx(2)
-                    x = this.x_data';
+                    x = this.sisa_fit.get_x_axis';
                 else
-                    x = this.x_data;
+                    x = this.sisa_fit.get_x_axis;
                 end
                 
                 % only one set of y values
@@ -825,6 +825,7 @@ classdef SiSaGenericPlot < handle
         end
         
         function change_faktor_cb(this,caller, varargin)
+            x = this.sisa_fit.get_x_axis;
             
             if strcmp(caller.Style,'slider')
                 this.h.faktor_edit.String = caller.Value;
@@ -841,15 +842,15 @@ classdef SiSaGenericPlot < handle
             
             
             this.plotdata();
-            this.plot_raw_data([this.x_data plotdata],true)
+            this.plot_raw_data([x plotdata],true)
             
             
             
             
-            this.plot_raw_data([this.x_data this.data_backup], true)
+            this.plot_raw_data([x this.data_backup], true)
             
             offset = mean(this.data(end-400:end));
-            this.plot_raw_data([this.x_data(1) offset;this.x_data(end) offset], 'k', 'linewidth',1.5)
+            this.plot_raw_data([x(1) offset;x(end) offset], 'k', 'linewidth',1.5)
             
             
             uistack(this.h.data_line,'top')
