@@ -49,7 +49,8 @@ Nach commit f32776dd wird nur noch mit dem neuen Backend entwickelt, also wird
 die Software ohne diese Einstellung und/oder in alten Matlab-Versionen vermtl.
 schrecklich aussehen. Die Funktionsfähigkeit sollte aber erhalten bleiben.
 
-Die Binaries sind ab f79c56c3 mit R2014b kompiliert.
+- Die Binaries sind ab f79c56c3 mit R2014b kompiliert.
+- Die Binaries sind ab 0.4.3 mit R2015b kompiliert.
 
 In [diesem](https://git.daten.tk/sebastian.pfitzner/sisa-scan-auswertung/tree/R2014a-kompatibel) 
 Branch sind noch die alten hg1-kompatiblen Files und Binaries enthalten.
