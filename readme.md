@@ -21,8 +21,11 @@ herunterzuladen und auszuführen.
 Zum Installieren
 entweder:
 - `git clone` in ein Verzeichnis
+- danach `git submodule update`
+
 oder:
 - oben rechts auf `Download zip` drücken und irgendwo entpacken
+- und außerdem noch die submodule einzeln laden und in den entpsrechenden Ordner entpacken
 
 und dann `startUI` (im Verzeichnis 'src') ausführen.
 
