@@ -14,7 +14,7 @@ Allgemeinen nicht die neusten Features und Bugfixes.
 dann bitte den [64-bit Installer R2015a (8.5)](http://de.mathworks.com/products/compiler/mcr/index.html)
 herunterladen und ausführen. Dann mit dem nächsten Schritt weiter machen.
 
-- Andernfalls reicht es, den Inhalt [diese exe](https://git.daten.tk/sebastian.pfitzner/sisa-scan-auswertung/raw/master/Deployment/SiSaScanAuswertung/standalone/SiSaScanAuswertung.exe)
+- Andernfalls reicht es, den Inhalt [diese exe](https://git.daten.tk/sebastian.pfitzner/sisa-scan-auswertung/raw/master/Deployment/SiSaScanAuswertung.exe)
 herunterzuladen und auszuführen.
 
 #### m-Files
