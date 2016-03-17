@@ -1,8 +1,8 @@
 %% config
 % change these four rows to suit your application
 prjct = 'sisa-scan-auswertung';
-path_to_prjct = 'C:\Users\pfitzseb\Dokumente\Matlab\sisa-scan-auswertung\src';
-local_version = get_local_version(path_to_prjct);
+path_to_prjct = [pwd '\..\src'];
+local_version = get_local_version(path_to_prjct)
 version_url = 'http://www.daten.tk/webhook/tags.php?owner=sebastian.pfitzner&project=sisa-scan-auswertung';
 
 %% read new version from source file and check against latest online version

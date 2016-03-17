@@ -7,7 +7,7 @@ classdef UI < handle
     end
     
     properties
-        version = '0.4.2';
+        version = '0.4.3';
         fileinfo = struct('path', '', 'size', [0 0 0 0],...
                           'name', '', 'np', 0); 
                       
