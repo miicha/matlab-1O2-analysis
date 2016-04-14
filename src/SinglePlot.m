@@ -33,15 +33,16 @@ classdef SinglePlot < handle
     
     methods
         function this = SinglePlot(xdata, ydata, ydata_err, defpath, varargin)
-            if nargin < 3
+            if nargin < 4
                 defpath = '';
+                if nargin < 3
+                    ydata_err = [];
+                end
             end
-
+            
             this.xdata = xdata;
             this.ydata = ydata;
-            if isempty(ydata_err)
-                ydata_err = zeros(size(ydata));
-            end
+
             this.ydata_err = ydata_err;
             this.defpath = defpath;
             
@@ -70,7 +71,11 @@ classdef SinglePlot < handle
         
         function plot(this)
             axes(this.h.axes);
-            this.h.p = errorbar(this.xdata, this.ydata, this.ydata_err);
+            if isempty(this.ydata_err)
+                this.h.p = plot(this.xdata, this.ydata);
+            else
+                this.h.p = errorbar(this.xdata, this.ydata, this.ydata_err);
+            end
             
             for i = 1:2:length(this.plot_args)
                 plt_props_handler(this.h.axes, this.plot_args{i}, this.plot_args{i+1});
