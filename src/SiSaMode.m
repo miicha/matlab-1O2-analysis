@@ -159,7 +159,8 @@ classdef SiSaMode < GenericMode
 
                 this.h.pres_tab = uitab(this.h.tabs);
                     this.h.savefig = uicontrol(this.h.pres_tab);
-                    this.h.prevfig = uicontrol(this.h.pres_tab);    
+                    this.h.prevfig = uicontrol(this.h.pres_tab);
+                    this.h.ch_width = uicontrol(this.h.pres_tab);
                     this.h.d_name_header = uicontrol(this.h.pres_tab);
                     this.h.d_scale_header = uicontrol(this.h.pres_tab);
                     this.h.d_unit_header = uicontrol(this.h.pres_tab);
@@ -431,6 +432,12 @@ classdef SiSaMode < GenericMode
                               'position', [92 2 80 28],...
                               'string', 'Vorschau',...
                               'callback', @this.generate_export_fig_cb);
+                          
+            set(this.h.ch_width, 'units', 'pixels',...
+                              'style', 'popupmenu',...
+                              'position', [185 2 55 28],...
+                              'String', {'13.33','20','40','80'},...
+                              'callback', @this.change_channel_width);
 
             set(this.h.d_name_header, 'units', 'pixels',...
                                       'style', 'text',...
@@ -508,6 +515,11 @@ classdef SiSaMode < GenericMode
             else 
                 this.plotpanel.plot_array(plot_data, mparam);
             end
+        end
+        
+        function change_channel_width(this, varargin)            
+            this.channel_width = str2double(this.h.ch_width.String{this.h.ch_width.Value})/1000;
+            this.sisa_fit.update('c',this.channel_width);
         end
         
         function read_channel_width(this)
