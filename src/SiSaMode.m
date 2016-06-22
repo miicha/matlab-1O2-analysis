@@ -14,6 +14,8 @@ classdef SiSaMode < GenericMode
         last_fitted;
         int_time = 5;
         
+        sum_number = 1;
+        
         overlays = {};  % 1 is always the automatically generated overlay,
                         % additional overlays can be added
         overlay_num2name = {'', 'Overlay 1'};
@@ -1194,6 +1196,7 @@ classdef SiSaMode < GenericMode
             if ~strcmp(this.p.fileinfo.path, '')
                 if sum(this.data(index{:}, :))
                     i = length(this.plt);
+                    this.sum_number = 1;
                     this.plt{i+1} = SiSaPointPlot([index{:}], this);
                 end
             end
@@ -1355,6 +1358,8 @@ classdef SiSaMode < GenericMode
             n = dimensionen(end);
             auswahl = find(this.overlays{this.current_ov});
             anzahl = length(auswahl);
+            
+            this.sum_number = anzahl;
 
             auswahl = repmat(this.overlays{this.current_ov},[1 1 1 1 n]);
             

@@ -19,6 +19,7 @@ classdef SiSaGenericPlot < handle
         sisa_fit;
         sisa_fit_info;
         res;
+        ub                  % upper bounds (different from parent due to sum)
     end
     
     properties (Access = private)
@@ -33,6 +34,8 @@ classdef SiSaGenericPlot < handle
 
             this.sisa_fit_info = this.smode.sisa_fit_info;
             this.sisa_fit = this.smode.sisa_fit.copy;
+            
+            this.ub = this.smode.sisa_fit.upper_bounds;
             
             this.est_params = rand(this.sisa_fit.par_num,1);
             
@@ -389,7 +392,7 @@ classdef SiSaGenericPlot < handle
             for i = 1:this.sisa_fit.par_num
                 str = sprintf('%1.2f', this.fit_params(i));
                 
-                if length(this.smode.sisa_fit.lower_bounds) == this.sisa_fit.par_num && (abs(this.fit_params(i) - this.smode.sisa_fit.lower_bounds(i)) < 1e-4 || abs(this.fit_params(i) - this.smode.sisa_fit.upper_bounds(i)) < 1e-4)
+                if length(this.smode.sisa_fit.lower_bounds) == this.sisa_fit.par_num && (abs(this.fit_params(i) - this.smode.sisa_fit.lower_bounds(i)) < 1e-4 || abs(this.fit_params(i) - this.ub(i)) < 1e-4)
                     this.h.pe{i}.BackgroundColor = [0.8 0.4 0.4];
                 else
                     this.h.pe{i}.BackgroundColor = [0.9400 0.9400 0.9400];
@@ -425,7 +428,17 @@ classdef SiSaGenericPlot < handle
             end
             
             if length(this.smode.sisa_fit.lower_bounds) == length(start)
-                this.sisa_fit.update('lower,',this.smode.sisa_fit.lower_bounds, 'upper', this.smode.sisa_fit.upper_bounds);
+                
+                this.ub = this.smode.sisa_fit.upper_bounds;
+                
+                for i = 1:length(this.ub)
+                    if this.smode.sisa_fit.parnames{i}(1) ~= 't'
+                        this.ub(i) = this.ub(i)*this.smode.sum_number;
+                    end
+                end
+
+                this.ub
+                this.sisa_fit.update('lower,',this.smode.sisa_fit.lower_bounds, 'upper', this.ub);
             end                
             this.sisa_fit.update('start',start,'fixed',fix);
             
