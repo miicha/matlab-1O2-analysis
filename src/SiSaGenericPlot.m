@@ -430,14 +430,11 @@ classdef SiSaGenericPlot < handle
             if length(this.smode.sisa_fit.lower_bounds) == length(start)
                 
                 this.ub = this.smode.sisa_fit.upper_bounds;
-                
                 for i = 1:length(this.ub)
                     if this.smode.sisa_fit.parnames{i}(1) ~= 't'
                         this.ub(i) = this.ub(i)*this.smode.sum_number;
                     end
                 end
-
-                this.ub
                 this.sisa_fit.update('lower,',this.smode.sisa_fit.lower_bounds, 'upper', this.ub);
             end                
             this.sisa_fit.update('start',start,'fixed',fix);
