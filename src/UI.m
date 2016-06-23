@@ -299,7 +299,25 @@ classdef UI < handle
                 end
             end
             
-            this.modes{1} = SiSaMode(this, double(data));
+            reader = this.guess_channel_width();
+            this.modes{1} = SiSaMode(this, double(data),reader);
+        end
+        
+        function reader = guess_channel_width(this)
+            % try to extract channel width from filenam or path
+            reader.meta.sisa.Kanalbreite = 0.02;    % set default
+            try
+                expression = '(\d\d[\.,]?\d*)ns';
+                match = regexp(this.fileinfo.path,expression,'tokens');
+                
+                for i = 1:length(match)
+                    tmp(i) = str2double(match{i});
+                end
+                reader.meta.sisa.Kanalbreite = min(tmp)/1000;
+            catch
+            end
+            
+            
         end
         
         function set_savepath(this, path)
