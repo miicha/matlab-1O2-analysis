@@ -165,8 +165,8 @@ classdef UI < handle
             FileType = lower(FileType);
             
             switch FileType
-                case 'scanning'
-                    reader = scanning_reader(filepath);
+                case {'scanning', 'bakterien'}
+                    reader = scanning_reader(filepath, FileType);
                     fn = fieldnames(reader.meta.fileinfo);
                     for i = 1:length(fn)
                         this.fileinfo.(fn{i}) = reader.meta.fileinfo.(fn{i});
