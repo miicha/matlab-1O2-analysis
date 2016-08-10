@@ -4,3 +4,6 @@
 [submodule "3rd-party/hdf5-tools"]
 	path = 3rd-party/hdf5-tools
 	url = git@git.daten.tk:sebastian.pfitzner/hdf5-tools.git
+[submodule "3rd-party/uipickfiles"]
+	path = 3rd-party/uipickfiles
+	url = git@git.daten.tk:michael.pfitzner/uipickfiles.git

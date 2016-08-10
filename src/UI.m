@@ -61,6 +61,8 @@ classdef UI < handle
             set(this.h.menu, 'Label', 'Datei');
             uimenu(this.h.menu, 'label', 'Datei öffnen...',...
                               'callback', @this.open_file_cb);
+            uimenu(this.h.menu, 'label', 'Ordner öffnen...',...
+                              'callback', @this.open_folder_cb);
             uimenu(this.h.menu, 'label', 'Plot speichern',...
                               'callback', @this.save_fig_cb);
             uimenu(this.h.menu, 'label', 'State speichern (experimentell!)',...
@@ -124,6 +126,13 @@ classdef UI < handle
                 this.fileinfo.name = name;
                 this.openDIFF();
                 [~, n] = fileparts(name{1});
+            elseif isstruct(name)
+                % multiple selection (including multiple folders)
+                
+                this.fileinfo.name = name;
+                this.openDIFF();
+
+                [~, n] = fileparts(name(1).name);
             else
                 % single selection
                 [~, ~, ext] = fileparts(name);
@@ -267,6 +276,7 @@ classdef UI < handle
                     warndlg(['Kann das Dateiformat ' FileType ' nicht öffnen!']);
             end
 
+            this.fileinfo.name
             this.data_read = true;
         end
         
@@ -287,6 +297,21 @@ classdef UI < handle
                     data(i, 1, 1, 1,:) = d;
                 end
                 this.fileinfo.np = length(name);
+            elseif isstruct(name)
+                this.fileinfo.name = cell(length(name),1);
+                for i = 1:length(name)
+                    if name(i).isdir
+                        files = dir([name(i).name '\*.diff']);
+                        for j = 1:length(files)
+                            d = dlmread([name(i).name '\' files(j).name]);
+                            if i == 1 && j == 1
+                                data = zeros(length(name),length(files),1,1,length(d));
+                            end
+                            this.fileinfo.name{i,j} = files(j).name;
+                            data(i, j, 1, 1,:) = d;
+                        end
+                    end
+                end
             end
             this.data_read = true;
             
@@ -493,6 +518,32 @@ classdef UI < handle
                 debug_u = UI(filepath, name, get(this.h.f, 'position'));
             else
                 UI(filepath, name, get(this.h.f, 'position'));
+            end
+            close(this.h.f);
+            delete(this);
+            
+%             %% add to PATH
+%             addpath(genpath([get_executable_dir '\..\3rd-party']));
+%             addpath([get_executable_dir '\..\src']);
+        end
+        
+        function open_folder_cb(this, varargin)
+            this.loadini();
+            % get path of file from user
+            names  = uipickfiles('FilterSpec', this.openpath, 'REFilter', '\.h5$|\.diff$|\.state$', 'output', 'str');
+            
+            if ~isstruct(names) || isempty(names) % no file selected
+                return
+            end
+            filepath = [fileparts(names(1).name) '\'];
+            this.openpath = filepath;
+            this.saveini();
+            set(this.h.f, 'visible', 'off');
+            global debug_u
+            if debug_u == true
+                debug_u = UI(filepath, names, get(this.h.f, 'position'));
+            else
+                UI(filepath, names, get(this.h.f, 'position'));
             end
             close(this.h.f);
             delete(this);
