@@ -439,7 +439,8 @@ classdef SiSaGenericPlot < handle
             end                
             this.sisa_fit.update('start',start,'fixed',fix);
             
-            [p, p_err, chi, this.res] = this.sisa_fit.fit(this.data);
+            
+            [p, p_err, chi, this.res] = this.sisa_fit.fit(this.data,this.diff_data(:,2));
             
             this.fit_params = p;
             this.fit_params_err = p_err;
