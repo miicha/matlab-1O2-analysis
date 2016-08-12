@@ -439,8 +439,14 @@ classdef SiSaGenericPlot < handle
             end                
             this.sisa_fit.update('start',start,'fixed',fix);
             
-            
-            [p, p_err, chi, this.res] = this.sisa_fit.fit(this.data,this.diff_data(:,2));
+            if length(this.diff_data) > 1
+                [p, p_err, chi, this.res] = this.sisa_fit.fit(this.data_backup,this.diff_data(:,2), this.h.faktor_slider.Value);
+                if strcmp(this.sisa_fit.name, 'A*(exp(-t/t1)-exp(-t/t2))+offset+B*diff_data')
+                    this.data = this.data_backup;
+                end
+            else
+                [p, p_err, chi, this.res] = this.sisa_fit.fit(this.data);
+            end
             
             this.fit_params = p;
             this.fit_params_err = p_err;
@@ -847,17 +853,11 @@ classdef SiSaGenericPlot < handle
 
             plotdata = this.diff_data;
             plotdata = plotdata(:,2)*this.h.faktor_slider.Value;
-            
-            this.data = this.data_backup-plotdata+50;
-            
-            
+            this.data = this.data_backup-plotdata;
             
             this.plotdata();
             this.plot_raw_data([x plotdata],true)
-            
-            
-            
-            
+
             this.plot_raw_data([x this.data_backup], true)
             
             offset = mean(this.data(end-400:end));
