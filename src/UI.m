@@ -97,6 +97,10 @@ classdef UI < handle
             %% get numbers of cores and set par_size accordingly
             this.par_size = feature('numCores')*6;
             
+            %% add to PATH
+            addpath(genpath([get_executable_dir '\..\3rd-party']));
+            addpath([get_executable_dir '\..\src']);
+            
             %% init
             this.resize();
 
@@ -112,10 +116,6 @@ classdef UI < handle
         
     % functions for opening and reading various files:
         function open_file(this, path, name)
-            %% add to PATH
-            addpath(genpath([get_executable_dir '\..\3rd-party']));
-            addpath([get_executable_dir '\..\src']);
-            %%
             this.loadini();
             this.fileinfo.path = path;
             this.openpath = path;
