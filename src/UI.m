@@ -203,6 +203,7 @@ classdef UI < handle
                         % open a temperature tab
                         this.modes{i} = LaserMode(this, reader.data.laserpower);
                     end
+                    this.scale = reader.meta.scale;
                     
                 case 'in-vivo'
                     reader = invivo_reader(filepath, this);
