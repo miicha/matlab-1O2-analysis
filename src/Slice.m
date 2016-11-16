@@ -108,6 +108,9 @@ classdef Slice < handle
         function open_slice_plot(this)
             d = this.p.get_data();
             dd = this.p.get_errs();
+            if(isempty(dd))
+                dd = zeros(size(d));
+            end
             tmp = this.p.get_slice();
             d = squeeze(d(tmp{:}));
             dd = squeeze(dd(tmp{:}));
