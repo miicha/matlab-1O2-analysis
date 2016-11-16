@@ -32,6 +32,7 @@ classdef UI < handle
             this.h.f = figure();
             
             this.h.menu = uimenu(this.h.f);
+            this.h.configmenu = uimenu(this.h.f);
             this.h.helpmenu = uimenu(this.h.f);
             
             this.h.bottombar = uipanel();
@@ -67,6 +68,12 @@ classdef UI < handle
                               'callback', @this.save_fig_cb);
             uimenu(this.h.menu, 'label', 'State speichern (experimentell!)',...
                               'callback', @this.save_global_state_cb);
+                          
+            this.h.configmenu.Label = 'Einstellungen';
+            this.h.config_read_fluo = uimenu(this.h.configmenu,...
+                              'label', 'Fluoreszenz einlesen',...
+                              'callback', @this.config_read_fluo_cb);
+            
             set(this.h.helpmenu, 'Label', '?');
             uimenu(this.h.helpmenu, 'label', 'Über',...
                                   'Callback', @this.open_versioninfo_cb);
@@ -173,9 +180,15 @@ classdef UI < handle
             
             FileType = lower(FileType);
             
+            if strcmp(this.h.config_read_fluo.Checked,'on')
+                readfluo = true;
+            else
+                readfluo = false;
+            end
+            
             switch FileType
                 case {'scanning', 'bakterien'}
-                    reader = scanning_reader(filepath, FileType);
+                    reader = scanning_reader(filepath, FileType, readfluo);
                     fn = fieldnames(reader.meta.fileinfo);
                     for i = 1:length(fn)
                         this.fileinfo.(fn{i}) = reader.meta.fileinfo.(fn{i});
@@ -437,6 +450,9 @@ classdef UI < handle
                 else
                     this.savepath = [p filesep()];
                 end
+                if isfield(conf, 'read_fluo')
+                    this.h.config_read_fluo.Checked = conf.read_fluo;
+                end
             else
                 this.openpath = [p filesep()];
                 this.savepath = [p filesep()];
@@ -448,6 +464,7 @@ classdef UI < handle
             strct.version = this.version;
             strct.openpath = this.openpath;
             strct.savepath = this.savepath;
+            strct.read_fluo = this.h.config_read_fluo.Checked;
 
             writeini([p filesep() 'config.ini'], strct);
         end
@@ -574,7 +591,16 @@ classdef UI < handle
             
             this_new = this;
             save([path name], 'this_new');
-        end 
+        end
+        
+        function config_read_fluo_cb(this,varargin)
+            if strcmp(this.h.config_read_fluo.Checked,'on')
+                this.h.config_read_fluo.Checked = 'off';
+            else
+                this.h.config_read_fluo.Checked = 'on';
+            end
+            this.saveini();            
+        end
         
         function destroy_cb(this, varargin)
             this.destroy(false);
