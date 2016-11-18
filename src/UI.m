@@ -220,7 +220,7 @@ classdef UI < handle
                             otherwise
                                 warndlg(['Kann das Dateiformat ' FileType ' nicht öffnen!']);
                         end
-                    case 'fluo'
+                    case {'fluo', 'spec'}
                         % open a fluorescence tab
                         this.modes{end+1} = FluoMode(this, reader.get_fluo_data(),...
                             reader.get_fluo_x_achse(),...
