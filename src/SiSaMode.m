@@ -92,12 +92,12 @@ classdef SiSaMode < GenericMode
             
             if nargin < 3
                 reader = struct();
+                reader.meta.int_time = 1000;
             end
             
             this.reader = reader;
             this.p = parent;
-            
-            if isfield(reader, 'meta.sisa') && isfield(reader.meta.sisa, 'int_time')
+            if isfield(reader.meta, 'sisa') && isfield(reader.meta.sisa, 'int_time')
                 this.int_time = reader.meta.sisa.int_time/1000;
             else
                 this.int_time = this.p.scale(4)*ones(size(data(:, :, :, :, 1)));
