@@ -10,42 +10,47 @@ classdef FluoMode < GenericMode
     
     methods
         function this = FluoMode(parent, data, wavelengths, int_time)
-            if nargin < 3
-                wavelengths = 1:size(data, 5);
-                int_time = 100;
-            end                
-                
-            this.p = parent;
-            this.data = data;
-            this.num_spec_points = size(data, 5);
-            this.wavelengths = wavelengths;
             
-            this.scale = this.p.scale;
-            this.units = this.p.units;
-            
-            this.scale(4) = int_time/1000;
-            this.units{4} = 't [s]';
-            this.units{5} = 'nm';
-            
-            this.h.parent = parent.h.modepanel;
-            
-            this.h.fluomode = uitab(this.h.parent);
-            
-            this.h.plotpanel = uipanel(this.h.fluomode);
-            
-            set(this.h.fluomode, 'title', 'Fluoreszenz',...
-                                 'tag', '2');
-                        
-            %% Plot
-            set(this.h.plotpanel, 'units', 'pixels',...
-                                'position', [5 5 500 500],...
-                                'bordertype', 'line',...
-                                'highlightcolor', [.7 .7 .7],...
-                                'BackgroundColor', [.85 .85 .85]);
-                            
-            this.plotpanel = FluoPanel(this, size(data), this.h.plotpanel);
-            this.resize();
-            this.plot_array();
+            if ~data
+                warning('Keine Fluodaten vorhanden')
+            else
+                if nargin < 3
+                    wavelengths = 1:size(data, 5);
+                    int_time = 100;
+                end                
+
+                this.p = parent;
+                this.data = data;
+                this.num_spec_points = size(data, 5);
+                this.wavelengths = wavelengths;
+
+                this.scale = this.p.scale;
+                this.units = this.p.units;
+
+                this.scale(4) = int_time/1000;
+                this.units{4} = 't [s]';
+                this.units{5} = 'nm';
+
+                this.h.parent = parent.h.modepanel;
+
+                this.h.fluomode = uitab(this.h.parent);
+
+                this.h.plotpanel = uipanel(this.h.fluomode);
+
+                set(this.h.fluomode, 'title', 'Fluoreszenz',...
+                                     'tag', '2');
+
+                %% Plot
+                set(this.h.plotpanel, 'units', 'pixels',...
+                                    'position', [5 5 500 500],...
+                                    'bordertype', 'line',...
+                                    'highlightcolor', [.7 .7 .7],...
+                                    'BackgroundColor', [.85 .85 .85]);
+
+                this.plotpanel = FluoPanel(this, size(data), this.h.plotpanel);
+                this.resize();
+                this.plot_array();
+            end
         end
         
         function save_fig(this, varargin)

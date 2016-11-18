@@ -843,7 +843,7 @@ classdef SiSaMode < GenericMode
                 ps = sf.estimate(d);
                 this.est_params(i, j, k, l, :) = ps;
                 if mod(curr_p, round(this.p.fileinfo.np/20)) == 0
-                    this.p.update_infos(['   |   Parameter abschÃ¤tzen ' num2str(curr_p) '/' num2str(this.p.fileinfo.np) '.']);
+                    this.p.update_infos(['   |   Parameter abschätzen ' num2str(curr_p) '/' num2str(this.p.fileinfo.np) '.']);
                 end
                 for m = 1:length(ps) % find biggest and smallest params
                     if ps(m) > ub(m)
