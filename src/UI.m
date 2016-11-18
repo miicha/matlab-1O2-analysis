@@ -173,7 +173,18 @@ classdef UI < handle
             else
                 readfluo = false;
             end
-            reader = HDF5_reader.read(filepath, readfluo);
+            
+            % Daten einlesen (abhängig von Einstellungen)
+            reader = HDF5_reader(filepath);
+            reader.readfluo = readfluo;
+            
+            reader.set_progress_cb(@this.update_infos);
+            tic
+            reader.read_data();
+            toc
+%             reader.meta.fileinfo
+            
+            
             fn = fieldnames(reader.meta.fileinfo);
             for i = 1:length(fn)
                 this.fileinfo.(fn{i}) = reader.meta.fileinfo.(fn{i});
@@ -211,16 +222,9 @@ classdef UI < handle
                         end
                     case 'fluo'
                         % open a fluorescence tab
-                        switch FileType
-                            case {'scanning', 'bakterien'}
-                                this.modes{end+1} = FluoMode(this, double(reader.data.fluo),...
-                                    reader.meta.fluo.x_achse,...
-                                    reader.meta.fluo.int_time);
-                            case {'in-vivo', 'in-vivo-dual'}
-                                this.modes{end+1} = FluoMode(this, double(reader.data.fluo.data),...
-                                                       reader.meta.fluo.x_achse,...
-                                                       reader.meta.fluo.int_time);
-                        end
+                        this.modes{end+1} = FluoMode(this, reader.get_fluo_data(),...
+                            reader.get_fluo_x_achse(),...
+                            reader.get_fluo_int_time());
                     case 'temp'
                         % open a temperature tab
                         this.modes{end+1} = TempMode(this, double(reader.data.temp));
