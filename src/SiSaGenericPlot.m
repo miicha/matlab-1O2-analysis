@@ -16,6 +16,7 @@ classdef SiSaGenericPlot < handle
         diff_data;
         data_backup;
         plot_limits;
+        plot_limits_default;
         sisa_fit;
         sisa_fit_info;
         res;
@@ -45,11 +46,13 @@ classdef SiSaGenericPlot < handle
             minSize = [850 650];
             
             this.h.toolbar=findall( this.h.f,'type','uitoolbar');
-            this.h.xy_zoom = uitoggletool(this.h.toolbar,'cdata',rand(16,16,3), ...
-                'tooltip','XY-Zoom', 'OnCallback',@this.xy_zoom, 'OffCallback',@this.reset_zoom);
-            this.h.x_zoom = uitoggletool(this.h.toolbar,'cdata',rand(16,16,3), ...
-                'tooltip','X-Zoom', 'OnCallback',@this.x_zoom, 'OffCallback',@this.reset_zoom);
-            
+            this.h.xy_zoom = uitoggletool(this.h.toolbar, 'cdata', lrudarrow(),...
+                                          'tooltip', 'XY-Zoom', 'OnCallback', @this.xy_zoom_cb,...
+                                          'OffCallback', @this.reset_zoom_cb);
+            this.h.x_zoom = uitoggletool(this.h.toolbar, 'cdata', lrarrow(),...
+                                         'tooltip','X-Zoom', 'OnCallback', @this.x_zoom_cb,...
+                                         'OffCallback', @this.reset_zoom_cb);
+
             this.h.axes = axes();
             this.h.res = axes();
             
@@ -287,12 +290,14 @@ classdef SiSaGenericPlot < handle
             
 
             if ~realtime             
-                ylim([mini m]);
+                ylim([0 m]);
                 xlim([min(x_ges)-1 max(x_ges)+1]);
                 if this.fitted
                     this.plotfit();
                 end
             end
+            this.plot_limits_default.Y = [0 m];
+            this.plot_limits_default.X = [min(x_ges)-1 max(x_ges)+1];
         end
         
         function plot_raw_data(this, data, add, varargin)
@@ -452,29 +457,34 @@ classdef SiSaGenericPlot < handle
             this.plotdata();
         end
         
-        function xy_zoom(this, varargin)            
+        function xy_zoom_cb(this, varargin)
+            this.h.x_zoom.State = 'off';
             this.y_zoom()
             this.x_zoom()
         end
         
-        function y_zoom(this, varargin)            
+        function x_zoom_cb(this, varargin)
+            this.h.xy_zoom.State = 'off';
+            this.x_zoom();
+            this.h.axes.YLim = this.plot_limits_default.Y;
+        end
+        
+        function y_zoom(this)      
             y_max = max(this.data);
             this.plot_limits.Y = this.h.axes.YLim;
             this.h.axes.YLim = [0 y_max];
         end
         
-        function x_zoom(this, varargin)
+        function x_zoom(this)
             x_min = this.sisa_fit.t_0*this.sisa_fit.cw;
             x_max = 5*this.sisa_fit.t_0*this.sisa_fit.cw;  
             this.plot_limits.X = this.h.axes.XLim;
             this.h.axes.XLim = [-x_min x_max];
         end
         
-        function reset_zoom(this, varargin)            
-            this.h.axes.XLim = this.plot_limits.X;
-            if isfield(this.plot_limits, 'Y')
-                this.h.axes.YLim = this.plot_limits.Y;
-            end
+        function reset_zoom_cb(this, varargin)
+            this.h.axes.XLim = this.plot_limits_default.X;
+            this.h.axes.YLim = this.plot_limits_default.Y;
         end
         
         function read_and_calc_quant(this, varargin)
@@ -894,3 +904,42 @@ classdef SiSaGenericPlot < handle
     
 end
 
+function img = lrarrow()
+    img = [1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1
+           1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1
+           0 1 1 1 1 1 1 1 1 1 1 1 1 1 1 0
+           0 1 1 1 1 1 1 1 1 1 1 1 1 1 1 0
+           0 1 1 1 1 1 1 1 1 1 1 1 1 1 1 0
+           0 1 1 0 1 1 1 1 1 1 1 1 0 1 1 0
+           0 1 0 1 1 1 1 1 1 1 1 1 1 0 1 0
+           0 0 1 1 1 1 1 1 1 1 1 1 1 1 0 0
+           0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+           0 0 1 1 1 1 1 1 1 1 1 1 1 1 0 0
+           0 1 0 1 1 1 1 1 1 1 1 1 1 0 1 0
+           0 1 1 0 1 1 1 1 1 1 1 1 0 1 1 0
+           0 1 1 1 1 1 1 1 1 1 1 1 1 1 1 0
+           0 1 1 1 1 1 1 1 1 1 1 1 1 1 1 0
+           1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1
+           1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1];
+    img = repmat(img, 1, 1, 3);
+end
+
+function img = lrudarrow()
+    img = [1 1 1 1 0 0 0 0 0 0 0 1 1 1 1 1
+           1 1 1 1 1 1 0 0 0 1 1 1 1 1 1 1
+           1 1 1 1 1 0 1 0 1 0 1 1 1 1 1 1
+           1 1 1 1 1 1 1 0 1 1 1 1 1 1 1 1
+           1 1 1 1 1 1 1 0 1 1 1 1 1 1 1 1
+           0 1 1 1 1 1 1 0 1 1 1 1 1 1 1 0
+           0 1 0 1 1 1 1 0 1 1 1 1 1 0 1 0
+           0 0 1 1 1 1 1 0 1 1 1 1 1 1 0 0
+           0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+           0 0 1 1 1 1 1 0 1 1 1 1 1 1 0 0
+           0 1 0 1 1 1 1 0 1 1 1 1 1 0 1 0
+           0 1 1 1 1 1 1 0 1 1 1 1 1 1 1 0
+           1 1 1 1 1 1 1 0 1 1 1 1 1 1 1 1
+           1 1 1 1 1 0 1 0 1 0 1 1 1 1 1 1
+           1 1 1 1 1 1 0 0 0 1 1 1 1 1 1 1
+           1 1 1 1 0 0 0 0 0 0 0 1 1 1 1 1];
+    img = repmat(img, 1, 1, 3);
+end
