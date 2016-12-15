@@ -90,6 +90,8 @@ classdef SiSaGenericPlot < handle
                          'menubar', 'none',...
                          'toolbar', 'figure',...
                          'ResizeFcn', @this.resize);
+            
+            this.h.toolbar
                      
             toolbar_pushtools = findall(this.h.toolbar, 'Type', 'uipushtool');
             toolbar_toggletools = findall(this.h.toolbar, 'Type', 'uitoggletool');
@@ -921,6 +923,7 @@ function img = lrarrow()
            0 1 1 1 1 1 1 1 1 1 1 1 1 1 1 0
            1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1
            1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1];
+    img(img == 1) = 0.95;
     img = repmat(img, 1, 1, 3);
 end
 
@@ -941,5 +944,6 @@ function img = lrudarrow()
            1 1 1 1 1 0 1 0 1 0 1 1 1 1 1 1
            1 1 1 1 1 1 0 0 0 1 1 1 1 1 1 1
            1 1 1 1 0 0 0 0 0 0 0 1 1 1 1 1];
+    img(img == 1) = 0.95;
     img = repmat(img, 1, 1, 3);
 end
