@@ -397,14 +397,11 @@ classdef SiSaGenericPlot < handle
                 else
                     this.h.pe{i}.BackgroundColor = [0.9400 0.9400 0.9400];
                 end
-                    
-                
+
                 set(this.h.pe{i}, 'string', str);
-                if this.fit_params_err(i) < this.fit_params(i)
-                    str = sprintf('+-%1.2f', this.fit_params_err(i));   
-                else 
-                    str = '+-NaN';   
-                end
+                
+                str = sprintf('±%1.2f', this.fit_params_err(i));   
+
                 set(this.h.pd{i}, 'string', str,'tooltipString', '95% Konfidenz');
             end
             tmp = get(this.h.gof, 'string');
@@ -551,7 +548,7 @@ classdef SiSaGenericPlot < handle
                                                       'position', [10+(i-1)*100 25 45 20]);
                  this.h.pd{i} = uicontrol(this.h.param, 'units', 'pixels',...
                                                       'style', 'text',...
-                                                      'string', '+-',...
+                                                      'string', '±',...
                                                       'HorizontalAlignment', 'left',...
                                                       'position', [55+(i-1)*100 22 40 20]); 
                  this.h.pc{i} = uicontrol(this.h.param, 'units', 'pixels',...
