@@ -45,7 +45,7 @@ classdef SiSaGenericPlot < handle
             this.h.f = figure();
             minSize = [850 650];
             
-            this.h.toolbar=findall( this.h.f,'type','uitoolbar');
+            this.h.toolbar = findall(this.h.f,'type','uitoolbar');
             this.h.xy_zoom = uitoggletool(this.h.toolbar, 'cdata', lrudarrow(),...
                                           'tooltip', 'XY-Zoom', 'OnCallback', @this.xy_zoom_cb,...
                                           'OffCallback', @this.reset_zoom_cb);
@@ -91,8 +91,6 @@ classdef SiSaGenericPlot < handle
                          'toolbar', 'figure',...
                          'ResizeFcn', @this.resize);
             
-            this.h.toolbar
-                     
             toolbar_pushtools = findall(this.h.toolbar, 'Type', 'uipushtool');
             toolbar_toggletools = findall(this.h.toolbar, 'Type', 'uitoggletool');
             set(findall(toolbar_pushtools, 'Tag', 'Plottools.PlottoolsOn'), 'visible', 'off');
