@@ -21,6 +21,7 @@ classdef UI < handle
         genericname;
         openpath; % persistent, in ini
         savepath; % persistent, in ini
+        open_nsTAS_path; % persistent, in ini
 
         h = struct();        % handles
     end
@@ -64,6 +65,8 @@ classdef UI < handle
                               'callback', @this.open_file_cb);
             uimenu(this.h.menu, 'label', 'Ordner öffnen...',...
                               'callback', @this.open_folder_cb);
+            uimenu(this.h.menu, 'label', 'nsTAS Datei öffnen...',...
+                              'callback', @this.open_nsTAS_cb);
             uimenu(this.h.menu, 'label', 'Plot speichern',...
                               'callback', @this.save_fig_cb);
             uimenu(this.h.menu, 'label', 'State speichern (experimentell!)',...
@@ -201,11 +204,11 @@ classdef UI < handle
                         % open a SiSa tab
                         switch FileType
                             case {'scanning', 'bakterien'}
-                                this.modes{end+1} = SiSaMode(this, double(reader.data.sisa), reader);
+                                this.modes{end+1} = SiSaMode(this, reader.data.sisa, reader);
                             case 'in-vivo'
                                 tmp = size(reader.data.sisa.data);
                                 this.fileinfo.size = tmp(1:4);
-                                this.modes{end+1} = InvivoMode(this, double(reader.data.sisa.data),...
+                                this.modes{end+1} = InvivoMode(this, reader.data.sisa.data,...
                                                          reader.data.sisa.verlauf,...
                                                          reader.meta.sisa.int_time, reader);
                             case 'in-vivo-dual'
@@ -227,7 +230,7 @@ classdef UI < handle
                             reader.get_fluo_int_time());
                     case 'temp'
                         % open a temperature tab
-                        this.modes{end+1} = TempMode(this, double(reader.data.temp));
+                        this.modes{end+1} = TempMode(this, reader.data.temp);
                     case 'laserpower'
                         this.modes{end+1} = LaserMode(this, reader.data.laserpower);
                 end
@@ -417,6 +420,7 @@ classdef UI < handle
             p = get_executable_dir();
             strct.version = this.version;
             strct.openpath = this.openpath;
+            strct.open_nsTAS_path = this.open_nsTAS_path;
             strct.savepath = this.savepath;
             strct.read_fluo = this.h.config_read_fluo.Checked;
 
@@ -523,6 +527,94 @@ classdef UI < handle
 %             %% add to PATH
 %             addpath(genpath([get_executable_dir '\..\3rd-party']));
 %             addpath([get_executable_dir '\..\src']);
+        end
+        
+        
+        function open_nsTAS(this)
+            name = this.fileinfo.name;
+            if iscell(name)
+                for i = 1:length(name)
+                    this.fileinfo.size = [length(name), 1, 1];
+                    d = dlmread([this.fileinfo.path name{i}]);
+                    if i > 1
+                        if length(d) > size(data, 5)
+                            d = d(1:size(data, 5));
+                            this.update_infos(['    |    Länge der Daten ungleich in ' name{i}]);
+                        elseif length(d) < size(data, 5)
+                            d = [d; zeros(size(data, 5) - length(d),1)];
+                        end
+                    end
+                    data(i, 1, 1, 1,:) = d;
+                end
+                this.fileinfo.np = length(name);
+            elseif isstruct(name)
+                this.fileinfo.name = cell(length(name),1);
+                for i = 1:length(name)
+                    if name(i).isdir
+                        files = dir([name(i).name '\*.diff']);
+                        for j = 1:length(files)
+                            d = dlmread([name(i).name '\' files(j).name]);
+                            if i == 1 && j == 1
+                                data = zeros(length(name),length(files),1,1,length(d));
+                            end
+                            this.fileinfo.name{i,j} = files(j).name;
+                            data(i, j, 1, 1,:) = d;
+                        end
+                    end
+                end
+            end
+            this.data_read = true;
+            
+            tmp = size(data);
+            this.fileinfo.size = tmp(1:4);
+            
+            for i = 1:length(name)
+                if mod(i, round(length(name)/10)) == 0
+                    this.update_infos(['   |   Metadaten einlesen ' num2str(i) '.']);
+                end
+            end
+            
+            reader = this.guess_channel_width();
+            this.modes{1} = SiSaMode(this, double(data),reader);
+        end
+        
+        
+        function open_nsTAS_cb(this,varargin)
+            this.loadini();
+            [name, filepath] = uigetfile({[this.open_nsTAS_path '*.txt;*.diff']}, 'Dateien auswählen', 'MultiSelect', 'on');
+            if (~ischar(name) && ~iscell(name)) || ~ischar(filepath) % no file selected
+                return
+            end
+            
+            this.open_nsTAS_path = filepath;
+            this.saveini();
+            
+            if ~iscell(name)
+                name = {name};
+            end
+            
+            for i = 1:length(name)
+                this.fileinfo.size = [length(name), 1, 1];
+                d = import_nsTAS([filepath '\' name{i}],1);
+                %                     d(:,1) = data(:,1)*10^6;
+                %                     d = dlmread([this.fileinfo.path name{i}]);
+                if i > 1
+                    if length(d) > size(data, 5)
+                        d = d(1:size(data, 5));
+                        this.update_infos(['    |    Länge der Daten ungleich in ' name{i}]);
+                    elseif length(d) < size(data, 5)
+                        d = [d; zeros(size(data, 5) - length(d),1)];
+                    end
+                end
+                data(i, 1, 1, 1,:) = d(:,2);
+                x_data(i, 1, 1, 1,:) = d(:,1)*10^6;
+                err(i, 1, 1, 1,:) = d(:,3);
+            end
+            this.fileinfo.np = length(name);
+            
+            
+            this.modes{end+1} = nsTASMode(this,data,x_data,err);
+            
         end
         
         % punt to current mode to handle everything
