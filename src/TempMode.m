@@ -3,7 +3,7 @@ classdef TempMode < GenericMode
     % Platzhalter. Macht was draus! :)
     
     methods
-        function this = TempMode(parent, data)
+        function this = TempMode(parent, data, tag)
             this.p = parent;
             data(data == 0) = nan;
             this.data = data;
@@ -15,7 +15,7 @@ classdef TempMode < GenericMode
             this.h.plotpanel = uipanel(this.h.tempmode);
             
             set(this.h.tempmode, 'title', 'Temperatur',...
-                                 'tag', '3');
+                                 'tag', num2str(tag));
                              
             %% Plot
             set(this.h.plotpanel, 'units', 'pixels',...

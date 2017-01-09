@@ -204,36 +204,37 @@ classdef UI < handle
                         % open a SiSa tab
                         switch FileType
                             case {'scanning', 'bakterien'}
-                                this.modes{end+1} = SiSaMode(this, reader.data.sisa, reader);
+                                this.modes{i} = SiSaMode(this, reader.data.sisa, reader, i);
                             case 'in-vivo'
                                 tmp = size(reader.data.sisa.data);
                                 this.fileinfo.size = tmp(1:4);
-                                this.modes{end+1} = InvivoMode(this, reader.data.sisa.data,...
+                                this.modes{i} = InvivoMode(this, reader.data.sisa.data,...
                                                          reader.data.sisa.verlauf,...
-                                                         reader.meta.sisa.int_time, reader);
+                                                         reader.meta.sisa.int_time, reader, i);
                             case 'in-vivo-dual'
                                 tmp = size(reader.data.sisa_1270.data);
                                 this.fileinfo.size = tmp(1:4);
-                                this.modes{end+1} = InvivoMode(this, double(reader.data.sisa_1211.data(1:tmp(1), 1:tmp(2), 1:tmp(3), 1:tmp(4), :)),...
+                                this.modes{i} = InvivoMode(this, double(reader.data.sisa_1211.data(1:tmp(1), 1:tmp(2), 1:tmp(3), 1:tmp(4), :)),...
                                                          reader.data.sisa_1211.verlauf,...
-                                                         reader.meta.sisa.int_time, reader);
-                                this.modes{end+1} = InvivoMode(this, double(reader.data.sisa_1270.data),...
+                                                         reader.meta.sisa.int_time, reader, i);
+                                this.modes{i} = InvivoMode(this, double(reader.data.sisa_1270.data),...
                                                          reader.data.sisa_1270.verlauf,...
-                                                         reader.meta.sisa.int_time, reader);
+                                                         reader.meta.sisa.int_time, reader, i);
                             otherwise
                                 warndlg(['Kann das Dateiformat ' FileType ' nicht öffnen!']);
                         end
                     case {'fluo', 'spec'}
                         % open a fluorescence tab
-                        this.modes{end+1} = FluoMode(this, reader.get_fluo_data(),...
+                        this.modes{i} = FluoMode(this, reader.get_fluo_data(),...
                             reader.get_fluo_x_achse(),...
-                            reader.get_fluo_int_time());
+                            reader.get_fluo_int_time(), i);
                     case 'temp'
                         % open a temperature tab
-                        this.modes{end+1} = TempMode(this, reader.data.temp);
+                        this.modes{i} = TempMode(this, reader.data.temp, i);
                     case 'laserpower'
-                        this.modes{end+1} = LaserMode(this, reader.data.laserpower);
+                        this.modes{i} = LaserMode(this, reader.data.laserpower, i);
                 end
+                i = i + 1;
             end
             switch FileType
                 case {'in-vivo', 'in-vivo-dual'}

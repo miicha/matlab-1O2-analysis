@@ -3,7 +3,7 @@ classdef LaserMode < GenericMode
     % Platzhalter. Macht was draus! :)
     
     methods
-        function this = LaserMode(parent, data)
+        function this = LaserMode(parent, data, tag)
             this.p = parent;
             data(data == 0) = nan;
             this.data = data;
@@ -21,7 +21,7 @@ classdef LaserMode < GenericMode
             this.h.plotpanel = uipanel(this.h.lasermode);
             
             set(this.h.lasermode, 'title', 'Laser-Leistung',...
-                                 'tag', '4');
+                                 'tag', num2str(tag));
                              
             %% Plot
             set(this.h.plotpanel, 'units', 'pixels',...

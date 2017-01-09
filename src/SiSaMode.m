@@ -88,7 +88,7 @@ classdef SiSaMode < GenericMode
     end
     
     methods
-        function this = SiSaMode(parent, data, reader)
+        function this = SiSaMode(parent, data, reader, tag)
             
             if nargin < 3
                 reader = struct();
@@ -169,7 +169,7 @@ classdef SiSaMode < GenericMode
             dims = size(data);
                                 
             set(this.h.sisamode, 'title', 'SiSa-Lumineszenz',...
-                                 'tag', '1',...
+                                 'tag', num2str(tag),...
                                  'SizeChangedFcn', @this.resize);
                 %% Plot
             set(this.h.plotpanel, 'units', 'pixels',...
