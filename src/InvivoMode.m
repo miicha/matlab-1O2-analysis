@@ -8,8 +8,8 @@ classdef InvivoMode < SiSaMode
     end
     
     methods
-        function this = InvivoMode(parent, data, evo_data, int_time, reader)
-            this@SiSaMode(parent, data, reader);
+        function this = InvivoMode(parent, data, evo_data, int_time, reader, tag)
+            this@SiSaMode(parent, data, reader, tag);
             
             this.scale(4) = int_time;
             this.units{4} = 's';

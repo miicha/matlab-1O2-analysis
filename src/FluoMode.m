@@ -9,9 +9,9 @@ classdef FluoMode < GenericMode
     end
     
     methods
-        function this = FluoMode(parent, data, wavelengths, int_time)
+        function this = FluoMode(parent, data, wavelengths, int_time, tag)
             
-            if ~data
+            if isempty(data)
                 warning('Keine Fluodaten vorhanden')
             else
                 if nargin < 3
@@ -38,7 +38,7 @@ classdef FluoMode < GenericMode
                 this.h.plotpanel = uipanel(this.h.fluomode);
 
                 set(this.h.fluomode, 'title', 'Fluoreszenz',...
-                                     'tag', '2');
+                                     'tag', num2str(tag));
 
                 %% Plot
                 set(this.h.plotpanel, 'units', 'pixels',...
