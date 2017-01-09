@@ -297,7 +297,7 @@ classdef UI < handle
             end
             
             reader = this.guess_channel_width();
-            this.modes{1} = SiSaMode(this, double(data),reader);
+            this.modes{1} = SiSaMode(this, double(data),reader,1);
         end
         
         function reader = guess_channel_width(this)
