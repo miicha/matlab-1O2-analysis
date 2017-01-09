@@ -327,7 +327,7 @@ classdef SiSaMode < GenericMode
                                'highlightcolor', [.7 .7 .7],...
                                'FontSize', 9);
 
-            % select fit model
+            %% select fit model
             set(this.h.fittxt, 'units', 'pixels',...
                              'style', 'text',...
                              'position', [15 220 50 15],...
@@ -408,7 +408,7 @@ classdef SiSaMode < GenericMode
                              'string', 'Export Fit',...
                              'callback', @this.export_fit_cb);
                          
-            % info about the selected data
+            %% info about the selected data
             set(this.h.sel_values, 'units', 'pixels',...
                                    'bordertype', 'line',...
                                    'highlightcolor', [.7 .7 .7],...
@@ -499,7 +499,7 @@ classdef SiSaMode < GenericMode
             s = num2cell(size(this.est_params));
             this.fit_chisq = nan(s{1:4});
             
-            %% Hintergrundfarbe abhängig von DetektionswellenlÃ¤nge
+            %% Hintergrundfarbe abhängig von Detektionswellenlänge
             if isfield(reader, 'meta') && isfield(reader.meta, 'sisa') && isfield(reader.meta.sisa, 'Optik')
                 if reader.meta.sisa.Optik == 1270
                     set(this.h.sisamode, 'background', [0.8 0.2 0.2]);
@@ -592,7 +592,7 @@ classdef SiSaMode < GenericMode
                
         function name = get_parname(this, index)
             fitpars = this.sisa_fit_info.par_names{this.model_number};
-            if index == length(fitpars + 1)
+            if index == length(fitpars) + 1
                 name = 'A_korr';
                 return
             elseif index > length(fitpars)

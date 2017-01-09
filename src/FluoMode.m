@@ -11,7 +11,7 @@ classdef FluoMode < GenericMode
     methods
         function this = FluoMode(parent, data, wavelengths, int_time)
             
-            if ~data
+            if isnan(data)
                 warning('Keine Fluodaten vorhanden')
             else
                 if nargin < 3
