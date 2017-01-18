@@ -113,6 +113,7 @@ classdef UI < handle
             
             %% init
             this.resize();
+            this.loadini();
 
             if nargin > 1
                 if nargin == 3
@@ -184,7 +185,7 @@ classdef UI < handle
             reader.set_progress_cb(@this.update_infos);
             tic
             reader.read_data();
-            toc
+            reading_time = toc
 %             reader.meta.fileinfo
             
             
@@ -223,18 +224,22 @@ classdef UI < handle
                             otherwise
                                 warndlg(['Kann das Dateiformat ' FileType ' nicht öffnen!']);
                         end
+                        i = i + 1;
                     case {'fluo', 'spec'}
-                        % open a fluorescence tab
-                        this.modes{i} = FluoMode(this, reader.get_fluo_data(),...
-                            reader.get_fluo_x_achse(),...
-                            reader.get_fluo_int_time(), i);
+                        if readfluo % open a fluorescence tab
+                            this.modes{i} = FluoMode(this, reader.get_fluo_data(),...
+                                reader.get_fluo_x_achse(),...
+                                reader.get_fluo_int_time(), i);
+                            i = i + 1;
+                        end
                     case 'temp'
                         % open a temperature tab
                         this.modes{i} = TempMode(this, reader.data.temp, i);
+                        i = i + 1;
                     case 'laserpower'
                         this.modes{i} = LaserMode(this, reader.data.laserpower, i);
+                        i = i + 1;
                 end
-                i = i + 1;
             end
             switch FileType
                 case {'in-vivo', 'in-vivo-dual'}

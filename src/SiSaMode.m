@@ -90,6 +90,9 @@ classdef SiSaMode < GenericMode
     methods
         function this = SiSaMode(parent, data, reader, tag)
             
+            if nargin < 4
+                tag = 1;
+            end
             if nargin < 3
                 reader = struct();
                 reader.meta.int_time = 1000;
@@ -856,11 +859,20 @@ classdef SiSaMode < GenericMode
             end
             this.data_sum = sum(this.data(:, :, :, :, (this.t_zero+this.t_offset):end), 5);
             this.fitted = false;
-                          
-            % set bounds from estimated parameters            
-            this.sisa_fit.update('upper', ub*1.5, 'lower', lb*0.5);
+            
             
             this.gstart = (ub+lb)./2;
+            
+            if sf.curr_fitfun == 16
+                lb(end) = 0;
+                ub(end) = 1/2;
+                this.gstart(end) = 0.8;
+            end
+            
+            % set bounds from estimated parameters            
+            this.sisa_fit.update('upper', ub*2, 'lower', lb*0.5);
+            
+            
             
             this.update_fit_options_field();
             this.p.update_infos();
