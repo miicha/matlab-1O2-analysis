@@ -528,6 +528,7 @@ classdef PlotPanel < handle
                        
             this.update_sliders();
             this.update_plot();
+            this.resize();
         end
 
         function value = set_nth_val(this, dim, value)
@@ -593,10 +594,47 @@ classdef PlotPanel < handle
             
             pP = get(this.h.plotpanel, 'Position');
             pP(3:4) = [(mP(3)-pP(1)) (mP(4)-pP(2))-35];
-            set(this.h.plotpanel, 'Position', pP);
+            pP_orig = pP;
+            
+            if strcmp(this.p.p.h.config_keep_AR.Checked, 'on')
+                t = this.get_data();
+                t = size(t(this.ind{:}));
+                j = 0;
+                vis_dim = [0 0];
+                for i = 1:length(this.ind)
+                    if strcmp(this.ind{i},':')
+                        j = j+1;
+                        vis_dim(j) = i;
+                    end
+                end
+                if this.transpose
+                    x_size = t(2)*this.p.scale(vis_dim(1));
+                    y_size = t(1)*this.p.scale(vis_dim(2));
+                else
+                    x_size = t(1)*this.p.scale(vis_dim(2));
+                    y_size = t(2)*this.p.scale(vis_dim(1));
+                end
+                
+                
+                
+                if pP(3)/pP(4) > x_size/y_size
+                    pP(3) = x_size/y_size*pP(4);
+                else
+                    pP(4) = y_size/x_size*pP(3);
+                end
+                
+            end
 
             aP = get(this.h.axes, 'Position');
             aP(4) = (pP(4)-aP(2))-5;
+            
+
+            if aP(4) < 20
+                aP(4) = (pP_orig(4)-aP(2))-5;
+                pP = pP_orig;
+            end
+
+            set(this.h.plotpanel, 'Position', pP);
             set(this.h.axes, 'Position', aP);
             
             j = 0;

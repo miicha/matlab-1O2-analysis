@@ -76,6 +76,9 @@ classdef UI < handle
             this.h.config_read_fluo = uimenu(this.h.configmenu,...
                               'label', 'Fluoreszenz einlesen',...
                               'callback', @this.config_read_fluo_cb);
+            this.h.config_keep_AR = uimenu(this.h.configmenu,...
+                              'label', 'keep aspect ratio',...
+                              'callback', @this.config_keep_AR_cb);
             
             set(this.h.helpmenu, 'Label', '?');
             uimenu(this.h.helpmenu, 'label', 'Über',...
@@ -652,6 +655,16 @@ classdef UI < handle
                 this.h.config_read_fluo.Checked = 'on';
             end
             this.saveini();            
+        end
+        
+        function config_keep_AR_cb(this,varargin)
+            if strcmp(this.h.config_keep_AR.Checked,'on')
+                this.h.config_keep_AR.Checked = 'off';
+            else
+                this.h.config_keep_AR.Checked = 'on';
+            end
+            this.resize();  % ToDo checken warum das nicht funktioniert
+            this.saveini();
         end
         
         function destroy_cb(this, varargin)
