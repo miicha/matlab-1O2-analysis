@@ -1,2 +1,10 @@
+v 0.4.5
+- Summensignale: Grenzen ordentlich setzen
+- Bakterien und Scan 1.4 Files einlesen
+- hübschere Zoom-Buttons
+- SiSa Singleplot Kosmetik: Feheler werden ordentlich angezeigt
+- bei Änderung der Fenstergröße kann Aspect Ratio beibehalten werden
+- Bugfixes
+
 v 0.4.4
 - Kanalbreite im Meta Tab (ganz unten) einstellbar

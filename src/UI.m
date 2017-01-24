@@ -7,7 +7,7 @@ classdef UI < handle
     end
     
     properties
-        version = '0.4.4';
+        version = '0.4.5';
         fileinfo = struct('path', '', 'size', [0 0 0 0],...
                           'name', '', 'np', 0); 
                       
@@ -419,6 +419,9 @@ classdef UI < handle
                 if isfield(conf, 'read_fluo')
                     this.h.config_read_fluo.Checked = conf.read_fluo;
                 end
+                if isfield(conf, 'keep_aspect')
+                    this.h.config_keep_AR.Checked = conf.keep_aspect;
+                end
             else
                 this.openpath = [p filesep()];
                 this.savepath = [p filesep()];
@@ -432,6 +435,7 @@ classdef UI < handle
             strct.open_nsTAS_path = this.open_nsTAS_path;
             strct.savepath = this.savepath;
             strct.read_fluo = this.h.config_read_fluo.Checked;
+            strct.keep_aspect = this.h.config_keep_AR.Checked;
 
             writeini([p filesep() 'config.ini'], strct);
         end
