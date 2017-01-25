@@ -34,6 +34,10 @@ classdef FluoMode < GenericMode
                 this.h.parent = parent.h.modepanel;
 
                 this.h.fluomode = uitab(this.h.parent);
+                
+                this.h.evalpanel = uipanel(this.h.fluomode);
+                this.h.diffbutton = uicontrol(this.h.evalpanel);
+                this.h.wl2 = uicontrol(this.h.evalpanel);
 
                 this.h.plotpanel = uipanel(this.h.fluomode);
 
@@ -41,8 +45,27 @@ classdef FluoMode < GenericMode
                                      'tag', num2str(tag));
 
                 %% Plot
+                
+                set(this.h.evalpanel, 'units', 'pixels',...
+                                    'position', [10 5 250 550],...
+                                    'bordertype', 'line',...
+                                    'highlightcolor', [.7 .7 .7],...
+                                    'BackgroundColor', [.85 .85 .85]);
+                                
+                set(this.h.diffbutton,  'units', 'pixels',...
+                           'style', 'push',...
+                           'position', [2 2 80 28],...
+                           'string', 'Differenz anzeigen',...
+                           'callback', @this.show_diff_cb);
+                       
+               set(this.h.wl2, 'units', 'pixels',...
+                                  'position', [40 145 50 15],...
+                                  'style', 'edit',...
+                                  'string', '666',...
+                                  'horizontalAlignment', 'left');
+                
                 set(this.h.plotpanel, 'units', 'pixels',...
-                                    'position', [5 5 500 500],...
+                                    'position', [270 5 500 500],...
                                     'bordertype', 'line',...
                                     'highlightcolor', [.7 .7 .7],...
                                     'BackgroundColor', [.85 .85 .85]);
@@ -82,6 +105,32 @@ classdef FluoMode < GenericMode
             pP = get(this.h.plotpanel, 'Position');
             pP(3:4) = [(mP(3)-pP(1))-10 (mP(4)-pP(2))-10];
             set(this.h.plotpanel, 'Position', pP);
+        end
+        
+        function show_diff_cb(this, varargin)
+            if this.plotpanel.h.d5_select.Value == 5
+                wl2_index = find(this.wavelengths >= str2double(this.h.wl2.String)-0.1,1,'first')
+                
+                ind1 = this.plotpanel.ind
+                ind2 = ind1;
+                ind2{5} = wl2_index
+                
+                plot_data = squeeze(this.data(ind1{:}))-squeeze(this.data(ind2{:}));
+                if ~this.plotpanel.transpose
+                    plot_data = plot_data';
+                end
+                figure(1234)
+                hmap(plot_data, false, 'summer');
+
+                ca = gca;
+                % ToDo warum muss das horizontal gespiegelt werden und wie
+                % geht das???
+                
+%                 ca.XTickLabel = this.plotpanel.ticklabels{this.plotpanel.curr_dims(1)};
+%                 ca.YTickLabel = this.plotpanel.ticklabels{this.plotpanel.curr_dims(2)};
+%                 ca.XTick = this.plotpanel.tickvalues{this.plotpanel.curr_dims(1)};
+%                 ca.YTick = this.plotpanel.tickvalues{this.plotpanel.curr_dims(2)};
+            end
         end
 
         function data = get_data(this)
