@@ -109,27 +109,36 @@ classdef FluoMode < GenericMode
         
         function show_diff_cb(this, varargin)
             if this.plotpanel.h.d5_select.Value == 5
-                wl2_index = find(this.wavelengths >= str2double(this.h.wl2.String)-0.1,1,'first')
+                wl2_index = find(this.wavelengths >= str2double(this.h.wl2.String)-0.1,1,'first');
                 
-                ind1 = this.plotpanel.ind
+                ind1 = this.plotpanel.ind;
                 ind2 = ind1;
-                ind2{5} = wl2_index
+                ind2{5} = wl2_index;
                 
                 plot_data = squeeze(this.data(ind1{:}))-squeeze(this.data(ind2{:}));
                 if ~this.plotpanel.transpose
                     plot_data = plot_data';
                 end
                 figure(1234)
-                hmap(plot_data, false, 'summer');
-
-                ca = gca;
-                % ToDo warum muss das horizontal gespiegelt werden und wie
-                % geht das???
+                hmap(plot_data);
                 
-%                 ca.XTickLabel = this.plotpanel.ticklabels{this.plotpanel.curr_dims(1)};
-%                 ca.YTickLabel = this.plotpanel.ticklabels{this.plotpanel.curr_dims(2)};
-%                 ca.XTick = this.plotpanel.tickvalues{this.plotpanel.curr_dims(1)};
-%                 ca.YTick = this.plotpanel.tickvalues{this.plotpanel.curr_dims(2)};
+                s = size(plot_data);
+                xlim([.5 s(2)+.5])
+                ylim([.5 s(1)+.5])
+                
+                ca = gca;
+                
+                % ToDo warum muss das horizontal gespiegelt werden und wie
+                % geht das??? so:            
+                ca.YDir = 'normal';
+                % aus irgendeinem grund ist das fuer das plotpanel schon
+                % auf 'normal' gesetzt, aber nicht explizit -- konnte auf
+                % die schnelle jetzt auch keinen grund dafuer finden
+                
+                ca.XTickLabel = this.plotpanel.ticklabels{this.plotpanel.curr_dims(1)};
+                ca.YTickLabel = this.plotpanel.ticklabels{this.plotpanel.curr_dims(2)};
+                ca.XTick = this.plotpanel.tickvalues{this.plotpanel.curr_dims(1)};
+                ca.YTick = this.plotpanel.tickvalues{this.plotpanel.curr_dims(2)};
             end
         end
 

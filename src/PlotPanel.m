@@ -280,6 +280,7 @@ classdef PlotPanel < handle
             this.h.axes.YTickLabel = this.ticklabels{this.curr_dims(2)};
             this.h.axes.XTick = this.tickvalues{this.curr_dims(1)};
             this.h.axes.YTick = this.tickvalues{this.curr_dims(2)};
+            this.h.axes.YDir = 'normal';
         end
 
         function fighandle = generate_export_fig(this, vis)
