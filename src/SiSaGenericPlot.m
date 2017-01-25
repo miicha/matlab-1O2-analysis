@@ -733,15 +733,22 @@ classdef SiSaGenericPlot < handle
                     if isempty(this.sisa_fit.last_params)
                         fprintf(fid, 'x,y\n');
                         fitdata = nan;
+                        res = nan;
                     else
-                        fprintf(fid, 'x,y,fit\n');
+                        fprintf(fid, 'x, y, fit, x_res, res\n');
                         fitdata = this.sisa_fit.eval(this.fit_params, this.sisa_fit.x_axis);
+
+                        res = nan(length(x),2);
+                        tmp = this.sisa_fit.x_axis_fit;
+                        res(end-length(tmp)+1:end,1) = tmp; 
+                        tmp = this.sisa_fit.get_res;
+                        res(end-length(tmp)+1:end,2) = tmp;
                     end
                     fclose(fid);
                     if isnan(fitdata)
                         dlmwrite(path, [x y], '-append');
                     else
-                        dlmwrite(path, [x y fitdata], '-append');
+                        dlmwrite(path, [x y fitdata res], '-append');
                     end
 
                 else % multiple sets of y values
@@ -750,7 +757,7 @@ classdef SiSaGenericPlot < handle
                         if i == sy(2)
                             fprintf(fid, 'y%d\n', i);
                         else
-                            fprintf(fid, 'y%d,', i);
+                            fprintf(fid, 'y%d, ', i);
                         end
                         
                     end
