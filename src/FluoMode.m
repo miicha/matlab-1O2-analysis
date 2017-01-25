@@ -37,6 +37,7 @@ classdef FluoMode < GenericMode
                 
                 this.h.evalpanel = uipanel(this.h.fluomode);
                 this.h.diffbutton = uicontrol(this.h.evalpanel);
+                this.h.quotientbutton = uicontrol(this.h.evalpanel);
                 this.h.wl2 = uicontrol(this.h.evalpanel);
 
                 this.h.plotpanel = uipanel(this.h.fluomode);
@@ -54,14 +55,20 @@ classdef FluoMode < GenericMode
                                 
                 set(this.h.diffbutton,  'units', 'pixels',...
                            'style', 'push',...
-                           'position', [2 2 80 28],...
+                           'position', [2 2 120 28],...
                            'string', 'Differenz anzeigen',...
                            'callback', @this.show_diff_cb);
                        
+                set(this.h.quotientbutton,  'units', 'pixels',...
+                           'style', 'push',...
+                           'position', [2 35 120 28],...
+                           'string', 'Quotienten anzeigen',...
+                           'callback', @this.show_quot_cb);
+                       
                set(this.h.wl2, 'units', 'pixels',...
-                                  'position', [40 145 50 15],...
+                                  'position', [150 25 50 15],...
                                   'style', 'edit',...
-                                  'string', '666',...
+                                  'string', '670',...
                                   'horizontalAlignment', 'left');
                 
                 set(this.h.plotpanel, 'units', 'pixels',...
@@ -109,18 +116,44 @@ classdef FluoMode < GenericMode
         
         function show_diff_cb(this, varargin)
             if this.plotpanel.h.d5_select.Value == 5
-                wl2_index = find(this.wavelengths >= str2double(this.h.wl2.String)-0.1,1,'first');
-                
-                ind1 = this.plotpanel.ind;
-                ind2 = ind1;
-                ind2{5} = wl2_index;
+               
+                [ind1, ind2] = acquire_WLs(this, varargin);
                 
                 plot_data = squeeze(this.data(ind1{:}))-squeeze(this.data(ind2{:}));
+                
+                figure(1234)
+                show_plot(this, plot_data)
+            end
+        end
+        
+        function show_quot_cb(this, varargin)
+            if this.plotpanel.h.d5_select.Value == 5
+
+                [ind1, ind2] = acquire_WLs(this, varargin);
+                
+                plot_data = squeeze(this.data(ind1{:}))./squeeze(this.data(ind2{:}));
+                
+                figure(1235)
+                show_plot(this, plot_data)
+            end
+        end
+        
+        function [ind1, ind2] = acquire_WLs(this, varargin)
+            wl2_index = find(this.wavelengths >= str2double(this.h.wl2.String)-0.1,1,'first');
+                
+            ind1 = this.plotpanel.ind;
+            ind2 = ind1;
+            ind2{5} = wl2_index;
+        end
+        
+        function show_plot(this, plot_data)
+            
                 if ~this.plotpanel.transpose
                     plot_data = plot_data';
                 end
-                figure(1234)
+%                 figure(1235)
                 hmap(plot_data);
+                colorbar
                 
                 s = size(plot_data);
                 xlim([.5 s(2)+.5])
@@ -139,7 +172,6 @@ classdef FluoMode < GenericMode
                 ca.YTickLabel = this.plotpanel.ticklabels{this.plotpanel.curr_dims(2)};
                 ca.XTick = this.plotpanel.tickvalues{this.plotpanel.curr_dims(1)};
                 ca.YTick = this.plotpanel.tickvalues{this.plotpanel.curr_dims(2)};
-            end
         end
 
         function data = get_data(this)
