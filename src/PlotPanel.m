@@ -418,12 +418,12 @@ classdef PlotPanel < handle
             y = this.curr_dims(2);
         end
 
-        function data = get_data(this)
-            data = this.p.get_data();
+        function data = get_data(this,varargin)
+            data = this.p.get_data(varargin);
         end
         
-        function data = get_errs(this)
-            data = this.p.get_errs();
+        function data = get_errs(this, varargin)
+            data = this.p.get_errs(varargin);
         end
 
         function create_slice(this, index)

@@ -145,6 +145,7 @@ classdef SiSaMode < GenericMode
                     this.h.ov_controls = uipanel(this.h.fit_tab);
                         this.h.ov_disp = uicontrol(this.h.ov_controls);
                         this.h.ov_sum_disp = uicontrol(this.h.ov_controls);
+                        this.h.export_slice_disp = uicontrol(this.h.ov_controls);
                         this.h.ov_buttongroup = uibuttongroup(this.h.ov_controls);
                             this.h.ov_radiobtns = {uicontrol(this.h.ov_buttongroup)};
                             this.h.ov_drpd = uicontrol(this.h.ov_controls);
@@ -277,15 +278,22 @@ classdef SiSaMode < GenericMode
 
             set(this.h.ov_disp, 'units', 'pixels',...
                               'style', 'checkbox',...
-                              'position', [15 175 150 20],...
-                              'string', 'Overlay anzeigen',...
+                              'position', [15 175 100 20],...
+                              'string', 'Overlay',...
                               'callback', @this.disp_ov_cb);
                           
             set(this.h.ov_sum_disp, 'units', 'pixels',...
                               'style', 'push',...
-                              'position', [120 175 115 20],...
-                              'string', 'Overlay Daten Summe',...
+                              'position', [80 175 65 20],...
+                              'string', 'Over Sum',...
                               'callback', @this.disp_ov_sum_cb);
+                          
+            set(this.h.export_slice_disp, 'units', 'pixels',...
+                              'style', 'push',...
+                              'position', [160 175 75 20],...
+                              'string', 'Slice export',...
+                              'callback', @this.export_slice_data_cb);
+                          
                               
             set(this.h.ov_buttongroup, 'SelectionChangedFcn', @this.set_current_ov_cb);
             
@@ -464,10 +472,21 @@ classdef SiSaMode < GenericMode
             this.overlays{2} = zeros(tmp(1), tmp(2), tmp(3), tmp(4));
             
             % find mean of t_0
+            size(this.data)
             [~, I] = max(this.data, [], 5);
+            
+            
+%             tmp = diff(this.data, 1, 5);
+%             tmp2 = find(tmp>1000)
+%             test = ind2sub(size(this.data),tmp2)
+%             size(tmp)
+%             figure(123)
+%             plot(squeeze(tmp(1,1,1,1:500)))
+            
+            
             I = squeeze(I(:,:,1));
             I = I(:);
-            N = hist(I,max(I));
+            [N,pos] = hist(I,1:max(I));
             [~,t_0] = max(N);
             end_ch = length(this.data(1,1,1,1,:));
             
@@ -749,8 +768,13 @@ classdef SiSaMode < GenericMode
             fig = this.p.get_figure();
         end
         
-        function [plot_data, param] = get_data(this)
-            param = this.current_param;
+        function [plot_data, param] = get_data(this,varargin)
+            if nargin == 2 && ~isempty(varargin{1})
+                param = varargin{1}{1};
+                param = cell2mat(param);
+            else
+                param = this.current_param;
+            end
 
             if this.disp_fit_params
                 switch param
@@ -773,8 +797,13 @@ classdef SiSaMode < GenericMode
             end
         end
         
-        function [plot_data, param] = get_errs(this)
-            param = this.current_param;
+        function [plot_data, param] = get_errs(this,varargin)
+            if nargin == 2 && ~isempty(varargin{1})
+                param = varargin{1}{1};
+                param = cell2mat(param);
+            else
+                param = this.current_param;
+            end
             
             if this.disp_fit_params
                 if param <= length(this.est_params(1, 1, 1, 1, :))
@@ -1399,6 +1428,28 @@ classdef SiSaMode < GenericMode
             
             SiSaDataPlot(data,this);
             
+        end
+        
+        function export_slice_data_cb(this, varargin)
+%             this.get_current_slice()
+            num_params = size(this.fit_params,5)+2;
+            
+            for i = 1:num_params
+                [~, plot_vec, plot_vec_err] = this.plotpanel.slices{end}.get_slice_data(i);
+                slice_data(i,:) = plot_vec;
+                slice_error_data(i,:) = plot_vec_err;
+            end
+            export_data{1} = this.sisa_fit.parnames;
+            export_data{2} = slice_data;
+            export_data{3} = slice_error_data;
+
+%             this.p.savepath
+            [FILENAME, PATHNAME] = uiputfile([this.p.savepath '.mat']);
+            
+            if FILENAME > 0
+                save([PATHNAME FILENAME], 'export_data');
+            end
+%             export_data
         end
         
         function set_current_ov_cb(this, varargin)

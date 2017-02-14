@@ -106,8 +106,22 @@ classdef Slice < handle
         end
 
         function open_slice_plot(this)
-            d = this.p.get_data();
-            dd = this.p.get_errs();
+            
+            [x_vec, plot_vec, plot_vec_err, x_label] = this.get_slice_data();
+            SinglePlot(x_vec, plot_vec, plot_vec_err, fullfile(this.p.p.p.savepath, this.p.p.p.genericname),...
+                       'xlabel', x_label);
+        end
+        
+        function [x_vec, plot_vec, plot_vec_err, x_label] = get_slice_data(this,varargin)
+            if nargin == 2
+                cur_par = varargin(1);
+                d = this.p.get_data(cur_par);
+                dd = this.p.get_errs(cur_par);
+            else
+                d = this.p.get_data();
+                dd = this.p.get_errs();
+            end
+            
             if(isempty(dd))
                 dd = zeros(size(d));
             end
@@ -197,13 +211,9 @@ classdef Slice < handle
                 x_label = 'a.u.';
             end
             
-            size(x_vec)
             if x_vec == zeros(size(x_vec))
                 x_vec = 1:length(x_vec);
             end
-            
-            SinglePlot(x_vec, plot_vec, plot_vec_err, fullfile(this.p.p.p.savepath, this.p.p.p.genericname),...
-                       'xlabel', x_label);
         end
 
         function stop_dragging_cb_1(this, varargin)
