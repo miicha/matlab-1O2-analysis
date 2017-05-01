@@ -248,7 +248,7 @@ classdef SiSaGenericPlot < handle
             end
             datal = this.data;
             realmax = max(datal)*1.5;
-            m = max(datal(this.sisa_fit.offset_time:end));
+            m = max(datal(this.sisa_fit.offset_time:this.sisa_fit.end_channel));
             m = m*1.1;
             mini = min(datal(this.sisa_fit.offset_time:end))*0.95;
            
