@@ -473,7 +473,7 @@ classdef SiSaMode < GenericMode
             
             % find mean of t_0
             size(this.data)
-            [~, I] = max(this.data, [], 5);
+            [~, I] = max(this.data(1:round(length(this.data)/2)), [], 5);
             
             
 %             tmp = diff(this.data, 1, 5);
