@@ -5,7 +5,7 @@ function [ output_args ] = openASC( this )
 name = this.fileinfo.name;
 
 formatSpec = '%s%[^\n\r]';
-delimiter = ',';
+delimiter = ' ';
 
 if iscell(name)    
     for i = 1:length(name)
@@ -13,20 +13,25 @@ if iscell(name)
         fileID = fopen([this.fileinfo.path name{i}],'r');
         dataArray = textscan(fileID, formatSpec, 'Delimiter', delimiter, 'MultipleDelimsAsOne', true,  'ReturnOnError', false);
         %% Close the text file.
-        fclose(fileID);
-        
-        dataArray = dataArray{1};
-        
+        fclose(fileID);       
         
         try
-            startIndex = find(contains(dataArray, '*BLOCK')); %geht erst ab 2016b
-            endIndex = find(contains(dataArray, '*END')); %geht erst ab 2016b
+            startIndex = find(contains(dataArray{1}, '*BLOCK')); %geht erst ab 2016b
+            endIndex = find(contains(dataArray{1}, '*END')); %geht erst ab 2016b
+            tmp = contains(dataArray{2}{startIndex(1)}, 'Time');
         catch me
-            IndexC = strfind(dataArray, '*BLOCK');
+            IndexC = strfind(dataArray{1}, '*BLOCK');
             startIndex = find(not(cellfun('isempty', IndexC)));
-            IndexC = strfind(dataArray, '*END');
+            IndexC = strfind(dataArray{1}, '*END');
             endIndex = find(not(cellfun('isempty', IndexC)));
+            tmp = strfind(dataArray{2}{startIndex(1)}, 'Time');
             disp(me)
+        end
+        
+        if tmp
+            dataArray = dataArray{2};
+        else
+            dataArray = dataArray{1};
         end
         
         if i == 1
