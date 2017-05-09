@@ -21,6 +21,7 @@ classdef UI < handle
         genericname;
         openpath; % persistent, in ini
         savepath; % persistent, in ini
+        dbpath; % persistent, in ini
         open_nsTAS_path; % persistent, in ini
 
         h = struct();        % handles
@@ -65,6 +66,8 @@ classdef UI < handle
                               'callback', @this.open_file_cb);
             uimenu(this.h.menu, 'label', 'Ordner öffnen...',...
                               'callback', @this.open_folder_cb);
+            uimenu(this.h.menu, 'label', 'Datenbank öffnen...',...
+                              'callback', @this.open_db_cb);
             uimenu(this.h.menu, 'label', 'nsTAS Datei öffnen...',...
                               'callback', @this.open_nsTAS_cb);
             uimenu(this.h.menu, 'label', 'Plot speichern',...
@@ -407,6 +410,13 @@ classdef UI < handle
                 else
                     this.openpath = [p filesep()];
                 end
+                
+                if isfield(conf, 'dbpath')
+                    this.dbpath = conf.dbpath;
+                else
+                    this.dbpath = [p filesep()];
+                end
+                
                 if isfield(conf, 'savepath')
                     this.savepath = conf.savepath;
                 else
@@ -438,6 +448,7 @@ classdef UI < handle
             p = get_executable_dir();
             strct.version = this.version;
             strct.openpath = this.openpath;
+            strct.dbpath = this.dbpath;
             strct.open_nsTAS_path = this.open_nsTAS_path;
             strct.savepath = this.savepath;
             strct.read_fluo = this.h.config_read_fluo.Checked;
@@ -546,6 +557,21 @@ classdef UI < handle
 %             %% add to PATH
 %             addpath(genpath([get_executable_dir '\..\3rd-party']));
 %             addpath([get_executable_dir '\..\src']);
+        end
+        
+        function open_db_cb(this, varargin)
+            this.loadini();
+            % get path of file from user
+            [name, filepath] = uigetfile({[this.dbpath '*.db']}, 'Dateien auswählen', 'MultiSelect', 'on');
+            if (~ischar(name) && ~iscell(name)) || ~ischar(filepath) % no file selected
+                return
+            end
+            this.dbpath = filepath;
+            this.saveini();
+            
+            dbviewer = DB_Viewer([filepath '\' name], 'DB-Anzeige')
+            
+           name
         end
         
         
