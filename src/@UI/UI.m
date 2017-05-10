@@ -569,9 +569,7 @@ classdef UI < handle
             this.dbpath = filepath;
             this.saveini();
             
-            dbviewer = DB_Viewer([filepath '\' name], 'DB-Anzeige')
-            
-           name
+            dbviewer = DB_Viewer([filepath name], 'DB-Anzeige');
         end
         
         

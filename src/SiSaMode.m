@@ -1251,7 +1251,9 @@ classdef SiSaMode < GenericMode
                 if sum(this.data(index{:}, :))
                     i = length(this.plt);
                     this.sum_number = 1;
+                    tic
                     this.plt{i+1} = SiSaPointPlot([index{:}], this);
+                    toc
                 end
             end
         end
