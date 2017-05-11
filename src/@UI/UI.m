@@ -321,6 +321,12 @@ classdef UI < handle
             data = load(path);
             data = data.sisadata;
             reader = this.guess_channel_width();
+            
+            this.fileinfo.path = path;
+            this.fileinfo.name = {path};
+            tmp =  size(data);
+            this.fileinfo.size = tmp(1:4);
+            
             this.modes{1} = SiSaMode(this, data,reader,1);
         end
         

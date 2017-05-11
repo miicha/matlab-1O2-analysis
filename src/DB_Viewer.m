@@ -7,12 +7,18 @@ classdef DB_Viewer < handle
         filename;
         db_data;
         UI;
+        data_folder;
     end
     
     methods
         function this = DB_Viewer(path, name, UI)
-            this.UI = UI;
             this.filename = path;
+            [path,name] = fileparts(path);
+            
+            this.data_folder = [path '\' name];
+            
+            this.UI = UI;
+            
             this.h.f = figure();
             
             scsize = get(0,'screensize');
@@ -28,7 +34,7 @@ classdef DB_Viewer < handle
                         'DeleteFcn', @this.destroy_cb);
 
             fsize = this.h.f.Position;
-            fsize = fsize(3:4)
+            fsize = fsize(3:4);
             
             this.h.selectpanel = uipanel(this.h.f,'Title','Auswahl',...
                 'BackgroundColor','white', 'Units','pixel',...
@@ -106,10 +112,9 @@ classdef DB_Viewer < handle
         end
         
         function ok(this, varargin)
-            get(this.h.l)
-            this.h.l.String{this.h.l.Value};
             
-            this.UI.open_sisa_data('D:\scan_database\data\2_sisa.mat');
+            file = sprintf('%s\\%d_sisa.mat',this.data_folder,this.db_data.ID(this.h.l.Value));
+            this.UI.open_sisa_data(file);
         end
         
         function load_db(this)
