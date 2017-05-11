@@ -472,8 +472,7 @@ classdef SiSaMode < GenericMode
             this.overlays{2} = zeros(tmp(1), tmp(2), tmp(3), tmp(4));
             
             % find mean of t_0
-            size(this.data)
-            [~, I] = max(this.data(1:round(length(this.data)/2)), [], 5);
+            [max_anf, I] = max(this.data(:,:,:,:,1:round(length(this.data)/4)), [], 5);
             
             
 %             tmp = diff(this.data, 1, 5);
@@ -488,7 +487,20 @@ classdef SiSaMode < GenericMode
             I = I(:);
             [N,pos] = hist(I,1:max(I));
             [~,t_0] = max(N);
-            end_ch = length(this.data(1,1,1,1,:));
+            
+            
+            [max_end, I] = max(this.data(:,:,:,:,round(length(this.data)/4*3):end), [], 5);           
+            
+            I = squeeze(I(:,:,1));
+            I = I(:);
+            [N,pos] = hist(I,1:max(I));
+            [~,end_ch] = max(N);
+            
+            if mean(max_anf) > mean(max_end)/10
+                end_ch = end_ch + round(length(this.data)/4*3)-55;
+            else
+                end_ch = length(this.data(1,1,1,1,:));
+            end
             
             this.sisa_fit.update('t0',t_0, 'offset',t_0+25, 'end_chan', end_ch);
             
