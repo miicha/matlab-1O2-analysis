@@ -317,6 +317,13 @@ classdef UI < handle
             this.modes{1} = SiSaMode(this, double(data),reader,1);
         end
         
+        function open_sisa_data(this,path)
+            data = load(path);
+            data = data.sisadata;
+            reader = this.guess_channel_width();
+            this.modes{1} = SiSaMode(this, data,reader,1);
+        end
+        
         function reader = guess_channel_width(this)
             % try to extract channel width from filenam or path
             reader.meta.sisa.Kanalbreite = 0.02;    % set default
@@ -569,7 +576,7 @@ classdef UI < handle
             this.dbpath = filepath;
             this.saveini();
             
-            dbviewer = DB_Viewer([filepath name], 'DB-Anzeige');
+            dbviewer = DB_Viewer([filepath name], 'DB-Anzeige', this);
         end
         
         

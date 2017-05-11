@@ -6,10 +6,12 @@ classdef DB_Viewer < handle
         h = struct();        % handles
         filename;
         db_data;
+        UI;
     end
     
     methods
-        function this = DB_Viewer(path, name)
+        function this = DB_Viewer(path, name, UI)
+            this.UI = UI;
             this.filename = path;
             this.h.f = figure();
             
@@ -106,6 +108,8 @@ classdef DB_Viewer < handle
         function ok(this, varargin)
             get(this.h.l)
             this.h.l.String{this.h.l.Value};
+            
+            this.UI.open_sisa_data('D:\scan_database\data\2_sisa.mat');
         end
         
         function load_db(this)
