@@ -61,26 +61,29 @@ classdef UI < handle
                         'ResizeFcn', @this.resize,...
                         'DeleteFcn', @this.destroy_cb);
      
-            set(this.h.menu, 'Label', 'Datei');
-            uimenu(this.h.menu, 'label', 'Datei öffnen...',...
+            set(this.h.menu, 'Label', 'File');
+            uimenu(this.h.menu, 'label', 'Open File...',...
                               'callback', @this.open_file_cb);
-            uimenu(this.h.menu, 'label', 'Ordner öffnen...',...
+            uimenu(this.h.menu, 'label', 'Open Folder...',...
                               'callback', @this.open_folder_cb);
-            uimenu(this.h.menu, 'label', 'Datenbank öffnen...',...
+            uimenu(this.h.menu, 'label', 'Open Database...',...
                               'callback', @this.open_db_cb);
-            uimenu(this.h.menu, 'label', 'nsTAS Datei öffnen...',...
+            uimenu(this.h.menu, 'label', 'Open nsTAS File...',...
                               'callback', @this.open_nsTAS_cb);
-            uimenu(this.h.menu, 'label', 'Plot speichern',...
+            uimenu(this.h.menu, 'label', 'Save Plot',...
                               'callback', @this.save_fig_cb);
-            uimenu(this.h.menu, 'label', 'State speichern (experimentell!)',...
+            uimenu(this.h.menu, 'label', 'Save State (experimentell!)',...
                               'callback', @this.save_global_state_cb);
                           
-            this.h.configmenu.Label = 'Einstellungen';
+            uimenu(this.h.menu, 'label', 'close all',...
+                              'callback', @this.destroy_children_cb);
+                          
+            this.h.configmenu.Label = 'Settings';
             this.h.config_read_fluo = uimenu(this.h.configmenu,...
-                              'label', 'Fluoreszenz einlesen',...
+                              'label', 'Read Fluorescence',...
                               'callback', @this.config_read_fluo_cb);
             this.h.config_keep_AR = uimenu(this.h.configmenu,...
-                              'label', 'keep aspect ratio',...
+                              'label', 'Keep Aspect Ratio',...
                               'callback', @this.config_keep_AR_cb);
             
             set(this.h.helpmenu, 'Label', '?');
@@ -317,12 +320,12 @@ classdef UI < handle
             this.modes{1} = SiSaMode(this, double(data),reader,1);
         end
         
-        function open_sisa_data(this,path)
+        function open_sisa_data(this,path, displayname)
             data = load(path);
             data = data.sisadata;
             reader = this.guess_channel_width();
             
-            this.fileinfo.path = path;
+            this.fileinfo.path = displayname;
             this.fileinfo.name = {path};
             tmp =  size(data);
             this.fileinfo.size = tmp(1:4);
@@ -482,9 +485,12 @@ classdef UI < handle
                 end
                 break;
             end
+            
             for i = 1:length(this.modes)
-                this.modes{i}.destroy(children_only);
+                this.modes{i}.destroy(false);
             end
+%             this.modes = {};
+%             delete(this.h.tabs)
             
             if ~children_only
                 delete(this.h.f);
@@ -720,6 +726,12 @@ classdef UI < handle
 %             %% clean up PATH            
 %             rmpath(genpath([get_executable_dir '\..\3rd-party']));
 %             rmpath(([get_executable_dir '\..\src']));
+        end
+        
+        function destroy_children_cb(this, varargin)
+            
+            this.destroy(true);
+            
         end
         
         function open_versioninfo_cb(this, varargin)

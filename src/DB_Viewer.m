@@ -113,8 +113,12 @@ classdef DB_Viewer < handle
         
         function ok(this, varargin)
             
-            file = sprintf('%s\\%d_sisa.mat',this.data_folder,this.db_data.ID(this.h.l.Value));
-            this.UI.open_sisa_data(file);
+            
+            for i = 1:length(this.h.l.Value)
+            file = sprintf('%s\\%d_sisa.mat',this.data_folder,this.db_data.ID(this.h.l.Value(i)));
+            displayname = this.db_data.Name(this.h.l.Value(i));
+            this.UI.open_sisa_data(file, displayname);
+            end
         end
         
         function load_db(this)
