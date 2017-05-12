@@ -471,8 +471,17 @@ classdef SiSaMode < GenericMode
             this.overlays{1} = ones(tmp(1), tmp(2), tmp(3), tmp(4));
             this.overlays{2} = zeros(tmp(1), tmp(2), tmp(3), tmp(4));
             
+            
+            this.read_channel_width();
+            
+            search_start = 1;
+            this.channel_width
+            if this.channel_width == 0.02
+                search_start = 15;
+            end
+            
             % find mean of t_0
-            [max_anf, I] = max(this.data(:,:,:,:,1:round(length(this.data)/4)), [], 5);
+            [max_anf, I] = max(this.data(:,:,:,:,search_start:round(length(this.data)/4)), [], 5);
             
             
 %             tmp = diff(this.data, 1, 5);
@@ -487,6 +496,7 @@ classdef SiSaMode < GenericMode
             I = I(:);
             [N,pos] = hist(I,1:max(I));
             [~,t_0] = max(N);
+            t_0 = t_0 + search_start-1;
             
             
             [max_end, I] = max(this.data(:,:,:,:,round(length(this.data)/4*3):end), [], 5);           
@@ -518,7 +528,7 @@ classdef SiSaMode < GenericMode
             
             
             
-            this.read_channel_width();
+            
             
             this.p.update_infos();
             
