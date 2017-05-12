@@ -927,7 +927,7 @@ classdef SiSaMode < GenericMode
             end
             
             % set bounds from estimated parameters            
-            this.sisa_fit.update('upper', ub*2, 'lower', lb*0.5);
+            this.sisa_fit.update('upper', ub*3, 'lower', lb*0.3);
             
             
             
