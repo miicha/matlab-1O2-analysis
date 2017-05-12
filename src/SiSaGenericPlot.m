@@ -294,6 +294,9 @@ classdef SiSaGenericPlot < handle
             if ~realtime             
                 ylim([0 m]);
                 xlim([min(x_ges)-1 max(x_ges)+1]);
+                % before refreshing the plot reset the zoom buttons
+                this.h.xy_zoom.State = 'off';
+                this.h.x_zoom.State = 'off';
                 if this.fitted
                     this.plotfit();
                 end
@@ -671,7 +674,9 @@ classdef SiSaGenericPlot < handle
         end
         
         function globalize(this, varargin)  
-            if this.sisa_fit.curr_fitfun ~= this.smode.sisa_fit.curr_fitfun
+            if this.sisa_fit.curr_fitfun ~= this.smode.sisa_fit.curr_fitfun || ...
+                    this.smode.sisa_fit.t_0 ~= this.sisa_fit.t_0
+                this.smode.sisa_fit.t_0 = this.sisa_fit.t_0;
                 this.smode.set_model(this.sisa_fit.curr_fitfun);
             end
             if this.fitted

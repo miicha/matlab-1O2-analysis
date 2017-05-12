@@ -106,6 +106,7 @@ classdef SiSaMode < GenericMode
                 this.int_time = this.p.scale(4)*ones(size(data(:, :, :, :, 1)));
             end
             
+            %% create elements
             this.p = parent;
             this.data = data;
             
@@ -171,6 +172,8 @@ classdef SiSaMode < GenericMode
                         
             
             dims = size(data);
+            
+            %% format elements
                                 
             set(this.h.sisamode, 'title', 'SiSa-Lumineszenz',...
                                  'tag', num2str(tag),...
