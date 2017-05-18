@@ -410,7 +410,7 @@ classdef SiSaGenericPlot < handle
 
                 set(this.h.pe{i}, 'string', str);
                 
-                str = sprintf('±%1.2f', this.fit_params_err(i));   
+                str = sprintf('?1.2f', this.fit_params_err(i));   
 
                 set(this.h.pd{i}, 'string', str,'tooltipString', '95% Konfidenz');
             end
@@ -574,7 +574,7 @@ classdef SiSaGenericPlot < handle
                                                       'position', [10+(i-1)*spacing 25 45 20]);
                  this.h.pd{i} = uicontrol(this.h.param, 'units', 'pixels',...
                                                       'style', 'text',...
-                                                      'string', '±',...
+                                                      'string', '\pm',...
                                                       'HorizontalAlignment', 'left',...
                                                       'position', [10+(i-1)*spacing 5 50 15]);
                  
@@ -813,17 +813,35 @@ classdef SiSaGenericPlot < handle
                    'name', 'SISA Scan Vorschau',...
                    'resize', 'off',...
                    'Color', [.95, .95, .95]);
+               
 
             ax = copyobj(this.h.axes, this.h.plot_pre);
-            xlabel(ax, 'Zeit [µs]')
+            xlabel(ax, 'Time [\mus]')
             ylabel(ax, 'Counts');
-
+            
+            tmp = gca;
+            tmp = tmp.Children;
+            for i=1:length(tmp)
+                if i ==1
+                    tmp(i).DisplayName = 'fit';
+                elseif i ==length(tmp)-1
+                    tmp(i).DisplayName = 'data';
+                elseif (length(tmp) == 8 && i ==2)
+                    tmp(i).DisplayName = 'estimated ^1O_2-signal';
+                else
+                    tmp(i).HandleVisibility = 'off';
+                end
+            end
+            legend('show')
+                
+            
             if this.fitted
                 ax_res = copyobj(this.h.res, this.h.plot_pre);
-                xlabel(ax_res, 'Zeit [µs]')
+                xlabel(ax_res, 'Time [\mus]')
                 ylabel(ax_res, 'norm. Residuen [Counts]')
                 set(ax_res, 'position', [70, 50, 1000, 150]);
                 set(ax, 'position', [70 250 1000 450]);
+                
             else
                 set(ax, 'position', [70 50 1000 650]);
             end
@@ -836,7 +854,7 @@ classdef SiSaGenericPlot < handle
             end
             
             if this.fitted && this.fit_info
-                this.generate_fit_info_ov();
+                %this.generate_fit_info_ov();
             end
         end
         
