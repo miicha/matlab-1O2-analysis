@@ -410,7 +410,7 @@ classdef SiSaGenericPlot < handle
 
                 set(this.h.pe{i}, 'string', str);
                 
-                str = sprintf('?1.2f', this.fit_params_err(i));   
+                str = sprintf('%1.2f', this.fit_params_err(i));   
 
                 set(this.h.pd{i}, 'string', str,'tooltipString', '95% Konfidenz');
             end
@@ -785,7 +785,12 @@ classdef SiSaGenericPlot < handle
         end
         
         function save_fig(this, path)
-            this.generate_export_fig('off');
+            
+            already_open = false;
+            if ~isfield(this.h, 'plot_pre') || (isfield(this.h, 'plot_pre') && ~ishandle(this.h.plot_pre))
+                this.generate_export_fig('off');
+                already_open = true;
+            end
             
             tmp = get(this.h.plot_pre, 'position');
             x_pix = tmp(3);
@@ -796,7 +801,10 @@ classdef SiSaGenericPlot < handle
             set(this.h.plot_pre, 'PaperSize', [x_pix+80 y_pix+80]/1.5);
             set(this.h.plot_pre, 'PaperPosition', [25 0 x_pix+80 y_pix+80]/1.5);
             print(this.h.plot_pre, '-dpdf', '-r300', path);
-            close(this.h.plot_pre)
+            
+            if ~already_open
+                close(this.h.plot_pre)
+            end
         end
 
         function generate_export_fig(this, vis)    
@@ -808,11 +816,12 @@ classdef SiSaGenericPlot < handle
             end
             set(this.h.plot_pre, 'units', 'pixels',...
                    'numbertitle', 'off',...
-                   'menubar', 'none',...
                    'position', [100 100 1100 750],...
                    'name', 'SISA Scan Vorschau',...
-                   'resize', 'off',...
-                   'Color', [.95, .95, .95]);
+                   'Color', [.95, .95, .95],...
+                   'resize', 'off');
+%                    'menubar', 'none',...
+%                    'resize', 'off',);
                
 
             ax = copyobj(this.h.axes, this.h.plot_pre);
@@ -838,7 +847,7 @@ classdef SiSaGenericPlot < handle
             if this.fitted
                 ax_res = copyobj(this.h.res, this.h.plot_pre);
                 xlabel(ax_res, 'Time [\mus]')
-                ylabel(ax_res, 'norm. Residuen [Counts]')
+                ylabel(ax_res, 'norm. residues')
                 set(ax_res, 'position', [70, 50, 1000, 150]);
                 set(ax, 'position', [70 250 1000 450]);
                 

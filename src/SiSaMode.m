@@ -571,8 +571,12 @@ classdef SiSaMode < GenericMode
             end
         end
         
-        function change_channel_width(this, varargin)            
-            this.channel_width = str2double(this.h.ch_width.String{this.h.ch_width.Value})/1000;
+        function change_channel_width(this, varargin)
+            try
+                this.channel_width = str2double(this.h.ch_width.String{this.h.ch_width.Value})/1000;
+            catch
+                this.channel_width = 0.02;
+            end
             this.sisa_fit.update('c',this.channel_width);
         end
         
