@@ -344,7 +344,11 @@ classdef SiSaGenericPlot < handle
                 this.sisa_fit.estimate(this.data);
             end
             
-            fitdata = this.sisa_fit.eval(this.fit_params, this.sisa_fit.x_axis);
+            x_axis = this.sisa_fit.x_axis;
+            fitdata_complete = this.sisa_fit.eval(this.fit_params, x_axis);
+            fitdata = fitdata_complete(x_axis>=0);
+            x_axis = x_axis(x_axis>=0);
+
             set(this.h.f,'CurrentAxes',this.h.axes)
             
             % extrahierte SiSa-Daten Plotten
@@ -352,16 +356,16 @@ classdef SiSaGenericPlot < handle
                 sisamodel = sisafit(1);
                 sisamodel.copy_data(this.sisa_fit);
                 if get(this.h.drpd, 'value') == 4
-                    sisadata = sisamodel.eval([p(1:3); p(6)], this.sisa_fit.x_axis);
+                    sisadata = sisamodel.eval([p(1:3); p(6)], x_axis);
                 else
-                    sisadata = sisamodel.eval([p(1:3); p(5)], this.sisa_fit.x_axis);
+                    sisadata = sisamodel.eval([p(1:3); p(5)], x_axis);
                 end
                 hold on
-                plot(this.sisa_fit.x_axis,  sisadata, 'color', [1 0.6 0.2], 'LineWidth', 1.5, 'HitTest', 'off');
+                plot(x_axis,  sisadata, 'color', [1 0.6 0.2], 'LineWidth', 1.5, 'HitTest', 'off');
                 hold off
             end
             hold on
-            this.h.fit_line = plot(this.sisa_fit.x_axis,  fitdata, 'r', 'LineWidth', 1.5, 'HitTest', 'off');
+            this.h.fit_line = plot(x_axis,  fitdata, 'r', 'LineWidth', 1.5, 'HitTest', 'off');
             hold off
             
             
@@ -369,7 +373,7 @@ classdef SiSaGenericPlot < handle
             set(this.h.f,'CurrentAxes',this.h.res);
             
             % im fitbereich
-            residues = this.data - fitdata;
+            residues = this.data - fitdata_complete;
             tmp = this.data; 
             tmp(tmp <= 0) = 1;
             residues = residues./sqrt(tmp);
