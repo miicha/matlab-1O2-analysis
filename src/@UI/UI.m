@@ -85,6 +85,9 @@ classdef UI < handle
             this.h.config_keep_AR = uimenu(this.h.configmenu,...
                               'label', 'Keep Aspect Ratio',...
                               'callback', @this.config_keep_AR_cb);
+            this.h.config_check_version = uimenu(this.h.configmenu,...
+                              'label', 'Check for new Version at startup',...
+                              'callback', @this.config_check_version_cb);
             
             set(this.h.helpmenu, 'Label', '?');
             uimenu(this.h.helpmenu, 'label', 'Über',...
@@ -108,7 +111,11 @@ classdef UI < handle
                                   'SelectionChangedFcn', @this.mode_change_cb);
                              
             %% check version (only if called as a binary)
-            this.check_version();
+            
+            this.loadini();
+            if strcmp(this.h.config_check_version.Checked,'on')
+                this.check_version();
+            end
                                  
             %% limit size with java
             unsafe_limit_size(this.h.f, [900 680]);
@@ -451,6 +458,9 @@ classdef UI < handle
                 if isfield(conf, 'read_fluo')
                     this.h.config_read_fluo.Checked = conf.read_fluo;
                 end
+                if isfield(conf, 'check_version')
+                    this.h.config_check_version.Checked = conf.check_version;
+                end
                 if isfield(conf, 'keep_aspect')
                     this.h.config_keep_AR.Checked = conf.keep_aspect;
                 end
@@ -469,6 +479,7 @@ classdef UI < handle
             strct.savepath = this.savepath;
             strct.read_fluo = this.h.config_read_fluo.Checked;
             strct.keep_aspect = this.h.config_keep_AR.Checked;
+            strct.check_version = this.h.config_check_version.Checked;
 
             writeini([p filesep() 'config.ini'], strct);
         end
@@ -709,6 +720,16 @@ classdef UI < handle
             end
             this.saveini();            
         end
+        
+        function config_check_version_cb(this,varargin)
+            if strcmp(this.h.config_check_version.Checked,'on')
+                this.h.config_check_version.Checked = 'off';
+            else
+                this.h.config_check_version.Checked = 'on';
+            end
+            this.saveini();            
+        end
+        
         
         function config_keep_AR_cb(this,varargin)
             if strcmp(this.h.config_keep_AR.Checked,'on')
