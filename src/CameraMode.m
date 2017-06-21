@@ -126,7 +126,7 @@ classdef CameraMode < GenericMode
                 
         function plot_array(this)
             this.plotpanel.plot_array(this.data(:, :, :, :, :), 'a');
-            this.h.histogr = histogram(this.h.histogr_axes,this.data(:, :, 1));
+            this.h.histogr = histogram(this.h.histogr_axes,this.data(this.plotpanel.ind{:}));
         end
         
         function left_click_on_axes(this, point)
