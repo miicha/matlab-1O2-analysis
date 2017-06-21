@@ -419,7 +419,11 @@ classdef PlotPanel < handle
         end
 
         function data = get_data(this,varargin)
-            data = this.p.get_data(varargin);
+            if isempty(varargin)
+                data = this.p.get_data();
+            else
+                data = this.p.get_data(varargin);
+            end
         end
         
         function data = get_errs(this, varargin)
