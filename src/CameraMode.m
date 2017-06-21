@@ -1,5 +1,5 @@
 classdef CameraMode < GenericMode
-    %FLUOMODE
+    %CAMERAMODE
     % Platzhalter. Macht was draus! :)
     properties
         spec_pos = 1;
@@ -68,7 +68,7 @@ classdef CameraMode < GenericMode
                        
                 set(this.h.chose_cmap_button, 'units', 'pixels',...
                            'style', 'popupmenu',...
-                           'string', {'a','b','c'},...
+                           'string', {'jet','summer','bone','parula','hot'},...
                            'value', 1,...
                            'position', [15 205 220 15],...
                            'callback', @this.set_cmap_cb,...
@@ -87,7 +87,7 @@ classdef CameraMode < GenericMode
                                     'highlightcolor', [.7 .7 .7],...
                                     'BackgroundColor', [.85 .85 .85]);
 
-                this.plotpanel = FluoPanel(this, size(data), this.h.plotpanel);
+                this.plotpanel = CameraPanel(this, size(data), this.h.plotpanel);
                 this.resize();
                 this.plot_array();
             end
@@ -111,6 +111,13 @@ classdef CameraMode < GenericMode
 %                            fullfile(this.p.savepath, this.p.genericname),...
 %                            'title', num2str(cell2mat(point)));
 %             end
+        end
+        
+        function set_cmap_cb(this,varargin)
+            drpdwn = varargin{1};
+            this.plotpanel.cmap = drpdwn.String{drpdwn.Value};
+            this.plot_array();
+            
         end
         
         function right_click_on_axes(this, point)
