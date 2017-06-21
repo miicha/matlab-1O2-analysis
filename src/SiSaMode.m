@@ -478,7 +478,6 @@ classdef SiSaMode < GenericMode
             this.read_channel_width();
             
             search_start = 1;
-            this.channel_width
             if this.channel_width == 0.02
                 search_start = 15;
             end

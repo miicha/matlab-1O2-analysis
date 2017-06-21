@@ -261,6 +261,12 @@ classdef UI < handle
                     case 'laserpower'
                         this.modes{i} = LaserMode(this, reader.data.laserpower, i);
                         i = i + 1;
+                        
+                    case 'camera'
+%                         figure(789)
+%                         imshow(reader.data.camera(:,:,1), [5000, 11000])
+                        intTime = 500;
+                        this.modes{i} = CameraMode(this, reader.data.camera,intTime, i);
                 end
             end
             switch FileType
