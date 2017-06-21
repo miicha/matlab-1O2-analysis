@@ -2,7 +2,7 @@ classdef CameraPanel < PlotPanel
 
     methods
         function this = CameraPanel(parent, dims, gui_parent)
-            dimnames = {'x', 'y', 's'};
+            dimnames = {'x', 'y', 'i', 'f'};
             this@PlotPanel(parent, dims, dimnames, gui_parent, dimnames ,{[], [], [], [], []});       
         end
         

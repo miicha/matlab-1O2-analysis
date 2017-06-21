@@ -23,7 +23,9 @@ classdef CameraMode < GenericMode
                 this.num_pictures = size(data, 3);
                 
                 for i = 1:this.num_pictures
-                    tmp(:,:,i) = data(:,:,i)';
+                    for j = 1:size(data, 4)
+                        tmp(:,:,i,j) = data(:,:,i,j)';
+                    end
                 end
                 data = tmp;
                 clear tmp;

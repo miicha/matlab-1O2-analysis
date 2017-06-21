@@ -193,6 +193,38 @@ classdef UI < handle
         
         function openMultipleHDF5(this)
             
+            if strcmp(this.h.config_read_fluo.Checked,'on')
+                readfluo = true;
+            else
+                readfluo = false;
+            end
+            tic
+            
+            filepath = fullfile(this.fileinfo.path, this.fileinfo.name{1});
+            reader = HDF5_reader(filepath);
+            reader.readfluo = readfluo;
+            reader.set_progress_cb(@this.update_infos);
+            reader.read_data();
+            
+            pooled_camera_data(:,:,:,1) = reader.get_camera_data();
+            num_images_in_file = size(pooled_camera_data,3);
+            
+            for i = 2: length(this.fileinfo.name)
+                filepath = fullfile(this.fileinfo.path, this.fileinfo.name{i});
+                
+                tmp_reader = HDF5_reader(filepath);
+                tmp_reader.readfluo = readfluo;
+                
+                tmp_reader.set_progress_cb(@this.update_infos);
+                tic
+                tmp_reader.read_data();
+                tmp = tmp_reader.get_camera_data();
+                pooled_camera_data(1:size(tmp,1),1:size(tmp,2),1:size(tmp,3),i) = tmp;
+            end
+            
+            reader.replace_camera_data(pooled_camera_data);
+            reading_time = toc
+            this.open_modes(reader);            
         end
         
         function openHDF5(this)
