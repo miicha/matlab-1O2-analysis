@@ -51,7 +51,7 @@ classdef CameraMode < GenericMode
                 
                 this.h.chose_cmap_button = uicontrol(this.h.colorpanel);
                 
-                this.h.histogr = uicontrol(this.h.colorpanel);
+                this.h.histogr_axes = axes('parent', this.h.colorpanel);
 
                 this.h.plotpanel = uipanel(this.h.cameramode);
 
@@ -69,6 +69,13 @@ classdef CameraMode < GenericMode
                                 
                 set(this.h.colorpanel, 'units', 'pixels',...
                             'position', [3 290 244 260]);
+                        
+                set(this.h.histogr_axes, 'units', 'pixels',...
+                            'position', [5 5 232 200]);
+%                         get(this.h.histogr.XAxis)
+                        this.h.histogr_axes.YAxis.Visible = 'off';
+                        this.h.histogr_axes.XAxis.Visible = 'off';
+%                         get(this.h.histogr)
                                 
                 set(this.h.diffbutton,  'units', 'pixels',...
                            'style', 'push',...
@@ -117,6 +124,7 @@ classdef CameraMode < GenericMode
                 
         function plot_array(this)
             this.plotpanel.plot_array(this.data(:, :, :, :, :), 'a');
+            this.h.histogr = histogram(this.h.histogr_axes,this.data(:, :, 1));
         end
         
         function left_click_on_axes(this, point)
