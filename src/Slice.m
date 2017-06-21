@@ -122,12 +122,14 @@ classdef Slice < handle
                 dd = this.p.get_errs();
             end
             
-            if(isempty(dd))
-                dd = zeros(size(d));
-            end
+%             if(isempty(dd))
+%                 dd = zeros(size(d));
+%             end
             tmp = this.p.get_slice();
             d = squeeze(d(tmp{:}));
-            dd = squeeze(dd(tmp{:}));
+            if ~isempty(dd)
+                dd = squeeze(dd(tmp{:}));
+            end
             
             if this.p.transpose
                 d = d';
@@ -177,7 +179,11 @@ classdef Slice < handle
                     continue
                 end
                 plot_vec(x_i) = d(i, l(i));
-                plot_vec_err(x_i) = dd(i, l(i));
+                if ~isempty(dd)
+                    plot_vec_err(x_i) = dd(i, l(i));
+                else
+                    plot_vec_err = [];
+                end
                 if x_i == 1
                     x_vec(1) = x_1;
                     continue

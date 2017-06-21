@@ -427,7 +427,11 @@ classdef PlotPanel < handle
         end
         
         function data = get_errs(this, varargin)
-            data = this.p.get_errs(varargin);
+            try
+                data = this.p.get_errs(varargin);
+            catch
+                data = [];
+            end
         end
 
         function create_slice(this, index)
