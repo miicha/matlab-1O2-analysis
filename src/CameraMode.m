@@ -19,9 +19,16 @@ classdef CameraMode < GenericMode
                 end                
 
                 this.p = parent;
-                this.data = data;
+                
                 this.num_pictures = size(data, 3);
-
+                
+                for i = 1:this.num_pictures
+                    tmp(:,:,i) = data(:,:,i)';
+                end
+                data = tmp;
+                clear tmp;
+                    
+                this.data = data;    
                 this.scale = this.p.scale;
                 this.units = this.p.units;
 
@@ -34,11 +41,17 @@ classdef CameraMode < GenericMode
                 this.h.cameramode = uitab(this.h.parent);
                 
                 this.h.evalpanel = uipanel(this.h.cameramode);
+                
+                this.h.colorpanel = uipanel(this.h.evalpanel);
+                
+                
                 this.h.diffbutton = uicontrol(this.h.evalpanel);
                 this.h.quotientbutton = uicontrol(this.h.evalpanel);
                 this.h.wl2 = uicontrol(this.h.evalpanel);
                 
-                this.h.chose_cmap_button = uicontrol(this.h.evalpanel);
+                this.h.chose_cmap_button = uicontrol(this.h.colorpanel);
+                
+                this.h.histogr = uicontrol(this.h.colorpanel);
 
                 this.h.plotpanel = uipanel(this.h.cameramode);
 
@@ -54,6 +67,9 @@ classdef CameraMode < GenericMode
                                     'highlightcolor', [.7 .7 .7],...
                                     'BackgroundColor', [.85 .85 .85]);
                                 
+                set(this.h.colorpanel, 'units', 'pixels',...
+                            'position', [3 290 244 260]);
+                                
                 set(this.h.diffbutton,  'units', 'pixels',...
                            'style', 'push',...
                            'position', [2 2 120 28],...
@@ -68,9 +84,9 @@ classdef CameraMode < GenericMode
                        
                 set(this.h.chose_cmap_button, 'units', 'pixels',...
                            'style', 'popupmenu',...
-                           'string', {'jet','summer','bone','parula','hot'},...
+                           'string', {'summer','jet','parula','bone','hot'},...
                            'value', 1,...
-                           'position', [15 205 220 15],...
+                           'position', [15 230 214 15],...
                            'callback', @this.set_cmap_cb,...
                            'BackgroundColor', [1 1 1],...
                            'FontSize', 9);
@@ -131,6 +147,14 @@ classdef CameraMode < GenericMode
             pP = get(this.h.plotpanel, 'Position');
             pP(3:4) = [(mP(3)-pP(1))-10 (mP(4)-pP(2))-10];
             this.h.plotpanel.Position = pP;
+            
+            eP = this.h.evalpanel.Position;
+            eP(4) = (mP(4)-eP(2))-10;
+            this.h.evalpanel.Position = eP;
+            
+            cP = this.h.colorpanel.Position;
+            cP(2) = (eP(4)-cP(4))-3;
+            this.h.colorpanel.Position = cP;
         end
         
         function show_diff_cb(this, varargin)
