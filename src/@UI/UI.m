@@ -156,6 +156,8 @@ classdef UI < handle
                     this.openDIFF();
                 elseif regexp(ext, 'asc$')
                     this.openASC();
+                elseif regexp(ext, 'h5$')
+                    this.openMultipleHDF5();
                 end
             elseif isstruct(name)
                 % multiple selection (including multiple folders)
@@ -189,6 +191,10 @@ classdef UI < handle
             this.saveini();
         end
         
+        function openMultipleHDF5(this)
+            
+        end
+        
         function openHDF5(this)
             filepath = fullfile(this.fileinfo.path, this.fileinfo.name{1});
             
@@ -209,7 +215,10 @@ classdef UI < handle
             reader.read_data();
             reading_time = toc
 %             reader.meta.fileinfo
-            
+            this.open_modes(reader);
+        end
+        
+        function open_modes(this, reader)
             
             fn = fieldnames(reader.meta.fileinfo);
             for i = 1:length(fn)
@@ -284,6 +293,7 @@ classdef UI < handle
             end
             this.data_read = true;
         end
+        
         
         function openDIFF(this)
             name = this.fileinfo.name;
