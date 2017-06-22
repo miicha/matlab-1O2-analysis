@@ -45,15 +45,16 @@ classdef CameraMode < GenericMode
                 this.h.evalpanel = uipanel(this.h.cameramode);
                 
                 this.h.colorpanel = uipanel(this.h.evalpanel);
-                
+                    this.h.chose_cmap_button = uicontrol(this.h.colorpanel);
+                    this.h.histogr_axes = axes('parent', this.h.colorpanel);
+                    this.h.jRangeSlider = com.jidesoft.swing.RangeSlider(0,100,0,70);  % min,max,low,high
+                    this.h.jRangeSlider = javacomponent(this.h.jRangeSlider, [0,0,244,40], this.h.colorpanel);
                 
                 this.h.diffbutton = uicontrol(this.h.evalpanel);
                 this.h.quotientbutton = uicontrol(this.h.evalpanel);
                 this.h.wl2 = uicontrol(this.h.evalpanel);
                 
-                this.h.chose_cmap_button = uicontrol(this.h.colorpanel);
                 
-                this.h.histogr_axes = axes('parent', this.h.colorpanel);
 
                 this.h.plotpanel = uipanel(this.h.cameramode);
 
@@ -72,12 +73,23 @@ classdef CameraMode < GenericMode
                 set(this.h.colorpanel, 'units', 'pixels',...
                             'position', [3 290 244 260]);
                         
-                set(this.h.histogr_axes, 'units', 'pixels',...
-                            'position', [5 5 232 200]);
-%                         get(this.h.histogr.XAxis)
-                        this.h.histogr_axes.YAxis.Visible = 'off';
-                        this.h.histogr_axes.XAxis.Visible = 'off';
-%                         get(this.h.histogr)
+                    set(this.h.histogr_axes, 'units', 'pixels',...
+                               'position', [15 42 213 175]);
+                               this.h.histogr_axes.YAxis.Visible = 'off';
+
+                    set(this.h.chose_cmap_button, 'units', 'pixels',...
+                               'style', 'popupmenu',...
+                               'string', {'summer','jet','parula','bone','hot'},...
+                               'value', 1,...
+                               'position', [15 230 214 15],...
+                               'callback', @this.set_cmap_cb,...
+                               'BackgroundColor', [1 1 1],...
+                               'FontSize', 9);
+                           
+                    set(this.h.jRangeSlider, 'MajorTickSpacing',25, 'MinorTickSpacing',5,...
+                               'PaintTicks',true, 'PaintLabels',true, ...
+                               'Background',java.awt.Color.white,...
+                               'StateChangedCallback',@this.histo_slider_cb);
                                 
                 set(this.h.diffbutton,  'units', 'pixels',...
                            'style', 'push',...
@@ -90,15 +102,6 @@ classdef CameraMode < GenericMode
                            'position', [2 35 120 28],...
                            'string', 'Quotienten anzeigen',...
                            'callback', @this.show_quot_cb);
-                       
-                set(this.h.chose_cmap_button, 'units', 'pixels',...
-                           'style', 'popupmenu',...
-                           'string', {'summer','jet','parula','bone','hot'},...
-                           'value', 1,...
-                           'position', [15 230 214 15],...
-                           'callback', @this.set_cmap_cb,...
-                           'BackgroundColor', [1 1 1],...
-                           'FontSize', 9);
                        
                 set(this.h.wl2, 'units', 'pixels',...
                                   'position', [150 25 50 15],...
@@ -126,17 +129,27 @@ classdef CameraMode < GenericMode
                 
         function plot_array(this)
             this.plotpanel.plot_array(this.data(:, :, :, :, :), 'a');
+            this.plot_histogram();
+        end
+        
+        function plot_histogram(this)
             this.h.histogr = histogram(this.h.histogr_axes,this.data(this.plotpanel.ind{:}));
+            get(this.h.histogr.Parent)
+            this.h.histogr.Parent.XTick = [];
+            this.h.histogr.Parent.YTick = [];
+            min_max = this.h.histogr.BinLimits;
+            this.h.histogr.Parent.XLim = min_max;
+            this.h.jRangeSlider.LabelTable = [];    % wichtig damit Labels automatisch neu berechnet werden
+            majTick = round((min_max(2)-min_max(1))/5);
+            this.h.jRangeSlider.MajorTickSpacing = majTick;
+            this.h.jRangeSlider.MinorTickSpacing = majTick/2;
+            this.h.jRangeSlider.Maximum = min_max(2);
+            this.h.jRangeSlider.HighValue = min_max(2);
         end
         
         function left_click_on_axes(this, point)
+            point
             this.data(point{1:4})
-            
-%             if sum(squeeze(this.data(point{1:4}, :))) > 0
-%                 SinglePlot(this.wavelengths, squeeze(this.data(point{1:4}, :)), [],...
-%                            fullfile(this.p.savepath, this.p.genericname),...
-%                            'title', num2str(cell2mat(point)));
-%             end
         end
         
         function set_cmap_cb(this,varargin)
@@ -229,6 +242,13 @@ classdef CameraMode < GenericMode
 
         function data = get_data(this)
             data = this.data(:, :, :, :, :);
+        end
+        
+        function histo_slider_cb(this, varargin)
+            werte = get(get(varargin{2}, 'Source'));
+            [werte.LowValue werte.HighValue];
+%             pause(0.1);
+            this.plotpanel.h.tick_min.String = num2str(werte.LowValue);
         end
     end
 end
