@@ -450,6 +450,34 @@ classdef PlotPanel < handle
                 end
             end
         end
+        
+         % upper and lower bound of legend
+        function set_tick_cb(this, varargin)
+            switch varargin{1}
+                case this.h.tick_min
+                    new_l_min = str2double(get(this.h.tick_min, 'string'));
+                    if new_l_min < this.l_max.(this.mode)
+                        this.l_min.(this.mode) = new_l_min;
+                        this.use_user_legend.(this.mode) = true;
+                    elseif isempty(get(this.h.tick_min, 'string'))
+                        this.use_user_legend.(this.mode) = false;
+                    else
+                        set(this.h.tick_min, 'string', this.l_min.(this.mode));
+                    end
+                case this.h.tick_max
+                    new_l_max = str2double(get(this.h.tick_max, 'string'));
+                    if new_l_max > this.l_min.(this.mode)
+                        this.l_max.(this.mode) = new_l_max;
+                        this.use_user_legend.(this.mode) = true;
+                    elseif isempty(get(this.h.tick_max, 'string'))
+                        this.use_user_legend.(this.mode) = false;
+                    else
+                        set(this.h.tick_max, 'string', this.l_max.(this.mode));
+                    end
+            end
+            this.update_plot();
+        end
+        
     end
     
     methods (Access = protected)       
@@ -571,32 +599,7 @@ classdef PlotPanel < handle
             this.h.(sprintf('d%d_slider', dim)).Value = value;
         end
 
-        % upper and lower bound of legend
-        function set_tick_cb(this, varargin)
-            switch varargin{1}
-                case this.h.tick_min
-                    new_l_min = str2double(get(this.h.tick_min, 'string'));
-                    if new_l_min < this.l_max.(this.mode)
-                        this.l_min.(this.mode) = new_l_min;
-                        this.use_user_legend.(this.mode) = true;
-                    elseif isempty(get(this.h.tick_min, 'string'))
-                        this.use_user_legend.(this.mode) = false;
-                    else
-                        set(this.h.tick_min, 'string', this.l_min.(this.mode));
-                    end
-                case this.h.tick_max
-                    new_l_max = str2double(get(this.h.tick_max, 'string'));
-                    if new_l_max > this.l_min.(this.mode)
-                        this.l_max.(this.mode) = new_l_max;
-                        this.use_user_legend.(this.mode) = true;
-                    elseif isempty(get(this.h.tick_max, 'string'))
-                        this.use_user_legend.(this.mode) = false;
-                    else
-                        set(this.h.tick_max, 'string', this.l_max.(this.mode));
-                    end
-            end
-            this.update_plot();
-        end
+       
 
         function resize(this, varargin)
             mP = get(this.h.parent, 'Position');

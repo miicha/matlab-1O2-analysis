@@ -47,8 +47,8 @@ classdef CameraMode < GenericMode
                 this.h.colorpanel = uipanel(this.h.evalpanel);
                     this.h.chose_cmap_button = uicontrol(this.h.colorpanel);
                     this.h.histogr_axes = axes('parent', this.h.colorpanel);
-                    this.h.jRangeSlider = com.jidesoft.swing.RangeSlider(0,100,0,70);  % min,max,low,high
-                    this.h.jRangeSlider = javacomponent(this.h.jRangeSlider, [0,0,244,40], this.h.colorpanel);
+                    this.h.jRangeSlider = com.jidesoft.swing.RangeSlider(0,14000,6000,12500);  % min,max,low,high
+                    this.h.jRangeSlider = javacomponent(this.h.jRangeSlider, [0,0,242,40], this.h.colorpanel);
                 
                 this.h.diffbutton = uicontrol(this.h.evalpanel);
                 this.h.quotientbutton = uicontrol(this.h.evalpanel);
@@ -74,7 +74,7 @@ classdef CameraMode < GenericMode
                             'position', [3 290 244 260]);
                         
                     set(this.h.histogr_axes, 'units', 'pixels',...
-                               'position', [15 42 213 175]);
+                               'position', [5 42 233 175]);
                                this.h.histogr_axes.YAxis.Visible = 'off';
 
                     set(this.h.chose_cmap_button, 'units', 'pixels',...
@@ -134,7 +134,6 @@ classdef CameraMode < GenericMode
         
         function plot_histogram(this)
             this.h.histogr = histogram(this.h.histogr_axes,this.data(this.plotpanel.ind{:}));
-            get(this.h.histogr.Parent)
             this.h.histogr.Parent.XTick = [];
             this.h.histogr.Parent.YTick = [];
             min_max = this.h.histogr.BinLimits;
@@ -144,7 +143,7 @@ classdef CameraMode < GenericMode
             this.h.jRangeSlider.MajorTickSpacing = majTick;
             this.h.jRangeSlider.MinorTickSpacing = majTick/2;
             this.h.jRangeSlider.Maximum = min_max(2);
-            this.h.jRangeSlider.HighValue = min_max(2);
+%             this.h.jRangeSlider.HighValue = min_max(2);
         end
         
         function left_click_on_axes(this, point)
@@ -247,8 +246,18 @@ classdef CameraMode < GenericMode
         function histo_slider_cb(this, varargin)
             werte = get(get(varargin{2}, 'Source'));
             [werte.LowValue werte.HighValue];
+            
+            max_y = max(this.h.histogr.BinCounts(this.h.histogr.BinEdges(1:end-1) > werte.LowValue));
+            
+%             get(this.h.histogr)
 %             pause(0.1);
             this.plotpanel.h.tick_min.String = num2str(werte.LowValue);
+            this.plotpanel.set_tick_cb(this.plotpanel.h.tick_min);
+            
+            this.plotpanel.h.tick_max.String = num2str(werte.HighValue);
+            this.plotpanel.set_tick_cb(this.plotpanel.h.tick_max);
+            
+            this.h.histogr.Parent.YLim = [0 max_y];
         end
     end
 end
