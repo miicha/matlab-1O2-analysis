@@ -695,7 +695,7 @@ classdef SiSaGenericPlot < handle
         %% Export
         
         function save_fig_selloc_cb(this, varargin)
-            [name, path] = uiputfile('*.pdf', 'Plot als PDF speichern', this.generate_filepath());
+            [name, path] = uiputfile({'*.pdf'; '*.png'}, 'Plot speichern', this.generate_filepath());
             if name == 0
                 return
             end
@@ -789,14 +789,15 @@ classdef SiSaGenericPlot < handle
         end
         
         function save_fig(this, path)
-            
+            [~, ~, ext] = fileparts(path);
+            ext = ext(2:end);
             already_open = false;
             if ~isfield(this.h, 'plot_pre') || (isfield(this.h, 'plot_pre') && ~ishandle(this.h.plot_pre))
                 this.generate_export_fig('off');
                 already_open = true;
             end
             
-            save2pdf(path, 'figure', this.h.plot_pre, 'width', 1.1)
+            save2pdf(path, 'format', ext, 'figure', this.h.plot_pre, 'width', 1.1)
             
             if ~already_open
                 close(this.h.plot_pre)
@@ -843,11 +844,11 @@ classdef SiSaGenericPlot < handle
                 ax_res = copyobj(this.h.res, this.h.plot_pre);
                 xlabel(ax_res, 'Time [$$\mu$$s]', 'interpreter', 'latex');
                 ylabel(ax_res, 'norm. residues', 'interpreter', 'latex');
-                set(ax_res, 'position', [90, 70, 1000, 130]);
-                set(ax, 'position', [90, 280, 1000, 450]);
+                set(ax_res, 'position', [90, 90, 1000, 120]);
+                set(ax, 'position', [90, 290, 990, 450]);
                 ax_res.TickLabelInterpreter='latex';
             else
-                set(ax, 'position', [90 70 1000 650]);
+                set(ax, 'position', [90 90 1000 650]);
             end
             ax.TickLabelInterpreter='latex';
             
