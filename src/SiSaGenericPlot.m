@@ -796,15 +796,7 @@ classdef SiSaGenericPlot < handle
                 already_open = true;
             end
             
-            tmp = get(this.h.plot_pre, 'position');
-            x_pix = tmp(3);
-            y_pix = tmp(4);
-            
-            % save the plot and close the figure
-            set(this.h.plot_pre, 'PaperUnits', 'points');
-            set(this.h.plot_pre, 'PaperSize', [x_pix+80 y_pix+80]/1.5);
-            set(this.h.plot_pre, 'PaperPosition', [25 0 x_pix+80 y_pix+80]/1.5);
-            print(this.h.plot_pre, '-dpdf', '-r300', path);
+            save2pdf(path, 'figure', this.h.plot_pre, 'width', 1.1)
             
             if ~already_open
                 close(this.h.plot_pre)
@@ -829,8 +821,8 @@ classdef SiSaGenericPlot < handle
                
 
             ax = copyobj(this.h.axes, this.h.plot_pre);
-            xlabel(ax, 'Time [\mus]')
-            ylabel(ax, 'Counts');
+            xlabel(ax, 'Time [$$\mu$$s]', 'interpreter', 'latex');
+            ylabel(ax, 'Counts', 'interpreter', 'latex');
             
             tmp = gca;
             tmp = tmp.Children;
@@ -845,19 +837,21 @@ classdef SiSaGenericPlot < handle
                     tmp(i).HandleVisibility = 'off';
                 end
             end
-            legend('show')
+            h = legend('show');
+            set(h, 'interpreter', 'latex');
                 
             
             if this.fitted
                 ax_res = copyobj(this.h.res, this.h.plot_pre);
-                xlabel(ax_res, 'Time [\mus]')
-                ylabel(ax_res, 'norm. residues')
-                set(ax_res, 'position', [70, 50, 1000, 150]);
-                set(ax, 'position', [70 250 1000 450]);
-                
+                xlabel(ax_res, 'Time [$$\mu$$s]', 'interpreter', 'latex');
+                ylabel(ax_res, 'norm. residues', 'interpreter', 'latex');
+                set(ax_res, 'position', [70, 70, 1000, 130]);
+                set(ax, 'position', [70, 280, 1000, 450]);
+                ax_res.TickLabelInterpreter='latex';
             else
-                set(ax, 'position', [70 50 1000 650]);
+                set(ax, 'position', [70 70 1000 650]);
             end
+            ax.TickLabelInterpreter='latex';
             
             plotobjs = ax.Children;
             for i = 1:length(plotobjs)
@@ -865,7 +859,7 @@ classdef SiSaGenericPlot < handle
                     set(plotobjs(i), 'visible', 'off')
                 end
             end
-            
+                        
             if this.fitted && this.fit_info
                 %this.generate_fit_info_ov();
             end
