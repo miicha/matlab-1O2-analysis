@@ -817,7 +817,7 @@ classdef SiSaGenericPlot < handle
                 already_open = true;
             end
             
-            save2pdf(path, 'format', ext, 'tick', 9, 'figure', this.h.plot_pre, 'width', 1.1)
+            save2pdf(path, 'format', ext, 'tick', 9, 'figure', this.h.plot_pre, 'width', .8)
             
             if ~already_open
                 close(this.h.plot_pre)
@@ -864,11 +864,11 @@ classdef SiSaGenericPlot < handle
                 ax_res = copyobj(this.h.res, this.h.plot_pre);
                 xlabel(ax_res, 'Time [$$\mu$$s]', 'interpreter', 'latex');
                 ylabel(ax_res, 'norm. residues', 'interpreter', 'latex');
-                set(ax_res, 'position', [90, 90, 1000, 120]);
-                set(ax, 'position', [90, 290, 1000, 450]);
+                set(ax_res, 'position', [130, 90, 1000, 120]);
+                set(ax, 'position', [130, 290, 1000, 450]);
                 ax_res.TickLabelInterpreter='latex';
             else
-                set(ax, 'position', [90 90 1000 650]);
+                set(ax, 'position', [130 90 1000 650]);
             end
             ax.TickLabelInterpreter='latex';
             
@@ -919,7 +919,7 @@ classdef SiSaGenericPlot < handle
                                     'units', 'normalized',...
                                     'HorizontalAlignment', 'right',...
                                     'VerticalAlignment', 'top',...
-                                    'FontSize', 7);
+                                    'FontSize', 10);
         end
         
         function generate_export_fig_cb(this, varargin)
