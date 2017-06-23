@@ -880,7 +880,7 @@ classdef SiSaGenericPlot < handle
             end
                         
             if this.fitted && this.export_fit_info
-                this.generate_fit_info_ov();
+                this.generate_fit_info_ov(ax);
             else
                 if this.fitted
                     h = legend('Data', 'Fit');
@@ -901,8 +901,7 @@ classdef SiSaGenericPlot < handle
             this.smode.export_res = this.export_res;
         end
         
-        function generate_fit_info_ov(this)
-            ax = this.h.plot_pre.Children(2);
+        function generate_fit_info_ov(this, ax)
             axes(ax);
             m_names = this.sisa_fit.tex_parnames;
             m_units = this.sisa_fit.tex_units;  
