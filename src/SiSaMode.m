@@ -52,6 +52,9 @@ classdef SiSaMode < GenericMode
         sisa_fit = sisafit(1);
         sisa_fit_info;
         
+        export_fit_info = true;
+        export_res = true;
+        
         fix = {};
         gstart = [0 0 0 0];
         use_gstart = [0 0 0 0]';

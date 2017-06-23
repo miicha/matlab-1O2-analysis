@@ -12,13 +12,14 @@ classdef SiSaGenericPlot < handle
         fit_params;         % fitted parameters
         fit_params_err;     % ertimated errors of fitted parameters
         cp;
-        fit_info = true;
         diff_data;
         data_backup;
         plot_limits;
         plot_limits_default;
         sisa_fit;
         sisa_fit_info;
+        export_fit_info = true;
+        export_res = true;
         res;
         ub                  % upper bounds (different from parent due to sum)
     end
@@ -35,6 +36,9 @@ classdef SiSaGenericPlot < handle
 
             this.sisa_fit_info = this.smode.sisa_fit_info;
             this.sisa_fit = this.smode.sisa_fit.copy;
+            
+            this.export_fit_info = smode.export_fit_info;
+            this.export_res = smode.export_res;
             
             this.ub = this.smode.sisa_fit.upper_bounds;
             
@@ -71,6 +75,8 @@ classdef SiSaGenericPlot < handle
                 this.h.save_fig = uicontrol(this.h.exp_tab);
                 this.h.save_data = uicontrol(this.h.exp_tab);
                 this.h.save_data_temp = uicontrol(this.h.exp_tab);
+                this.h.res_toggle = uicontrol(this.h.exp_tab);
+                this.h.info_toggle = uicontrol(this.h.exp_tab);
                 
             this.h.imp_tab = uitab(this.h.tabs);
                 this.h.import_diff_data = uicontrol(this.h.imp_tab);
@@ -203,6 +209,20 @@ classdef SiSaGenericPlot < handle
                           'string', 'Transfer Data',...
                           'FontSize', 9,...
                           'callback', @this.save_data_temp_cb);
+             set(this.h.res_toggle, 'units', 'pixels',...
+                          'style', 'checkbox',...
+                          'position', [250 5 120 28],...
+                          'string', 'Export residues',...
+                          'value', this.export_res,...
+                          'FontSize', 9,...
+                          'callback', @this.toggle_res_cb);
+             set(this.h.info_toggle, 'units', 'pixels',...
+                          'position', [250 40 120 28],...
+                          'style', 'checkbox',...
+                          'value', this.export_fit_info,...
+                          'string', 'Export fit info',...
+                          'FontSize', 9,...
+                          'callback', @this.toggle_info_cb);
                       
              %% import
             set(this.h.imp_tab, 'units', 'pixels',...
@@ -797,7 +817,7 @@ classdef SiSaGenericPlot < handle
                 already_open = true;
             end
             
-            save2pdf(path, 'format', ext, 'figure', this.h.plot_pre, 'width', 1.1)
+            save2pdf(path, 'format', ext, 'tick', 9, 'figure', this.h.plot_pre, 'width', 1.1)
             
             if ~already_open
                 close(this.h.plot_pre)
@@ -840,12 +860,12 @@ classdef SiSaGenericPlot < handle
             end
                
             
-            if this.fitted
+            if this.fitted && this.export_res
                 ax_res = copyobj(this.h.res, this.h.plot_pre);
                 xlabel(ax_res, 'Time [$$\mu$$s]', 'interpreter', 'latex');
                 ylabel(ax_res, 'norm. residues', 'interpreter', 'latex');
                 set(ax_res, 'position', [90, 90, 1000, 120]);
-                set(ax, 'position', [90, 290, 990, 450]);
+                set(ax, 'position', [90, 290, 1000, 450]);
                 ax_res.TickLabelInterpreter='latex';
             else
                 set(ax, 'position', [90 90 1000 650]);
@@ -859,12 +879,26 @@ classdef SiSaGenericPlot < handle
                 end
             end
                         
-            if this.fitted && this.fit_info
+            if this.fitted && this.export_fit_info
                 this.generate_fit_info_ov();
             else
-                h = legend('show');
+                if this.fitted
+                    h = legend('Data', 'Fit');
+                else
+                    h = legend('Data');
+                end
                 set(h, 'interpreter', 'latex');
             end
+        end
+        
+        function toggle_info_cb(this, caller, varargin)
+            this.export_fit_info = caller.Value;
+            this.smode.export_fit_info = this.export_fit_info;
+        end
+        
+        function toggle_res_cb(this, caller, varargin)
+            this.export_res = caller.Value;
+            this.smode.export_res = this.export_res;
         end
         
         function generate_fit_info_ov(this)
@@ -882,10 +916,11 @@ classdef SiSaGenericPlot < handle
                 str{i+2} = ['$$ ' m_names{i} ' = (' num2str(par) '\pm ' num2str(err) ')$$ ' m_units{i}];
             end
             str{end+2} = ['$$ \chi^2 =$$ ' num2str(roundsig(this.chisq, 4))];
-            m = text(.92, .90, str, 'Interpreter', 'latex',...
+            m = text(.96, .90, str, 'Interpreter', 'latex',...
                                     'units', 'normalized',...
                                     'HorizontalAlignment', 'right',...
-                                    'VerticalAlignment', 'top');
+                                    'VerticalAlignment', 'top',...
+                                    'FontSize', 7);
         end
         
         function generate_export_fig_cb(this, varargin)
