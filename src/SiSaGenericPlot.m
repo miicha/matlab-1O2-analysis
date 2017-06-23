@@ -812,7 +812,7 @@ classdef SiSaGenericPlot < handle
             end
             set(this.h.plot_pre, 'units', 'pixels',...
                    'numbertitle', 'off',...
-                   'position', [100 100 1100 750],...
+                   'position', [100 100 1150 780],...
                    'name', 'SISA Scan Vorschau',...
                    'Color', [.95, .95, .95],...
                    'resize', 'off');
@@ -837,19 +837,17 @@ classdef SiSaGenericPlot < handle
                     tmp(i).HandleVisibility = 'off';
                 end
             end
-            h = legend('show');
-            set(h, 'interpreter', 'latex');
-                
+               
             
             if this.fitted
                 ax_res = copyobj(this.h.res, this.h.plot_pre);
                 xlabel(ax_res, 'Time [$$\mu$$s]', 'interpreter', 'latex');
                 ylabel(ax_res, 'norm. residues', 'interpreter', 'latex');
-                set(ax_res, 'position', [70, 70, 1000, 130]);
-                set(ax, 'position', [70, 280, 1000, 450]);
+                set(ax_res, 'position', [90, 70, 1000, 130]);
+                set(ax, 'position', [90, 280, 1000, 450]);
                 ax_res.TickLabelInterpreter='latex';
             else
-                set(ax, 'position', [70 70 1000 650]);
+                set(ax, 'position', [90 70 1000 650]);
             end
             ax.TickLabelInterpreter='latex';
             
@@ -861,7 +859,10 @@ classdef SiSaGenericPlot < handle
             end
                         
             if this.fitted && this.fit_info
-                %this.generate_fit_info_ov();
+                this.generate_fit_info_ov();
+            else
+                h = legend('show');
+                set(h, 'interpreter', 'latex');
             end
         end
         
@@ -880,7 +881,7 @@ classdef SiSaGenericPlot < handle
                 str{i+2} = ['$$ ' m_names{i} ' = (' num2str(par) '\pm ' num2str(err) ')$$ ' m_units{i}];
             end
             str{end+2} = ['$$ \chi^2 =$$ ' num2str(roundsig(this.chisq, 4))];
-            m = text(.92, .94, str, 'Interpreter', 'latex',...
+            m = text(.92, .90, str, 'Interpreter', 'latex',...
                                     'units', 'normalized',...
                                     'HorizontalAlignment', 'right',...
                                     'VerticalAlignment', 'top');
