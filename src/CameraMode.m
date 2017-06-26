@@ -6,6 +6,7 @@ classdef CameraMode < GenericMode
         num_pictures;
         current_spec_point = 1;
         wavelengths;
+        bg_data;
     end
     
     methods
@@ -43,18 +44,13 @@ classdef CameraMode < GenericMode
                 this.h.cameramode = uitab(this.h.parent);
                 
                 this.h.evalpanel = uipanel(this.h.cameramode);
-                
-                this.h.colorpanel = uipanel(this.h.evalpanel);
-                    this.h.chose_cmap_button = uicontrol(this.h.colorpanel);
-                    this.h.histogr_axes = axes('parent', this.h.colorpanel);
-                    this.h.jRangeSlider = com.jidesoft.swing.RangeSlider(0,14000,6000,12500);  % min,max,low,high
-                    this.h.jRangeSlider = javacomponent(this.h.jRangeSlider, [0,0,242,40], this.h.colorpanel);
-                
-                this.h.diffbutton = uicontrol(this.h.evalpanel);
-                this.h.quotientbutton = uicontrol(this.h.evalpanel);
-                this.h.wl2 = uicontrol(this.h.evalpanel);
-                
-                
+                    this.h.colorpanel = uipanel(this.h.evalpanel);
+                        this.h.chose_cmap_button = uicontrol(this.h.colorpanel);
+                        this.h.histogr_axes = axes('parent', this.h.colorpanel);
+                        this.h.jRangeSlider = com.jidesoft.swing.RangeSlider(0,14000,6000,12500);  % min,max,low,high
+                        this.h.jRangeSlider = javacomponent(this.h.jRangeSlider, [0,0,242,40], this.h.colorpanel);
+                    this.h.removeBackground = uicontrol(this.h.evalpanel);
+                    this.h.restoreBackground = uicontrol(this.h.evalpanel);
 
                 this.h.plotpanel = uipanel(this.h.cameramode);
 
@@ -91,23 +87,17 @@ classdef CameraMode < GenericMode
                                'Background',java.awt.Color.white,...
                                'StateChangedCallback',@this.histo_slider_cb);
                                 
-                set(this.h.diffbutton,  'units', 'pixels',...
+                set(this.h.removeBackground,  'units', 'pixels',...
                            'style', 'push',...
                            'position', [2 2 120 28],...
-                           'string', 'Differenz anzeigen',...
-                           'callback', @this.show_diff_cb);
+                           'string', 'Set and remove Background',...
+                           'callback', @this.setBG);
                        
-                set(this.h.quotientbutton,  'units', 'pixels',...
+                set(this.h.restoreBackground,  'units', 'pixels',...
                            'style', 'push',...
                            'position', [2 35 120 28],...
-                           'string', 'Quotienten anzeigen',...
-                           'callback', @this.show_quot_cb);
-                       
-                set(this.h.wl2, 'units', 'pixels',...
-                                  'position', [150 25 50 15],...
-                                  'style', 'edit',...
-                                  'string', '670',...
-                                  'horizontalAlignment', 'left');
+                           'string', 'Restore Background',...
+                           'callback', @this.restoreBG_cb);
                 
                 set(this.h.plotpanel, 'units', 'pixels',...
                                     'position', [270 5 500 500],...
@@ -128,7 +118,7 @@ classdef CameraMode < GenericMode
         end
                 
         function plot_array(this)
-            this.plotpanel.plot_array(this.data(:, :, :, :, :), 'a');
+            this.plotpanel.plot_array(this.get_data, 'a');
             this.plot_histogram();
         end
         
@@ -137,12 +127,15 @@ classdef CameraMode < GenericMode
             this.h.histogr.Parent.XTick = [];
             this.h.histogr.Parent.YTick = [];
             min_max = this.h.histogr.BinLimits;
-            this.h.histogr.Parent.XLim = min_max;
+            
             this.h.jRangeSlider.LabelTable = [];    % wichtig damit Labels automatisch neu berechnet werden
             majTick = round((min_max(2)-min_max(1))/5);
             this.h.jRangeSlider.MajorTickSpacing = majTick;
             this.h.jRangeSlider.MinorTickSpacing = majTick/2;
-            this.h.jRangeSlider.Maximum = min_max(2);
+            if min_max(2) > 100
+                this.h.histogr.Parent.XLim = min_max;
+                this.h.jRangeSlider.Maximum = min_max(2);
+            end
 %             this.h.jRangeSlider.HighValue = min_max(2);
         end
         
@@ -248,7 +241,9 @@ classdef CameraMode < GenericMode
             [werte.LowValue werte.HighValue];
             
             max_y = max(this.h.histogr.BinCounts(this.h.histogr.BinEdges(1:end-1) > werte.LowValue));
-            
+            if isempty(max_y)
+                max_y = 20;
+            end
 %             get(this.h.histogr)
 %             pause(0.1);
             this.plotpanel.h.tick_min.String = num2str(werte.LowValue);
@@ -258,6 +253,33 @@ classdef CameraMode < GenericMode
             this.plotpanel.set_tick_cb(this.plotpanel.h.tick_max);
             
             this.h.histogr.Parent.YLim = [0 max_y];
+        end
+    end
+    
+    methods (Access = private)
+        function setBG(this,varargin)
+            % Background aus aktueller Ansicht übernehmen, abspeichern und
+            % in this.data von allen Daten abziehen.
+            this.restoreBG();
+            
+            this.bg_data = this.get_current_data();
+            this.data = this.data-this.bg_data;
+            this.plot_array();
+        end
+        
+        function restoreBG(this)
+            if ~isempty(this.bg_data)
+                this.data = this.data+this.bg_data;
+            end
+        end
+        
+        function data = get_current_data(this)
+            data = this.data(this.plotpanel.ind{:});
+        end
+        
+        function restoreBG_cb(this, varargin)
+            this.restoreBG();
+            this.plot_array();
         end
     end
 end
