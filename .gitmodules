@@ -7,3 +7,6 @@
 [submodule "3rd-party/uipickfiles"]
 	path = 3rd-party/uipickfiles
 	url = git@git.daten.tk:michael.pfitzner/uipickfiles.git
+[submodule "3rd-party/textools"]
+	path = 3rd-party/textools
+	url = git@git.daten.tk:sebastian.pfitzner/textools.git
