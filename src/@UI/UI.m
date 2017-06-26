@@ -289,7 +289,7 @@ classdef UI < handle
                         end
                         i = i + 1;
                     case {'fluo', 'spec'}
-                        if readfluo % open a fluorescence tab
+                        if reader.readfluo % open a fluorescence tab
                             this.modes{i} = FluoMode(this, reader.get_fluo_data(),...
                                 reader.get_fluo_x_achse(),...
                                 reader.get_fluo_int_time(), i);
