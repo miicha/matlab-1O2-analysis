@@ -7,6 +7,10 @@ classdef CameraMode < GenericMode
         current_spec_point = 1;
         wavelengths;
         bg_data;
+        current_draggable;
+        histo_start;
+        histo_end;
+        current_index = {'','','',''};
     end
     
     methods
@@ -47,8 +51,6 @@ classdef CameraMode < GenericMode
                     this.h.colorpanel = uipanel(this.h.evalpanel);
                         this.h.chose_cmap_button = uicontrol(this.h.colorpanel);
                         this.h.histogr_axes = axes('parent', this.h.colorpanel);
-                        this.h.jRangeSlider = com.jidesoft.swing.RangeSlider(0,14000,6000,12500);  % min,max,low,high
-                        this.h.jRangeSlider = javacomponent(this.h.jRangeSlider, [0,0,242,40], this.h.colorpanel);
                     this.h.removeBackground = uicontrol(this.h.evalpanel);
                     this.h.restoreBackground = uicontrol(this.h.evalpanel);
 
@@ -67,25 +69,20 @@ classdef CameraMode < GenericMode
                                     'BackgroundColor', [.85 .85 .85]);
                                 
                 set(this.h.colorpanel, 'units', 'pixels',...
-                            'position', [3 290 244 260]);
+                            'position', [3 290 244 300]);
                         
                     set(this.h.histogr_axes, 'units', 'pixels',...
-                               'position', [5 42 233 175]);
+                               'position', [5 82 233 175]);
                                this.h.histogr_axes.YAxis.Visible = 'off';
 
                     set(this.h.chose_cmap_button, 'units', 'pixels',...
                                'style', 'popupmenu',...
                                'string', {'summer','jet','parula','bone','hot'},...
                                'value', 1,...
-                               'position', [15 230 214 15],...
+                               'position', [15 270 214 15],...
                                'callback', @this.set_cmap_cb,...
                                'BackgroundColor', [1 1 1],...
                                'FontSize', 9);
-                           
-                    set(this.h.jRangeSlider, 'MajorTickSpacing',25, 'MinorTickSpacing',5,...
-                               'PaintTicks',true, 'PaintLabels',true, ...
-                               'Background',java.awt.Color.white,...
-                               'StateChangedCallback',@this.histo_slider_cb);
                                 
                 set(this.h.removeBackground,  'units', 'pixels',...
                            'style', 'push',...
@@ -120,23 +117,9 @@ classdef CameraMode < GenericMode
         function plot_array(this)
             this.plotpanel.plot_array(this.get_data, 'a');
             this.plot_histogram();
-        end
-        
-        function plot_histogram(this)
-            this.h.histogr = histogram(this.h.histogr_axes,this.data(this.plotpanel.ind{:}));
-            this.h.histogr.Parent.XTick = [];
-            this.h.histogr.Parent.YTick = [];
-            min_max = this.h.histogr.BinLimits;
+            this.plot_histo_slider();
             
-            this.h.jRangeSlider.LabelTable = [];    % wichtig damit Labels automatisch neu berechnet werden
-            majTick = round((min_max(2)-min_max(1))/5);
-            this.h.jRangeSlider.MajorTickSpacing = majTick;
-            this.h.jRangeSlider.MinorTickSpacing = majTick/2;
-            if min_max(2) > 100
-                this.h.histogr.Parent.XLim = min_max;
-                this.h.jRangeSlider.Maximum = min_max(2);
-            end
-%             this.h.jRangeSlider.HighValue = min_max(2);
+            this.current_index = this.plotpanel.ind;
         end
         
         function left_click_on_axes(this, point)
@@ -176,27 +159,56 @@ classdef CameraMode < GenericMode
                 ca.YTick = this.plotpanel.tickvalues{this.plotpanel.curr_dims(2)};
         end
         
-        function histo_slider_cb(this, varargin)
-            werte = get(get(varargin{2}, 'Source'));
-            [werte.LowValue werte.HighValue];
-            
-            max_y = max(this.h.histogr.BinCounts(this.h.histogr.BinEdges(1:end-1) > werte.LowValue));
-            if isempty(max_y)
-                max_y = 20;
-            end
-%             get(this.h.histogr)
-%             pause(0.1);
-            this.plotpanel.h.tick_min.String = num2str(werte.LowValue);
-            this.plotpanel.set_tick_cb(this.plotpanel.h.tick_min);
-            
-            this.plotpanel.h.tick_max.String = num2str(werte.HighValue);
-            this.plotpanel.set_tick_cb(this.plotpanel.h.tick_max);
-            
-            this.h.histogr.Parent.YLim = [0 max_y];
-        end
     end
     
     methods (Access = private)
+        
+        function plot_histogram(this)
+            vergl = zeros(length(this.plotpanel.ind),1);
+            for i = 1:length(this.plotpanel.ind)
+                if this.plotpanel.ind{i} == this.current_index{i}
+                    vergl(i) = 1;
+                end
+            end
+            
+            if sum(vergl) ~= 4
+                clear this.h.histogr
+                this.h.histogr = histogram(this.h.histogr_axes,this.data(this.plotpanel.ind{:}));
+%                             this.h.histogr.Parent.XTick = [];
+                this.h.histogr.Parent.YTick = [];
+                if isfield(this.h, 'startline')
+                    this.h = rmfield(this.h, 'startline');
+                    this.h = rmfield(this.h, 'endline');
+                end
+            end 
+        end
+        
+        function plot_histo_slider(this)
+            if ~isfield(this.h, 'startline')
+                min_max = this.h.histogr.BinLimits;
+                hist_cutoff = 0.05;
+                if isempty(this.histo_start)
+                    start_line = min_max(1) + (min_max(2)-min_max(1))*hist_cutoff;
+                else
+                    start_line = this.histo_start;
+                end
+                
+                if isempty(this.histo_end)
+                    end_line = min_max(2)-(min_max(2)-min_max(1))*hist_cutoff;
+                else
+                    end_line = this.histo_end;
+                end
+                
+                realmax = max(this.h.histogr.Values);
+                this.h.endline = line(this.h.histogr_axes,[end_line end_line],...
+                    [0 realmax], 'Color', [0.8 .2 .2], 'ButtonDownFcn', @this.plot_click, 'LineWidth', 1.5,...
+                    'LineStyle', '-.', 'Tag', 'line');
+                this.h.startline = line(this.h.histogr_axes,[start_line start_line],...
+                    [0 realmax], 'Color', [0.8 .2 .2], 'ButtonDownFcn', @this.plot_click, 'LineWidth', 1.5,...
+                    'LineStyle', '-.', 'Tag', 'line');
+            end
+        end
+        
         function resize(this, varargin)
             mP = get(this.h.parent, 'position');
             mP(4) = mP(4) - 25;
@@ -237,6 +249,69 @@ classdef CameraMode < GenericMode
         function data = get_current_data(this)
             data = this.data(this.plotpanel.ind{:});
         end
+        
+        
+        function plot_click(this, varargin)
+            switch varargin{1}
+                case this.h.startline
+                    set(gcf, 'WindowButtonMotionFcn', @this.plot_drag_start);
+                    set(gcf, 'WindowButtonUpFcn', @this.stop_dragging);
+                case this.h.endline
+%                     get(this.p)
+                    set(gcf, 'WindowButtonMotionFcn', @this.plot_drag_end);
+                    set(gcf, 'WindowButtonUpFcn', @this.stop_dragging);
+            end
+        end
+        
+        function plot_drag_start(this, varargin)
+            this.current_draggable = 'start';
+            cpoint = get(this.h.histogr_axes, 'CurrentPoint');
+            cpoint = cpoint(1, 1);
+
+            this.h.startline.XData = [cpoint cpoint];
+            
+            y_max = max(this.h.histogr.Values(this.h.histogr.BinEdges(1:end-1) > cpoint));
+            y_max = y_max + y_max*0.1;
+            this.h.histogr_axes.YLim = [0 y_max];
+            
+            this.histo_start = cpoint;
+            
+            this.plotpanel.h.tick_min.String = num2str(this.h.startline.XData(1));
+            this.plotpanel.set_tick_cb(this.plotpanel.h.tick_min);
+            
+        end
+        
+        
+        function plot_drag_end(this, varargin)
+            this.current_draggable = 'end';
+            cpoint = get(this.h.histogr_axes, 'CurrentPoint');
+            cpoint = cpoint(1, 1);
+            this.h.endline.XData = [cpoint cpoint];
+            
+            this.histo_end = cpoint;
+            
+            this.plotpanel.h.tick_max.String = num2str(this.h.endline.XData(1));
+            this.plotpanel.set_tick_cb(this.plotpanel.h.tick_max);
+            
+        end
+        
+        function stop_dragging(this, varargin)
+            set(gcf, 'WindowButtonMotionFcn', '');
+            set(gcf, 'WindowButtonUpFcn', '');
+            this.adjust_histo_x();
+        end
+        
+        function adjust_histo_x(this)
+            over = 0.2;
+            min_max = this.h.histogr_axes.XLim;
+            
+            if ~isempty(this.histo_start) && ~isempty(this.histo_end)
+                min_max(1) = this.histo_start - (this.histo_end - this.histo_start)*over;
+                min_max(2) = this.histo_end + (this.histo_end - this.histo_start)*over;
+                this.h.histogr_axes.XLim =min_max;
+            end
+        end
+            
         
         function restoreBG_cb(this, varargin)
             this.restoreBG();
