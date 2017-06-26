@@ -144,64 +144,8 @@ classdef CameraMode < GenericMode
             this.data(point{1:4})
         end
         
-        function set_cmap_cb(this,varargin)
-            drpdwn = varargin{1};
-            this.plotpanel.cmap = drpdwn.String{drpdwn.Value};
-            this.plot_array();
-            
-        end
-        
         function right_click_on_axes(this, point)
             % nothing yet. Do something about that! :)
-        end
-        
-        function resize(this, varargin)
-            mP = get(this.h.parent, 'position');
-            mP(4) = mP(4) - 25;
-            
-            pP = get(this.h.plotpanel, 'Position');
-            pP(3:4) = [(mP(3)-pP(1))-10 (mP(4)-pP(2))-10];
-            this.h.plotpanel.Position = pP;
-            
-            eP = this.h.evalpanel.Position;
-            eP(4) = (mP(4)-eP(2))-10;
-            this.h.evalpanel.Position = eP;
-            
-            cP = this.h.colorpanel.Position;
-            cP(2) = (eP(4)-cP(4))-3;
-            this.h.colorpanel.Position = cP;
-        end
-        
-        function show_diff_cb(this, varargin)
-            if this.plotpanel.h.d5_select.Value == 5
-               
-                [ind1, ind2] = acquire_WLs(this, varargin);
-                
-                plot_data = squeeze(this.data(ind1{:}))-squeeze(this.data(ind2{:}));
-                
-                figure(1234)
-                show_plot(this, plot_data)
-            end
-        end
-        
-        function show_quot_cb(this, varargin)
-            if this.plotpanel.h.d5_select.Value == 5
-
-                [ind1, ind2] = acquire_WLs(this, varargin);
-                
-                plot_data = squeeze(this.data(ind1{:}))./squeeze(this.data(ind2{:}));
-                
-                figure(1235)
-                show_plot(this, plot_data)
-            end
-        end
-        
-        function [ind1, ind2] = acquire_WLs(this, varargin)
-            wl2_index = find(this.wavelengths >= str2double(this.h.wl2.String)-0.1,1,'first');
-                
-            ind1 = this.plotpanel.ind;
-            ind2 = ind1;
-            ind2{5} = wl2_index;
         end
         
         function show_plot(this, plot_data)
@@ -231,10 +175,6 @@ classdef CameraMode < GenericMode
                 ca.XTick = this.plotpanel.tickvalues{this.plotpanel.curr_dims(1)};
                 ca.YTick = this.plotpanel.tickvalues{this.plotpanel.curr_dims(2)};
         end
-
-        function data = get_data(this)
-            data = this.data(:, :, :, :, :);
-        end
         
         function histo_slider_cb(this, varargin)
             werte = get(get(varargin{2}, 'Source'));
@@ -257,6 +197,23 @@ classdef CameraMode < GenericMode
     end
     
     methods (Access = private)
+        function resize(this, varargin)
+            mP = get(this.h.parent, 'position');
+            mP(4) = mP(4) - 25;
+            
+            pP = get(this.h.plotpanel, 'Position');
+            pP(3:4) = [(mP(3)-pP(1))-10 (mP(4)-pP(2))-10];
+            this.h.plotpanel.Position = pP;
+            
+            eP = this.h.evalpanel.Position;
+            eP(4) = (mP(4)-eP(2))-10;
+            this.h.evalpanel.Position = eP;
+            
+            cP = this.h.colorpanel.Position;
+            cP(2) = (eP(4)-cP(4))-3;
+            this.h.colorpanel.Position = cP;
+        end
+        
         function setBG(this,varargin)
             % Background aus aktueller Ansicht übernehmen, abspeichern und
             % in this.data von allen Daten abziehen.
@@ -273,6 +230,10 @@ classdef CameraMode < GenericMode
             end
         end
         
+        function data = get_data(this)
+            data = this.data(:, :, :, :, :);
+        end
+        
         function data = get_current_data(this)
             data = this.data(this.plotpanel.ind{:});
         end
@@ -280,6 +241,13 @@ classdef CameraMode < GenericMode
         function restoreBG_cb(this, varargin)
             this.restoreBG();
             this.plot_array();
+        end
+        
+        function set_cmap_cb(this,varargin)
+            drpdwn = varargin{1};
+            this.plotpanel.cmap = drpdwn.String{drpdwn.Value};
+            this.plot_array();
+            
         end
     end
 end
