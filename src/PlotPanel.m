@@ -263,6 +263,9 @@ classdef PlotPanel < handle
                     hold on
                     hmap(l_data, false, this.cmap);
                     hold off
+                    if isempty(l_data)
+                        l_data = 1
+                    end
                     xlim([.5 length(l_data)+.5])
                     set(this.h.legend, 'visible', 'on');
                     set(this.h.tick_min, 'visible', 'on', 'string', num2str(l_data(1),4));
