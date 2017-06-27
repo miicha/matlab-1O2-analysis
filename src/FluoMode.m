@@ -10,6 +10,7 @@ classdef FluoMode < GenericMode
     
     methods
         function this = FluoMode(parent, data, wavelengths, int_time, tag)
+            data = double(data);
             
             if isnan(data)
                 warning('Keine Fluodaten vorhanden')
