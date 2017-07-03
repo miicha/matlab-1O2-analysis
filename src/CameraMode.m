@@ -52,6 +52,7 @@ classdef CameraMode < GenericMode
                         this.h.chose_cmap_button = uicontrol(this.h.colorpanel);
                         this.h.histogr_axes = axes('parent', this.h.colorpanel);
                     this.h.removeBackground = uicontrol(this.h.evalpanel);
+                    this.h.removeGenericBackground = uicontrol(this.h.evalpanel);
                     this.h.restoreBackground = uicontrol(this.h.evalpanel);
 
                 this.h.plotpanel = uipanel(this.h.cameramode);
@@ -88,7 +89,13 @@ classdef CameraMode < GenericMode
                            'style', 'push',...
                            'position', [2 2 120 28],...
                            'string', 'Set and remove Background',...
-                           'callback', @this.setBG);
+                           'callback', @this.setBG_cb);
+                       
+               set(this.h.removeGenericBackground,  'units', 'pixels',...
+                   'style', 'push',...
+                   'position', [128 2 120 28],...
+                   'string', 'Remove Background',...
+                   'callback', @this.setGenBG_cb);
                        
                 set(this.h.restoreBackground,  'units', 'pixels',...
                            'style', 'push',...
@@ -159,9 +166,17 @@ classdef CameraMode < GenericMode
                 ca.YTick = this.plotpanel.tickvalues{this.plotpanel.curr_dims(2)};
         end
         
+        function data = get_data(this)
+            data = this.data(:, :, :, :, :);
+        end
+        
     end
     
     methods (Access = private)
+        
+        function data = get_current_data(this)
+            data = this.data(this.plotpanel.ind{:});
+        end
         
         function plot_histogram(this)
             vergl = zeros(length(this.plotpanel.ind),1);
@@ -226,30 +241,22 @@ classdef CameraMode < GenericMode
             this.h.colorpanel.Position = cP;
         end
         
-        function setBG(this,varargin)
+        function setBG(this,data)
             % Background aus aktueller Ansicht übernehmen, abspeichern und
             % in this.data von allen Daten abziehen.
             this.restoreBG();
             
-            this.bg_data = this.get_current_data();
+            this.bg_data = data;
             this.data = this.data-this.bg_data;
             this.plot_array();
         end
         
         function restoreBG(this)
             if ~isempty(this.bg_data)
+                size(this.bg_data)
                 this.data = this.data+this.bg_data;
             end
         end
-        
-        function data = get_data(this)
-            data = this.data(:, :, :, :, :);
-        end
-        
-        function data = get_current_data(this)
-            data = this.data(this.plotpanel.ind{:});
-        end
-        
         
         function plot_click(this, varargin)
             switch varargin{1}
@@ -279,8 +286,7 @@ classdef CameraMode < GenericMode
             this.plotpanel.h.tick_min.String = num2str(this.h.startline.XData(1));
             this.plotpanel.set_tick_cb(this.plotpanel.h.tick_min);
             
-        end
-        
+        end 
         
         function plot_drag_end(this, varargin)
             this.current_draggable = 'end';
@@ -311,7 +317,29 @@ classdef CameraMode < GenericMode
                 this.h.histogr_axes.XLim =min_max;
             end
         end
+        
+        function setBG_cb(this,varargin)
+            this.setBG(this.get_current_data());
+        end
+        
+        function setGenBG_cb(this,varargin)
+            int_time = 2000;
+            file = [pwd '\..\Background\bg_noise.hdf5'];
             
+            daten = h5read(file, '/data');
+            beschr = h5read(file, '/IntTime');
+            daten = permute(daten,[3 2 1]);
+%             daten = flipud(daten);
+            current_data = double(squeeze(daten(:,:,beschr == int_time)));
+            
+%             test_data = h5read('D:\Git-Projekte\sisa-scan-auswertung\Background\2000ms(18.18.09).h5', '/Data/camera/0');
+            figure(423)
+            imagesc(current_data)
+%             figure(433)
+%             surf(test_data)
+            
+            this.setBG(current_data);
+        end
         
         function restoreBG_cb(this, varargin)
             this.restoreBG();
