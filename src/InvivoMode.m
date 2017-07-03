@@ -28,20 +28,7 @@ classdef InvivoMode < SiSaMode
                     this.plt{i+1} = InvivoPlot([index{:}], this);
                 end
             end
-        end
-        
-        function read_channel_width(this)
-            % read Channel Width
-            
-            try
-                chanWidth=h5read(fullfile(this.p.fileinfo.path, this.p.fileinfo.name{1}), '/Meta/sisa/Parameter');
-                
-                this.channel_width=single(chanWidth.Kanalbreite);
-            catch
-                % nothing. just an old file.
-            end
-        end
-        
+        end        
     end
     
 end

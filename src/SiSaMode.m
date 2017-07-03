@@ -584,20 +584,11 @@ classdef SiSaMode < GenericMode
         
         function read_channel_width(this)
             % read Channel Width
-            
             this.channel_width = this.reader.meta.sisa.Kanalbreite;
-            try
-                chanWidth=h5readatt(fullfile(this.p.fileinfo.path, this.p.fileinfo.name{1}), '/META/SISA', 'Channel Width (ns)');
-                this.channel_width=single(chanWidth)/1000;
-            catch
-                % nothing. just an old file.
-            end
             % select channel width in dropdown
             tmp = str2double(this.h.ch_width.String);
             this.h.ch_width.Value = find(tmp == this.channel_width*1000);
-            
             this.change_channel_width();
-            
         end
         
         function set_model(this, number)
