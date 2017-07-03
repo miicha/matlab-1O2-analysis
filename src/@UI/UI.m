@@ -253,7 +253,6 @@ classdef UI < handle
                 reader.replace_camera_data(randi([0 16384],256,320,5,8));
             end
             reading_time = toc
-%             reader.meta.fileinfo
             this.open_modes(reader);
         end
         
