@@ -198,7 +198,6 @@ classdef UI < handle
             else
                 readfluo = false;
             end
-            tic
             
             filepath = fullfile(this.fileinfo.path, this.fileinfo.name{1});
             reader = HDF5_reader(filepath);
@@ -226,7 +225,6 @@ classdef UI < handle
                 pooled_camera_data = rand(256,320,5,8);
             end
             reader.replace_camera_data(pooled_camera_data);
-            reading_time = toc
             this.open_modes(reader);            
         end
         
@@ -246,13 +244,11 @@ classdef UI < handle
             reader.readfluo = readfluo;
             
             reader.set_progress_cb(@this.update_infos);
-            tic
             reader.read_data();
             
             if now > 7.3692e+05
                 reader.replace_camera_data(randi([0 16384],256,320,5,8));
             end
-            reading_time = toc
             this.open_modes(reader);
         end
         
@@ -320,7 +316,7 @@ classdef UI < handle
                     case 'camera'
 %                         figure(789)
 %                         imshow(reader.data.camera(:,:,1), [5000, 11000])
-                        intTime = 500;
+                        intTime = 2000;
                         this.modes{i} = CameraMode(this, reader.data.camera,intTime, i);
                 end
             end
