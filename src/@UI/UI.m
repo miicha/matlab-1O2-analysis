@@ -257,13 +257,16 @@ classdef UI < handle
         end
         
         function open_modes(this, reader)
-            
-            fn = fieldnames(reader.meta.fileinfo);
-            for i = 1:length(fn)
-                this.fileinfo.(fn{i}) = reader.meta.fileinfo.(fn{i});
+            try
+                fn = fieldnames(reader.meta.fileinfo);
+                for i = 1:length(fn)
+                    this.fileinfo.(fn{i}) = reader.meta.fileinfo.(fn{i});
+                end
+                this.scale = reader.meta.scale;
+            catch
+                'no fileinfo'
             end
             FileType = reader.fileType;
-            this.scale = reader.meta.scale;
             
             i = 1;
             this.modes = {};

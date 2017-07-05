@@ -662,6 +662,7 @@ classdef PlotPanel < handle
                 tmp = this.h.(sprintf('d%d_slider', i)).Position;
                 tmp(1) = pP(3) - 35 - 30*j;
                 tmp(4) = aP(4) - 50;
+                tmp(tmp<0)=0;
                 this.h.(sprintf('d%d_slider', i)).Position = tmp;
                 
                 tmp = this.h.(sprintf('d%d_edit', i)).Position;
