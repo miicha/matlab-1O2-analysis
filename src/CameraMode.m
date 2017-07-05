@@ -11,11 +11,12 @@ classdef CameraMode < GenericMode
         histo_start;
         histo_end;
         current_index = {'','','',''};
+        adj_histo_axis = true;
     end
     
     methods
         function this = CameraMode(parent, data, int_time, tag)
-            
+          
             if isnan(data)
                 warning('Keine Kamera-Daten vorhanden')
             else
@@ -24,17 +25,8 @@ classdef CameraMode < GenericMode
                 end                
 
                 this.p = parent;
+                data = permute(data,[2,1,3,4]);
                 
-                this.num_pictures = size(data, 3);
-                
-                for i = 1:this.num_pictures
-                    for j = 1:size(data, 4)
-                        tmp(:,:,i,j) = data(:,:,i,j)';
-                    end
-                end
-                data = tmp;
-                clear tmp;
-                    
                 this.data = data;    
                 this.scale = this.p.scale;
                 this.units = this.p.units;
@@ -51,6 +43,7 @@ classdef CameraMode < GenericMode
                     this.h.colorpanel = uipanel(this.h.evalpanel);
                         this.h.chose_cmap_button = uicontrol(this.h.colorpanel);
                         this.h.histogr_axes = axes('parent', this.h.colorpanel);
+                    this.h.alternatingSum = uicontrol(this.h.evalpanel);
                     this.h.removeBackground = uicontrol(this.h.evalpanel);
                     this.h.removeGenericBackground = uicontrol(this.h.evalpanel);
                     this.h.restoreBackground = uicontrol(this.h.evalpanel);
@@ -84,6 +77,12 @@ classdef CameraMode < GenericMode
                                'callback', @this.set_cmap_cb,...
                                'BackgroundColor', [1 1 1],...
                                'FontSize', 9);
+                           
+                set(this.h.alternatingSum,  'units', 'pixels',...
+                           'style', 'push',...
+                           'position', [2 68 120 28],...
+                           'string', 'Altern. Summe',...
+                           'callback', @this.alternatingSum_cb);
                                 
                 set(this.h.removeBackground,  'units', 'pixels',...
                            'style', 'push',...
@@ -112,6 +111,7 @@ classdef CameraMode < GenericMode
                 this.plotpanel = CameraPanel(this, size(data), this.h.plotpanel);
                 this.resize();
                 this.plot_array();
+                
             end
         end
         
@@ -127,6 +127,8 @@ classdef CameraMode < GenericMode
             this.plot_histo_slider();
             
             this.current_index = this.plotpanel.ind;
+            
+            this.adjust_histo_x();
         end
         
         function left_click_on_axes(this, point)
@@ -178,7 +180,11 @@ classdef CameraMode < GenericMode
             data = this.data(this.plotpanel.ind{:});
         end
         
-        function plot_histogram(this)
+        function plot_histogram(this, varargin)
+            forced = false;
+            if nargin > 1
+                forced = varargin{1};
+            end
             vergl = zeros(length(this.plotpanel.ind),1);
             for i = 1:length(this.plotpanel.ind)
                 if this.plotpanel.ind{i} == this.current_index{i}
@@ -186,7 +192,7 @@ classdef CameraMode < GenericMode
                 end
             end
             
-            if sum(vergl) ~= 4
+            if sum(vergl) ~= 4 || forced
                 clear this.h.histogr
                 this.h.histogr = histogram(this.h.histogr_axes,this.data(this.plotpanel.ind{:}));
 %                             this.h.histogr.Parent.XTick = [];
@@ -248,13 +254,19 @@ classdef CameraMode < GenericMode
             
             this.bg_data = data;
             this.data = this.data-this.bg_data;
+            this.histo_start = [];
+            this.histo_end = [];
             this.plot_array();
+            this.plot_histogram(true);
+            this.plot_histo_slider();
+            this.update_min_field();
+            this.update_max_field();
         end
         
         function restoreBG(this)
             if ~isempty(this.bg_data)
-                size(this.bg_data)
                 this.data = this.data+this.bg_data;
+                this.bg_data = [];
             end
         end
         
@@ -271,6 +283,7 @@ classdef CameraMode < GenericMode
         end
         
         function plot_drag_start(this, varargin)
+            this.adj_histo_axis = false;
             this.current_draggable = 'start';
             cpoint = get(this.h.histogr_axes, 'CurrentPoint');
             cpoint = cpoint(1, 1);
@@ -282,40 +295,64 @@ classdef CameraMode < GenericMode
             this.h.histogr_axes.YLim = [0 y_max];
             
             this.histo_start = cpoint;
-            
-            this.plotpanel.h.tick_min.String = num2str(this.h.startline.XData(1));
-            this.plotpanel.set_tick_cb(this.plotpanel.h.tick_min);
-            
+            this.update_min_field();
         end 
         
+        function update_min_field(this)
+            this.plotpanel.h.tick_min.String = num2str(this.h.startline.XData(1));
+            this.plotpanel.set_tick_cb(this.plotpanel.h.tick_min);
+        end
+        
         function plot_drag_end(this, varargin)
+            this.adj_histo_axis = false;
             this.current_draggable = 'end';
             cpoint = get(this.h.histogr_axes, 'CurrentPoint');
             cpoint = cpoint(1, 1);
             this.h.endline.XData = [cpoint cpoint];
-            
             this.histo_end = cpoint;
             
+            this.update_max_field();
+        end
+        
+        function update_max_field(this)
             this.plotpanel.h.tick_max.String = num2str(this.h.endline.XData(1));
             this.plotpanel.set_tick_cb(this.plotpanel.h.tick_max);
-            
         end
         
         function stop_dragging(this, varargin)
             set(gcf, 'WindowButtonMotionFcn', '');
             set(gcf, 'WindowButtonUpFcn', '');
             this.adjust_histo_x();
+            this.adj_histo_axis = true;
         end
         
         function adjust_histo_x(this)
             over = 0.2;
             min_max = this.h.histogr_axes.XLim;
             
-            if ~isempty(this.histo_start) && ~isempty(this.histo_end)
+            if ~isempty(this.histo_start) && ~isempty(this.histo_end) && this.adj_histo_axis
                 min_max(1) = this.histo_start - (this.histo_end - this.histo_start)*over;
                 min_max(2) = this.histo_end + (this.histo_end - this.histo_start)*over;
                 this.h.histogr_axes.XLim =min_max;
             end
+        end
+        
+        function alternatingSum_cb(this, varargin)
+            % Bilder abwechselnd addieren und subtrahieren
+            gerade = squeeze(sum(this.data(:,:,2:2:end,1),3));
+            gerade = permute(gerade, [2,1]);
+            gerade = flipud(gerade);
+            
+            ungerade = squeeze(sum(this.data(:,:,1:2:end,1),3));
+            ungerade = permute(ungerade, [2,1]);
+            ungerade = flipud(ungerade);
+
+            bild = gerade+ungerade;
+%             bild = ungerade;
+            bild = flipud(squeeze(this.data(:,:,1,1))');
+            
+            figure(522)
+            imagesc(bild)
         end
         
         function setBG_cb(this,varargin)
@@ -324,26 +361,23 @@ classdef CameraMode < GenericMode
         
         function setGenBG_cb(this,varargin)
             int_time = 2000;
-            file = [pwd '\..\Background\bg_noise.hdf5'];
+            file = [get_executable_dir '\..\Background\bg_noise.hdf5'];
             
             daten = h5read(file, '/data');
             beschr = h5read(file, '/IntTime');
-            daten = permute(daten,[3 2 1]);
-%             daten = flipud(daten);
-            current_data = double(squeeze(daten(:,:,beschr == int_time)));
-            
-%             test_data = h5read('D:\Git-Projekte\sisa-scan-auswertung\Background\2000ms(18.18.09).h5', '/Data/camera/0');
-            figure(423)
-            imagesc(current_data)
-%             figure(433)
-%             surf(test_data)
-            
+            daten = permute(daten,[2 3 1]);
+            daten = fliplr(daten);
+            current_data = double(squeeze(daten(:,:,beschr == int_time)));            
             this.setBG(current_data);
         end
         
         function restoreBG_cb(this, varargin)
             this.restoreBG();
             this.plot_array();
+            this.plot_histogram(true);
+            this.plot_histo_slider();
+            this.update_min_field();
+            this.update_max_field();
         end
         
         function set_cmap_cb(this,varargin)
