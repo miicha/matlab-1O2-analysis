@@ -19,7 +19,7 @@ classdef SiSaGroupPlot < handle
     methods
         function this = SiSaGroupPlot(p)
             this.p = p;
-            [this.x_pos, this.y_pos] = find(p.overlays{p.current_ov}); % size of the selection
+            [this.x_pos, this.y_pos] = find(squeeze(p.overlays{p.current_ov})); % size of the selection
             this.x_data = this.x_pos;
             this.y_data = this.y_pos;
 
