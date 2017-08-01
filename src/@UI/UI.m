@@ -281,11 +281,11 @@ classdef UI < handle
                         % open a SiSa tab
                         switch FileType
                             case {'scanning', 'bakterien'}
-                                this.modes{i} = SiSaMode(this, reader.data.sisa, reader, i);
+                                this.modes{i} = SiSaMode(this, reader.get_sisa_data(), reader, i);
                             case 'in-vivo'
                                 tmp = size(reader.data.sisa.data);
                                 this.fileinfo.size = tmp(1:4);
-                                this.modes{i} = InvivoMode(this, reader.data.sisa.data,...
+                                this.modes{i} = InvivoMode(this, reader.get_sisa_data(),...
                                                          reader.data.sisa.verlauf,...
                                                          reader.meta.sisa.int_time, reader, i);
                             case 'in-vivo-dual'
