@@ -224,9 +224,6 @@ classdef UI < handle
                 pooled_camera_data(1:size(tmp,1),1:size(tmp,2),1:size(tmp,3),i) = tmp;
             end
             
-            if now > 7.3692e+05
-                pooled_camera_data = rand(256,320,5,8);
-            end
             reader.replace_camera_data(pooled_camera_data);
             this.open_modes(reader);            
         end
@@ -249,9 +246,6 @@ classdef UI < handle
             reader.set_progress_cb(@this.update_infos);
             reader.read_data();
             
-            if now > 7.3692e+05
-                reader.replace_camera_data(randi([0 16384],256,320,5,8));
-            end
             this.open_modes(reader);
         end
         
@@ -269,10 +263,6 @@ classdef UI < handle
             
             i = 1;
             this.modes = {};
-            
-            if now > 7.3693e+05
-                reader.meta.modes_in_file = {'camera'};
-            end
             
             for mode = reader.meta.modes_in_file
                 mode = mode{1};
