@@ -263,6 +263,9 @@ classdef PlotPanel < handle
                     hold on
                     hmap(l_data, false, this.cmap);
                     hold off
+                    if isempty(l_data)
+                        l_data = 1
+                    end
                     xlim([.5 length(l_data)+.5])
                     set(this.h.legend, 'visible', 'on');
                     set(this.h.tick_min, 'visible', 'on', 'string', num2str(l_data(1),4));
@@ -419,11 +422,19 @@ classdef PlotPanel < handle
         end
 
         function data = get_data(this,varargin)
-            data = this.p.get_data(varargin);
+            if isempty(varargin)
+                data = this.p.get_data();
+            else
+                data = this.p.get_data(varargin);
+            end
         end
         
         function data = get_errs(this, varargin)
-            data = this.p.get_errs(varargin);
+            try
+                data = this.p.get_errs(varargin);
+            catch
+                data = [];
+            end
         end
 
         function create_slice(this, index)
@@ -442,6 +453,34 @@ classdef PlotPanel < handle
                 end
             end
         end
+        
+         % upper and lower bound of legend
+        function set_tick_cb(this, varargin)
+            switch varargin{1}
+                case this.h.tick_min
+                    new_l_min = str2double(get(this.h.tick_min, 'string'));
+                    if new_l_min < this.l_max.(this.mode)
+                        this.l_min.(this.mode) = new_l_min;
+                        this.use_user_legend.(this.mode) = true;
+                    elseif isempty(get(this.h.tick_min, 'string'))
+                        this.use_user_legend.(this.mode) = false;
+                    else
+                        set(this.h.tick_min, 'string', this.l_min.(this.mode));
+                    end
+                case this.h.tick_max
+                    new_l_max = str2double(get(this.h.tick_max, 'string'));
+                    if new_l_max > this.l_min.(this.mode)
+                        this.l_max.(this.mode) = new_l_max;
+                        this.use_user_legend.(this.mode) = true;
+                    elseif isempty(get(this.h.tick_max, 'string'))
+                        this.use_user_legend.(this.mode) = false;
+                    else
+                        set(this.h.tick_max, 'string', this.l_max.(this.mode));
+                    end
+            end
+            this.update_plot();
+        end
+        
     end
     
     methods (Access = protected)       
@@ -563,32 +602,7 @@ classdef PlotPanel < handle
             this.h.(sprintf('d%d_slider', dim)).Value = value;
         end
 
-        % upper and lower bound of legend
-        function set_tick_cb(this, varargin)
-            switch varargin{1}
-                case this.h.tick_min
-                    new_l_min = str2double(get(this.h.tick_min, 'string'));
-                    if new_l_min < this.l_max.(this.mode)
-                        this.l_min.(this.mode) = new_l_min;
-                        this.use_user_legend.(this.mode) = true;
-                    elseif isempty(get(this.h.tick_min, 'string'))
-                        this.use_user_legend.(this.mode) = false;
-                    else
-                        set(this.h.tick_min, 'string', this.l_min.(this.mode));
-                    end
-                case this.h.tick_max
-                    new_l_max = str2double(get(this.h.tick_max, 'string'));
-                    if new_l_max > this.l_min.(this.mode)
-                        this.l_max.(this.mode) = new_l_max;
-                        this.use_user_legend.(this.mode) = true;
-                    elseif isempty(get(this.h.tick_max, 'string'))
-                        this.use_user_legend.(this.mode) = false;
-                    else
-                        set(this.h.tick_max, 'string', this.l_max.(this.mode));
-                    end
-            end
-            this.update_plot();
-        end
+       
 
         function resize(this, varargin)
             mP = get(this.h.parent, 'Position');
@@ -648,6 +662,7 @@ classdef PlotPanel < handle
                 tmp = this.h.(sprintf('d%d_slider', i)).Position;
                 tmp(1) = pP(3) - 35 - 30*j;
                 tmp(4) = aP(4) - 50;
+                tmp(tmp<0)=0;
                 this.h.(sprintf('d%d_slider', i)).Position = tmp;
                 
                 tmp = this.h.(sprintf('d%d_edit', i)).Position;

@@ -12,13 +12,14 @@ classdef SiSaGenericPlot < handle
         fit_params;         % fitted parameters
         fit_params_err;     % ertimated errors of fitted parameters
         cp;
-        fit_info = true;
         diff_data;
         data_backup;
         plot_limits;
         plot_limits_default;
         sisa_fit;
         sisa_fit_info;
+        export_fit_info = true;
+        export_res = true;
         res;
         ub                  % upper bounds (different from parent due to sum)
     end
@@ -35,6 +36,9 @@ classdef SiSaGenericPlot < handle
 
             this.sisa_fit_info = this.smode.sisa_fit_info;
             this.sisa_fit = this.smode.sisa_fit.copy;
+            
+            this.export_fit_info = smode.export_fit_info;
+            this.export_res = smode.export_res;
             
             this.ub = this.smode.sisa_fit.upper_bounds;
             
@@ -71,11 +75,15 @@ classdef SiSaGenericPlot < handle
                 this.h.save_fig = uicontrol(this.h.exp_tab);
                 this.h.save_data = uicontrol(this.h.exp_tab);
                 this.h.save_data_temp = uicontrol(this.h.exp_tab);
+                this.h.res_toggle = uicontrol(this.h.exp_tab);
+                this.h.info_toggle = uicontrol(this.h.exp_tab);
                 
             this.h.imp_tab = uitab(this.h.tabs);
                 this.h.import_diff_data = uicontrol(this.h.imp_tab);
                 this.h.faktor_slider = uicontrol(this.h.imp_tab);
                 this.h.faktor_edit = uicontrol(this.h.imp_tab);
+                this.h.faktor_edit_desc = uicontrol(this.h.imp_tab,'Style','text',...
+                    'String','Scaling Factor:','Position',[180 37 75 20]);
 
             %% figure
            
@@ -145,7 +153,7 @@ classdef SiSaGenericPlot < handle
                       
             set(this.h.pb_glob, 'units', 'pixels',...
                           'position', [62 35 98 28],...
-                          'string', 'globalisieren',...
+                          'string', 'Globalize',...
                           'FontSize', 9,...
                           'callback', @this.globalize)
                       
@@ -180,27 +188,41 @@ classdef SiSaGenericPlot < handle
                            
             set(this.h.prev_fig, 'units', 'pixels',...
                           'position', [10 40 98 28],...
-                          'string', 'Vorschau',...
+                          'string', 'Preview',...
                           'FontSize', 9,...
                           'callback', @this.generate_export_fig_cb);
                       
             set(this.h.save_fig, 'units', 'pixels',...
                           'position', [10 5 98 28],...
-                          'string', 'Speichern',...
+                          'string', 'Save',...
                           'FontSize', 9,...
                           'callback', @this.save_fig_cb);
                       
             set(this.h.save_data, 'units', 'pixels',...
                           'position', [120 5 120 28],...
-                          'string', 'Daten speichern',...
+                          'string', 'Save Data',...
                           'FontSize', 9,...
                           'callback', @this.save_data_cb);
             
             set(this.h.save_data_temp, 'units', 'pixels',...
                           'position', [120 40 120 28],...
-                          'string', 'Daten übergeben',...
+                          'string', 'Transfer Data',...
                           'FontSize', 9,...
                           'callback', @this.save_data_temp_cb);
+             set(this.h.res_toggle, 'units', 'pixels',...
+                          'style', 'checkbox',...
+                          'position', [250 5 120 28],...
+                          'string', 'Export residues',...
+                          'value', this.export_res,...
+                          'FontSize', 9,...
+                          'callback', @this.toggle_res_cb);
+             set(this.h.info_toggle, 'units', 'pixels',...
+                          'position', [250 40 120 28],...
+                          'style', 'checkbox',...
+                          'value', this.export_fit_info,...
+                          'string', 'Export fit info',...
+                          'FontSize', 9,...
+                          'callback', @this.toggle_info_cb);
                       
              %% import
             set(this.h.imp_tab, 'units', 'pixels',...
@@ -214,7 +236,7 @@ classdef SiSaGenericPlot < handle
                       
             set(this.h.faktor_slider, 'units', 'pixels',...
                             'style', 'slider',...
-                            'position', [400 40 300 20],...
+                            'position', [320 40 300 20],...
                             'min', 0, 'max', 3.5,...
                             'SliderStep', [0.01 0.1],...
                             'value', 0.6,...
@@ -224,7 +246,7 @@ classdef SiSaGenericPlot < handle
             set(this.h.faktor_edit, 'units', 'pixels',...
                             'style', 'edit',...
                             'string', '0.6',...
-                            'position', [200 40 50 20],...
+                            'position', [260 40 50 20],...
                             'callback', @this.change_faktor_cb);
 
             %% limit size with java
@@ -248,7 +270,7 @@ classdef SiSaGenericPlot < handle
             end
             datal = this.data;
             realmax = max(datal)*1.5;
-            m = max(datal(this.sisa_fit.offset_time:end));
+            m = max(datal(this.sisa_fit.offset_time:this.sisa_fit.end_channel));
             m = m*1.1;
             mini = min(datal(this.sisa_fit.offset_time:end))*0.95;
            
@@ -292,6 +314,9 @@ classdef SiSaGenericPlot < handle
             if ~realtime             
                 ylim([0 m]);
                 xlim([min(x_ges)-1 max(x_ges)+1]);
+                % before refreshing the plot reset the zoom buttons
+                this.h.xy_zoom.State = 'off';
+                this.h.x_zoom.State = 'off';
                 if this.fitted
                     this.plotfit();
                 end
@@ -339,7 +364,11 @@ classdef SiSaGenericPlot < handle
                 this.sisa_fit.estimate(this.data);
             end
             
-            fitdata = this.sisa_fit.eval(this.fit_params, this.sisa_fit.x_axis);
+            x_axis = this.sisa_fit.x_axis;
+            fitdata_complete = this.sisa_fit.eval(this.fit_params, x_axis);
+            fitdata = fitdata_complete(x_axis>=0);
+            x_axis = x_axis(x_axis>=0);
+
             set(this.h.f,'CurrentAxes',this.h.axes)
             
             % extrahierte SiSa-Daten Plotten
@@ -347,16 +376,16 @@ classdef SiSaGenericPlot < handle
                 sisamodel = sisafit(1);
                 sisamodel.copy_data(this.sisa_fit);
                 if get(this.h.drpd, 'value') == 4
-                    sisadata = sisamodel.eval([p(1:3); p(6)], this.sisa_fit.x_axis);
+                    sisadata = sisamodel.eval([p(1:3); p(6)], x_axis);
                 else
-                    sisadata = sisamodel.eval([p(1:3); p(5)], this.sisa_fit.x_axis);
+                    sisadata = sisamodel.eval([p(1:3); p(5)], x_axis);
                 end
                 hold on
-                plot(this.sisa_fit.x_axis,  sisadata, 'color', [1 0.6 0.2], 'LineWidth', 1.5, 'HitTest', 'off');
+                plot(x_axis,  sisadata, 'color', [1 0.6 0.2], 'LineWidth', 1.5, 'HitTest', 'off');
                 hold off
             end
             hold on
-            this.h.fit_line = plot(this.sisa_fit.x_axis,  fitdata, 'r', 'LineWidth', 1.5, 'HitTest', 'off');
+            this.h.fit_line = plot(x_axis,  fitdata, 'r', 'LineWidth', 1.5, 'HitTest', 'off');
             hold off
             
             
@@ -364,7 +393,7 @@ classdef SiSaGenericPlot < handle
             set(this.h.f,'CurrentAxes',this.h.res);
             
             % im fitbereich
-            residues = this.data - fitdata;
+            residues = this.data - fitdata_complete;
             tmp = this.data; 
             tmp(tmp <= 0) = 1;
             residues = residues./sqrt(tmp);
@@ -405,7 +434,7 @@ classdef SiSaGenericPlot < handle
 
                 set(this.h.pe{i}, 'string', str);
                 
-                str = sprintf('±%1.2f', this.fit_params_err(i));   
+                str = sprintf('%1.2f', this.fit_params_err(i));   
 
                 set(this.h.pd{i}, 'string', str,'tooltipString', '95% Konfidenz');
             end
@@ -476,8 +505,8 @@ classdef SiSaGenericPlot < handle
         end
         
         function x_zoom(this)
-            x_min = this.sisa_fit.t_0*this.sisa_fit.cw;
-            x_max = 5*this.sisa_fit.t_0*this.sisa_fit.cw;  
+            x_min = 100*this.sisa_fit.cw;
+            x_max = 100*this.sisa_fit.cw;
             this.plot_limits.X = this.h.axes.XLim;
             this.h.axes.XLim = [-x_min x_max];
         end
@@ -569,7 +598,7 @@ classdef SiSaGenericPlot < handle
                                                       'position', [10+(i-1)*spacing 25 45 20]);
                  this.h.pd{i} = uicontrol(this.h.param, 'units', 'pixels',...
                                                       'style', 'text',...
-                                                      'string', '±',...
+                                                      'string', '\pm',...
                                                       'HorizontalAlignment', 'left',...
                                                       'position', [10+(i-1)*spacing 5 50 15]);
                  
@@ -669,7 +698,9 @@ classdef SiSaGenericPlot < handle
         end
         
         function globalize(this, varargin)  
-            if this.sisa_fit.curr_fitfun ~= this.smode.sisa_fit.curr_fitfun
+            if this.sisa_fit.curr_fitfun ~= this.smode.sisa_fit.curr_fitfun || ...
+                    this.smode.sisa_fit.t_0 ~= this.sisa_fit.t_0
+                this.smode.sisa_fit.t_0 = this.sisa_fit.t_0;
                 this.smode.set_model(this.sisa_fit.curr_fitfun);
             end
             if this.fitted
@@ -684,7 +715,7 @@ classdef SiSaGenericPlot < handle
         %% Export
         
         function save_fig_selloc_cb(this, varargin)
-            [name, path] = uiputfile('*.pdf', 'Plot als PDF speichern', this.generate_filepath());
+            [name, path] = uiputfile({'*.pdf'; '*.png'}, 'Plot speichern', this.generate_filepath());
             if name == 0
                 return
             end
@@ -778,18 +809,19 @@ classdef SiSaGenericPlot < handle
         end
         
         function save_fig(this, path)
-            this.generate_export_fig('off');
+            [~, ~, ext] = fileparts(path);
+            ext = ext(2:end);
+            already_open = false;
+            if ~isfield(this.h, 'plot_pre') || (isfield(this.h, 'plot_pre') && ~ishandle(this.h.plot_pre))
+                this.generate_export_fig('off');
+                already_open = true;
+            end
             
-            tmp = get(this.h.plot_pre, 'position');
-            x_pix = tmp(3);
-            y_pix = tmp(4);
+            save2pdf(path, 'format', ext, 'tick', 9, 'figure', this.h.plot_pre, 'width', .8)
             
-            % save the plot and close the figure
-            set(this.h.plot_pre, 'PaperUnits', 'points');
-            set(this.h.plot_pre, 'PaperSize', [x_pix+80 y_pix+80]/1.5);
-            set(this.h.plot_pre, 'PaperPosition', [25 0 x_pix+80 y_pix+80]/1.5);
-            print(this.h.plot_pre, '-dpdf', '-r300', path);
-            close(this.h.plot_pre)
+            if ~already_open
+                close(this.h.plot_pre)
+            end
         end
 
         function generate_export_fig(this, vis)    
@@ -801,25 +833,44 @@ classdef SiSaGenericPlot < handle
             end
             set(this.h.plot_pre, 'units', 'pixels',...
                    'numbertitle', 'off',...
-                   'menubar', 'none',...
-                   'position', [100 100 1100 750],...
+                   'position', [100 100 1150 780],...
                    'name', 'SISA Scan Vorschau',...
-                   'resize', 'off',...
-                   'Color', [.95, .95, .95]);
+                   'Color', [.95, .95, .95],...
+                   'resize', 'off');
+%                    'menubar', 'none',...
+%                    'resize', 'off',);
+               
 
             ax = copyobj(this.h.axes, this.h.plot_pre);
-            xlabel(ax, 'Zeit [µs]')
-            ylabel(ax, 'Counts');
-
-            if this.fitted
-                ax_res = copyobj(this.h.res, this.h.plot_pre);
-                xlabel(ax_res, 'Zeit [µs]')
-                ylabel(ax_res, 'norm. Residuen [Counts]')
-                set(ax_res, 'position', [70, 50, 1000, 150]);
-                set(ax, 'position', [70 250 1000 450]);
-            else
-                set(ax, 'position', [70 50 1000 650]);
+            xlabel(ax, 'Time [$$\mu$$s]', 'interpreter', 'latex');
+            ylabel(ax, 'Counts', 'interpreter', 'latex');
+            
+            tmp = gca;
+            tmp = tmp.Children;
+            for i=1:length(tmp)
+                if i ==1
+                    tmp(i).DisplayName = 'fit';
+                elseif i ==length(tmp)-1
+                    tmp(i).DisplayName = 'data';
+                elseif (length(tmp) == 8 && i ==2)
+                    tmp(i).DisplayName = 'estimated ^1O_2-signal';
+                else
+                    tmp(i).HandleVisibility = 'off';
+                end
             end
+               
+            
+            if this.fitted && this.export_res
+                ax_res = copyobj(this.h.res, this.h.plot_pre);
+                xlabel(ax_res, 'Time [$$\mu$$s]', 'interpreter', 'latex');
+                ylabel(ax_res, 'norm. residues', 'interpreter', 'latex');
+                set(ax_res, 'position', [130, 90, 1000, 120]);
+                set(ax, 'position', [130, 290, 1000, 450]);
+                ax_res.TickLabelInterpreter='latex';
+            else
+                set(ax, 'position', [130 90 1000 650]);
+            end
+            ax.TickLabelInterpreter='latex';
             
             plotobjs = ax.Children;
             for i = 1:length(plotobjs)
@@ -827,14 +878,30 @@ classdef SiSaGenericPlot < handle
                     set(plotobjs(i), 'visible', 'off')
                 end
             end
-            
-            if this.fitted && this.fit_info
-                this.generate_fit_info_ov();
+                        
+            if this.fitted && this.export_fit_info
+                this.generate_fit_info_ov(ax);
+            else
+                if this.fitted
+                    h = legend('Data', 'Fit');
+                else
+                    h = legend('Data');
+                end
+                set(h, 'interpreter', 'latex');
             end
         end
         
-        function generate_fit_info_ov(this)
-            ax = this.h.plot_pre.Children(2);
+        function toggle_info_cb(this, caller, varargin)
+            this.export_fit_info = caller.Value;
+            this.smode.export_fit_info = this.export_fit_info;
+        end
+        
+        function toggle_res_cb(this, caller, varargin)
+            this.export_res = caller.Value;
+            this.smode.export_res = this.export_res;
+        end
+        
+        function generate_fit_info_ov(this, ax)
             axes(ax);
             m_names = this.sisa_fit.tex_parnames;
             m_units = this.sisa_fit.tex_units;  
@@ -848,10 +915,11 @@ classdef SiSaGenericPlot < handle
                 str{i+2} = ['$$ ' m_names{i} ' = (' num2str(par) '\pm ' num2str(err) ')$$ ' m_units{i}];
             end
             str{end+2} = ['$$ \chi^2 =$$ ' num2str(roundsig(this.chisq, 4))];
-            m = text(.92, .94, str, 'Interpreter', 'latex',...
+            m = text(.96, .90, str, 'Interpreter', 'latex',...
                                     'units', 'normalized',...
                                     'HorizontalAlignment', 'right',...
-                                    'VerticalAlignment', 'top');
+                                    'VerticalAlignment', 'top',...
+                                    'FontSize', 8);
         end
         
         function generate_export_fig_cb(this, varargin)

@@ -52,6 +52,9 @@ classdef SiSaMode < GenericMode
         sisa_fit = sisafit(1);
         sisa_fit_info;
         
+        export_fit_info = true;
+        export_res = true;
+        
         fix = {};
         gstart = [0 0 0 0];
         use_gstart = [0 0 0 0]';
@@ -89,7 +92,6 @@ classdef SiSaMode < GenericMode
     
     methods
         function this = SiSaMode(parent, data, reader, tag)
-            
             if nargin < 4
                 tag = 1;
             end
@@ -106,6 +108,7 @@ classdef SiSaMode < GenericMode
                 this.int_time = this.p.scale(4)*ones(size(data(:, :, :, :, 1)));
             end
             
+            %% create elements
             this.p = parent;
             this.data = data;
             
@@ -171,6 +174,8 @@ classdef SiSaMode < GenericMode
                         
             
             dims = size(data);
+            
+            %% format elements
                                 
             set(this.h.sisamode, 'title', 'SiSa-Lumineszenz',...
                                  'tag', num2str(tag),...
@@ -207,7 +212,7 @@ classdef SiSaMode < GenericMode
                               'visible', 'on',...
                               'FontSize', 9,...
                               'BackgroundColor', get(this.h.plotpanel, 'BackgroundColor'),...
-                              'string', 'abgeschätzt',...
+                              'string', 'Estimates',...
                               'horizontalAlignment', 'left',...
                               'position', [10 1 100 17],...
                               'parent', this.h.fit_est);
@@ -217,7 +222,7 @@ classdef SiSaMode < GenericMode
                               'visible', 'on',...
                               'FontSize', 9,...
                               'BackgroundColor', get(this.h.plotpanel, 'BackgroundColor'),...
-                              'string', 'gefittet',...
+                              'string', 'Fitted',...
                               'horizontalAlignment', 'left',...
                               'position', [115 1 60 17],...
                               'parent', this.h.fit_est,...
@@ -236,7 +241,7 @@ classdef SiSaMode < GenericMode
                              'visible', 'off');
                            
             %% Fitten
-            set(this.h.fit_tab, 'Title', 'Fitten');
+            set(this.h.fit_tab, 'Title', 'Fit');
             
             set(this.h.fit,  'units', 'pixels',...
                            'style', 'push',...
@@ -258,7 +263,7 @@ classdef SiSaMode < GenericMode
                        
             set(this.h.parallel, 'units', 'pixels',...
                             'style', 'checkbox',...
-                            'string', 'parallel Fitten? (keine Interaktivität!)',...
+                            'string', 'Parallel Fit? (not interactive!)',...
                             'tooltipString', 'Dauert am Anfang ein bisschen. Keine Fortschrittsanzeige!',...
                             'position', [2 35 200 15]);
                         
@@ -333,7 +338,7 @@ classdef SiSaMode < GenericMode
             %% Fit-Panel:
             set(this.h.fitpanel, 'units', 'pixels',...
                                'position', [2 55 243 260],...
-                               'title', 'Fit-Optionen',...
+                               'title', 'Fit-Options',...
                                'bordertype', 'line',...
                                'highlightcolor', [.7 .7 .7],...
                                'FontSize', 9);
@@ -364,13 +369,13 @@ classdef SiSaMode < GenericMode
             set(this.h.bounds_txt1, 'units', 'pixels',...
                                   'position', [40 145 50 15],...
                                   'style', 'text',...
-                                  'string', 'untere',...
+                                  'string', 'Lower',...
                                   'horizontalAlignment', 'left');
                               
             set(this.h.bounds_txt2, 'units', 'pixels',...
                                   'position', [95 145 50 15],...
                                   'style', 'text',...
-                                  'string', 'obere',...
+                                  'string', 'Upper',...
                                   'horizontalAlignment', 'left');
                               
             set(this.h.gstart_text, 'units', 'pixels',...
@@ -441,13 +446,13 @@ classdef SiSaMode < GenericMode
             set(this.h.prevfig, 'units', 'pixels',...
                               'style', 'push',...
                               'position', [92 2 80 28],...
-                              'string', 'Vorschau',...
+                              'string', 'Preview',...
                               'callback', @this.generate_export_fig_cb);
                           
             set(this.h.ch_width, 'units', 'pixels',...
                               'style', 'popupmenu',...
                               'position', [185 2 55 28],...
-                              'String', {'13.33','20','40','80'},...
+                              'String', {'13.33','20','40', '50', '80'},...
                               'callback', @this.change_channel_width);
 
             set(this.h.d_name_header, 'units', 'pixels',...
@@ -471,9 +476,15 @@ classdef SiSaMode < GenericMode
             this.overlays{1} = ones(tmp(1), tmp(2), tmp(3), tmp(4));
             this.overlays{2} = zeros(tmp(1), tmp(2), tmp(3), tmp(4));
             
+            this.read_channel_width();
+            
+            search_start = 1;
+            if this.channel_width == 0.02
+                search_start = 15;
+            end
+            
             % find mean of t_0
-            size(this.data)
-            [~, I] = max(this.data, [], 5);
+            [max_anf, I] = max(this.data(:,:,:,:,search_start:round(length(this.data)/4)), [], 5);
             
             
 %             tmp = diff(this.data, 1, 5);
@@ -488,7 +499,21 @@ classdef SiSaMode < GenericMode
             I = I(:);
             [N,pos] = hist(I,1:max(I));
             [~,t_0] = max(N);
-            end_ch = length(this.data(1,1,1,1,:));
+            t_0 = t_0 + search_start-1;
+            
+            
+            [max_end, I] = max(this.data(:,:,:,:,round(length(this.data)/4*3):end), [], 5);           
+            
+            I = squeeze(I(:,:,1));
+            I = I(:);
+            [N,pos] = hist(I,1:max(I));
+            [~,end_ch] = max(N);
+            
+            if mean(max_anf) > mean(max_end)/10
+                end_ch = end_ch + round(length(this.data)/4*3)-55;
+            else
+                end_ch = length(this.data(1,1,1,1,:));
+            end
             
             this.sisa_fit.update('t0',t_0, 'offset',t_0+25, 'end_chan', end_ch);
             
@@ -506,7 +531,7 @@ classdef SiSaMode < GenericMode
             
             
             
-            this.read_channel_width();
+            
             
             this.p.update_infos();
             
@@ -546,27 +571,22 @@ classdef SiSaMode < GenericMode
             end
         end
         
-        function change_channel_width(this, varargin)            
-            this.channel_width = str2double(this.h.ch_width.String{this.h.ch_width.Value})/1000;
+        function change_channel_width(this, varargin)
+            try
+                this.channel_width = str2double(this.h.ch_width.String{this.h.ch_width.Value})/1000;
+            catch
+                this.channel_width = 0.02;
+            end
             this.sisa_fit.update('c',this.channel_width);
         end
         
         function read_channel_width(this)
             % read Channel Width
-            
             this.channel_width = this.reader.meta.sisa.Kanalbreite;
-            try
-                chanWidth=h5readatt(fullfile(this.p.fileinfo.path, this.p.fileinfo.name{1}), '/META/SISA', 'Channel Width (ns)');
-                this.channel_width=single(chanWidth)/1000;
-            catch
-                % nothing. just an old file.
-            end
             % select channel width in dropdown
             tmp = str2double(this.h.ch_width.String);
             this.h.ch_width.Value = find(tmp == this.channel_width*1000);
-            
             this.change_channel_width();
-            
         end
         
         function set_model(this, number)
@@ -902,7 +922,7 @@ classdef SiSaMode < GenericMode
             end
             
             % set bounds from estimated parameters            
-            this.sisa_fit.update('upper', ub*2, 'lower', lb*0.5);
+            this.sisa_fit.update('upper', ub*3, 'lower', lb*0.3);
             
             
             
@@ -969,15 +989,15 @@ classdef SiSaMode < GenericMode
                     
                     lt = lt + toc(innertime);
                     
-                    this.p.update_infos(['   |   Fitte ' num2str(m) '/' num2str(ma) ' (sequentiell): '...
-                                    format_time(lt/m*(ma-m)) ' verbleibend.'])
+                    this.p.update_infos(['   |   Fitting ' num2str(m) '/' num2str(ma) ' (sequentiell): '...
+                                    format_time(lt/m*(ma-m)) ' remaining.'])
                 end
                 
                 if this.disp_fit_params
                     this.plot_array();
                 end
                 if this.hold_f
-                    set(this.h.hold, 'string', 'Fortsetzen',...
+                    set(this.h.hold, 'string', 'Resume',...
                                    'callback', @this.resume_fit_cb);
                     return
                 end
@@ -990,7 +1010,7 @@ classdef SiSaMode < GenericMode
             t = toc(outertime);
             this.p.update_infos(['   |   Daten global gefittet (' format_time(t) ').'])
             set(this.h.hold, 'visible', 'off');
-            set(this.h.fit, 'string', 'global Fitten', 'callback', @this.fit_all_cb);
+            set(this.h.fit, 'string', 'Fit all', 'callback', @this.fit_all_cb);
             this.fitted = true;
             
             this.fit_params(i, j, k, l, :) = par;
@@ -1251,7 +1271,9 @@ classdef SiSaMode < GenericMode
                 if sum(this.data(index{:}, :))
                     i = length(this.plt);
                     this.sum_number = 1;
+                    tic
                     this.plt{i+1} = SiSaPointPlot([index{:}], this);
+                    toc
                 end
             end
         end
