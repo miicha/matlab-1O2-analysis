@@ -37,7 +37,8 @@ classdef nsTASPlot < SinglePlot
 %             end
 
             this = this@SinglePlot(xdata, ydata, ydata_err, defpath, varargin);
-this.plot_args
+            
+            this.plot_args{1}
             tmp
             length(tmp)
             
@@ -68,7 +69,7 @@ this.plot_args
                                   'callback', @this.save_data_cb);
             set(this.h.axes, 'units', 'pixels',...
                              'OuterPosition', [10 30 1000 500])
-            this.plot();
+%             this.plot();
             this.resize();
         end
         
