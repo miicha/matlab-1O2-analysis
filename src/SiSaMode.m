@@ -161,6 +161,7 @@ classdef SiSaMode < GenericMode
                     this.h.sel_controls = uipanel(this.h.sel_tab);
                         this.h.sel_btn_plot = uicontrol(this.h.sel_controls);
                         this.h.export_fit_btn = uicontrol(this.h.sel_controls);
+                        this.h.histo_btn = uicontrol(this.h.sel_controls);
 
                     this.h.sel_values = uipanel(this.h.sel_tab);
 
@@ -417,6 +418,12 @@ classdef SiSaMode < GenericMode
                              'position', [15 50 50 20],...
                              'string', 'Plotten',...
                              'callback', @this.plot_group);
+                         
+            set(this.h.histo_btn, 'units', 'pixels',...
+                             'style', 'push',...
+                             'position', [15 25 50 20],...
+                             'string', 'Histogramm',...
+                             'callback', @this.plot_histo);
                          
             set(this.h.export_fit_btn, 'units', 'pixels',...
                              'style', 'push',...
@@ -1409,6 +1416,22 @@ classdef SiSaMode < GenericMode
             this.generate_sel_vals();
         end
         
+        function plot_histo(this, varargin)
+            params = this.get_overlay_selection_data(this.fit_params);
+            
+            num_par = size(params,1);
+            m = ceil(num_par/2);
+            
+            figure(42)
+            for i = 1:num_par
+                subplot(2,m,i)
+                hist(params(i,:))
+                title(this.sisa_fit.parnames{i})
+            end
+            
+            
+        end
+  
         function add_ov_cb(this, varargin)
             if varargin{1} == this.h.ov_add_from_auto
                 name = [this.h.ov_drpd.String{this.h.ov_drpd.Value} ' '...
@@ -1429,27 +1452,25 @@ classdef SiSaMode < GenericMode
             this.set_disp_ov(varargin{1}.Value);
         end
         
-        function disp_ov_sum_cb(this, varargin)
-            dimensionen = size(this.data);
+        function disp_ov_sum_cb(this, varargin)            
+            data = this.get_overlay_selection_data(this.data);
+            data = sum(data,2);
+            SiSaDataPlot(data,this);
+        end
+        
+        function data = get_overlay_selection_data(this,data,varargin)
+            dimensionen = size(data);
             n = dimensionen(end);
             auswahl = find(this.overlays{this.current_ov});
             anzahl = length(auswahl);
-            
-            this.sum_number = anzahl;
-
             auswahl = repmat(this.overlays{this.current_ov},[1 1 1 1 n]);
             
-            tmp = this.data(auswahl);
+            tmp = data(auswahl);
             data = zeros(n,anzahl);
             
             for i = 1:anzahl
                 data(:,i) =tmp(i:anzahl:n*anzahl);
             end
-           
-            data = sum(data,2);
-            
-            SiSaDataPlot(data,this);
-            
         end
         
         function export_slice_data_cb(this, varargin)
