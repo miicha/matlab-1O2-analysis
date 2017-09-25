@@ -1438,9 +1438,18 @@ classdef SiSaMode < GenericMode
         end
         
         function DBinsert(this, varargin)
-            params = this.get_overlay_selection_data(this.fit_params)
+            params = this.get_overlay_selection_data(this.fit_params);
             
-
+            global db
+            db = db_interaction('messdaten2', 'messdaten', 'testtest', '141.20.44.176');
+            
+            basepath = 'D:\Michael\UNI\Promotion\Projekte\CAM_Berlin\Scans\';
+            filename = [strrep(this.p.openpath, basepath, '') this.p.genericname '.h5'];
+            ps = this.reader.meta.sample.ps;
+            pw = double(this.reader.meta.sisa.Pulsbreite);
+            cw = this.reader.meta.sisa.Kanalbreite*1000;
+            
+            db.insert(basepath, filename, ps, cw, 'CAM');
         end
   
         function add_ov_cb(this, varargin)
