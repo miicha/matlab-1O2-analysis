@@ -162,6 +162,7 @@ classdef SiSaMode < GenericMode
                         this.h.sel_btn_plot = uicontrol(this.h.sel_controls);
                         this.h.export_fit_btn = uicontrol(this.h.sel_controls);
                         this.h.histo_btn = uicontrol(this.h.sel_controls);
+                        this.h.dbinsert_btn = uicontrol(this.h.sel_controls);
 
                     this.h.sel_values = uipanel(this.h.sel_tab);
 
@@ -421,9 +422,15 @@ classdef SiSaMode < GenericMode
                          
             set(this.h.histo_btn, 'units', 'pixels',...
                              'style', 'push',...
-                             'position', [15 25 50 20],...
+                             'position', [15 25 60 20],...
                              'string', 'Histogramm',...
                              'callback', @this.plot_histo);
+                         
+            set(this.h.dbinsert_btn, 'units', 'pixels',...
+                             'style', 'push',...
+                             'position', [85 25 50 20],...
+                             'string', 'DB insert',...
+                             'callback', @this.DBinsert);
                          
             set(this.h.export_fit_btn, 'units', 'pixels',...
                              'style', 'push',...
@@ -967,7 +974,7 @@ classdef SiSaMode < GenericMode
             
             for n = start:n_pixel
                 [i,j,k,l] = ind2sub(this.p.fileinfo.size, n);               
-                if this.overlays{this.current_ov}(i, j, k, l) || ~this.disp_ov
+                if ~this.disp_ov || this.overlays{this.current_ov}(i, j, k, l)
                     innertime = tic();
                     y = squeeze(this.data(i, j, k, l, :));
                     
@@ -1422,14 +1429,18 @@ classdef SiSaMode < GenericMode
             num_par = size(params,1);
             m = ceil(num_par/2);
             
-            figure(42)
+            figure
             for i = 1:num_par
                 subplot(2,m,i)
                 hist(params(i,:))
                 title(this.sisa_fit.parnames{i})
             end
+        end
+        
+        function DBinsert(this, varargin)
+            params = this.get_overlay_selection_data(this.fit_params)
             
-            
+
         end
   
         function add_ov_cb(this, varargin)
@@ -1461,16 +1472,9 @@ classdef SiSaMode < GenericMode
         function data = get_overlay_selection_data(this,data,varargin)
             dimensionen = size(data);
             n = dimensionen(end);
-            auswahl = find(this.overlays{this.current_ov});
-            anzahl = length(auswahl);
+            anzahl = sum(this.overlays{this.current_ov}(:));
             auswahl = repmat(this.overlays{this.current_ov},[1 1 1 1 n]);
-            
-            tmp = data(auswahl);
-            data = zeros(n,anzahl);
-            
-            for i = 1:anzahl
-                data(:,i) =tmp(i:anzahl:n*anzahl);
-            end
+            data = reshape(data(auswahl),anzahl,n)';
         end
         
         function export_slice_data_cb(this, varargin)
