@@ -173,6 +173,12 @@ classdef SiSaMode < GenericMode
                     this.h.d_name_header = uicontrol(this.h.pres_tab);
                     this.h.d_scale_header = uicontrol(this.h.pres_tab);
                     this.h.d_unit_header = uicontrol(this.h.pres_tab);
+                    
+                    this.h.d_exwl_header = uicontrol(this.h.pres_tab);
+                    this.h.d_swl_header = uicontrol(this.h.pres_tab);
+                    this.h.d_exwl = uicontrol(this.h.pres_tab);
+                    this.h.d_swl = uicontrol(this.h.pres_tab);
+                    
                         
             
             dims = size(data);
@@ -483,6 +489,26 @@ classdef SiSaMode < GenericMode
                                       'style', 'text',...
                                       'position', [150, 220, 60, 20],...
                                       'string', 'Einheit');
+                                  
+            set(this.h.d_exwl_header, 'units', 'pixels',...
+                                      'style', 'text',...
+                                      'position', [10, 315, 60, 20],...
+                                      'string', 'Excitation');
+                                  
+            set(this.h.d_exwl, 'units', 'pixels',...
+                                      'style', 'edit',...
+                                      'position', [10, 300, 60, 20],...
+                                      'callback', @this.update_config);
+                                  
+            set(this.h.d_swl_header, 'units', 'pixels',...
+                                      'style', 'text',...
+                                      'position', [75, 315, 60, 20],...
+                                      'string', 'Emission');
+                                  
+            set(this.h.d_swl, 'units', 'pixels',...
+                                      'style', 'edit',...
+                                      'position', [75, 300, 60, 20],...
+                                      'callback', @this.update_config);
             
             % init
             tmp = size(this.data);
@@ -571,6 +597,7 @@ classdef SiSaMode < GenericMode
                     set(this.h.sisamode, 'background', [0.2 0.2 0.8]);
                 end
             end
+            this.h.d_exwl.String = num2str(this.reader.meta.exWL);
 
         end
         
@@ -1440,12 +1467,12 @@ classdef SiSaMode < GenericMode
         function DBinsert(this, varargin)
             params = this.get_overlay_selection_data(this.fit_params);
             
-            global db
+%             global db
             db = db_interaction('messdaten2', 'messdaten', 'testtest', '141.20.44.176');
             
             fileinfo.basepath = 'D:\Michael\UNI\Promotion\Projekte\CAM_Berlin\Scans\';
             
-            this.sisa_fit.t_0
+            
             
             fileinfo.filename = [strrep(this.p.openpath, fileinfo.basepath, '') this.p.genericname '.h5'];
             fileinfo.ps = this.reader.meta.sample.ps;
@@ -1454,11 +1481,37 @@ classdef SiSaMode < GenericMode
             fileinfo.t_0 = this.sisa_fit.t_0;
             
             fileinfo.probe = 'CAM'; % aus Textfeld und config
-            fileinfo.exWL = 690;    % aus Datei, sonst config und Textfeld
+            fileinfo.exWL = str2double(this.h.d_exwl.String);
             fileinfo.sWL = 1270;    % aus Textfeld und config
             fileinfo.note = 'selbst eingegeben';    % aus Textfeld und eventuell config
-            fileinfo.description = 'aus datei ausgelesen';  % aus Datei
-            db.insert(fileinfo);
+            fileinfo.description = this.reader.meta.sample.description;  % aus Datei
+            
+            if this.disp_ov
+                num_points = length(find(this.overlays{this.current_ov}));
+            else
+                num_points = prod(this.p.fileinfo.size);
+            end
+            
+            s = size(this.data); 
+            k = 0;
+            for a = 1:s(1)
+                for aa = 1:s(2)
+                    for aaa = 1:s(3)
+                        for aaaa = 1:s(4)
+                            if this.disp_ov
+                            % alle punkte einzeln abklappern
+                            k = k+1;
+                            end
+                        end
+                    end
+                end
+            end
+            k
+            num_points - k
+            pointinfo.ort = '';
+            
+            db.insert(fileinfo, pointinfo);
+            db.close();
         end
   
         function add_ov_cb(this, varargin)
@@ -1663,6 +1716,10 @@ classdef SiSaMode < GenericMode
             this.cancel_f = true;
             set(this.h.fit, 'string', 'global Fitten', 'callback', @this.fit_all_cb);
             set(this.h.hold, 'visible', 'off');
+        end
+        
+        function update_config(this, varargin)
+            varargin{1}
         end
     end
     
