@@ -1443,13 +1443,22 @@ classdef SiSaMode < GenericMode
             global db
             db = db_interaction('messdaten2', 'messdaten', 'testtest', '141.20.44.176');
             
-            basepath = 'D:\Michael\UNI\Promotion\Projekte\CAM_Berlin\Scans\';
-            filename = [strrep(this.p.openpath, basepath, '') this.p.genericname '.h5'];
-            ps = this.reader.meta.sample.ps;
-            pw = double(this.reader.meta.sisa.Pulsbreite);
-            cw = this.reader.meta.sisa.Kanalbreite*1000;
+            fileinfo.basepath = 'D:\Michael\UNI\Promotion\Projekte\CAM_Berlin\Scans\';
             
-            db.insert(basepath, filename, ps, cw, 'CAM');
+            this.sisa_fit.t_0
+            
+            fileinfo.filename = [strrep(this.p.openpath, fileinfo.basepath, '') this.p.genericname '.h5'];
+            fileinfo.ps = this.reader.meta.sample.ps;
+            fileinfo.pw = double(this.reader.meta.sisa.Pulsbreite);
+            fileinfo.cw = this.reader.meta.sisa.Kanalbreite*1000;
+            fileinfo.t_0 = this.sisa_fit.t_0;
+            
+            fileinfo.probe = 'CAM'; % aus Textfeld und config
+            fileinfo.exWL = 690;    % aus Datei, sonst config und Textfeld
+            fileinfo.sWL = 1270;    % aus Textfeld und config
+            fileinfo.note = 'selbst eingegeben';    % aus Textfeld und eventuell config
+            fileinfo.description = 'aus datei ausgelesen';  % aus Datei
+            db.insert(fileinfo);
         end
   
         function add_ov_cb(this, varargin)
@@ -1474,6 +1483,7 @@ classdef SiSaMode < GenericMode
         
         function disp_ov_sum_cb(this, varargin)            
             data = this.get_overlay_selection_data(this.data);
+            this.sum_number = size(data,2);
             data = sum(data,2);
             SiSaDataPlot(data,this);
         end
