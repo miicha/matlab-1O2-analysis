@@ -805,6 +805,7 @@ classdef SiSaGenericPlot < handle
             %ToDo checken warum genericname und savepath leer sind
             point = regexprep(num2str(this.cp), '\s+', '_');
             name = [this.smode.p.genericname '_p_' point];
+            this.smode.p.savepath
             path = fullfile(this.smode.p.savepath, name);
         end
         

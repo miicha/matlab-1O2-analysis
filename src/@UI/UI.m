@@ -428,7 +428,7 @@ classdef UI < handle
                 wh.Children(3).Children.FontSize = 9;
                 
             end
-            this_new.destroy(true);
+%             this_new.destroy(true);
             unsafe_limit_size(this_new.h.f, [900 680]);
             close(this.h.f);
             delete(this);
