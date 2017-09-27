@@ -1465,15 +1465,9 @@ classdef SiSaMode < GenericMode
         end
         
         function DBinsert(this, varargin)
-            params = this.get_overlay_selection_data(this.fit_params);
-            
-%             global db
             db = db_interaction('messdaten2', 'messdaten', 'testtest', '141.20.44.176');
             
             fileinfo.basepath = 'D:\Michael\UNI\Promotion\Projekte\CAM_Berlin\Scans\';
-            
-            
-            
             fileinfo.filename = [strrep(this.p.openpath, fileinfo.basepath, '') this.p.genericname '.h5'];
             fileinfo.ps = this.reader.meta.sample.ps;
             fileinfo.pw = double(this.reader.meta.sisa.Pulsbreite);
@@ -1491,26 +1485,55 @@ classdef SiSaMode < GenericMode
             else
                 num_points = prod(this.p.fileinfo.size);
             end
-            
-            s = size(this.data); 
-            k = 0;
-            for a = 1:s(1)
-                for aa = 1:s(2)
-                    for aaa = 1:s(3)
-                        for aaaa = 1:s(4)
-                            if this.disp_ov
-                            % alle punkte einzeln abklappern
-                            k = k+1;
-                            end
+            s = prod(this.p.fileinfo.size);
+            ii = 0;
+            pointinfo = repmat( struct( 'name', 1 ), num_points, 1 );
+            result = repmat( struct( 'ort', 1 ), num_points, 1 );
+            for n = 1:s
+                [i,j,k,l] = ind2sub(this.p.fileinfo.size, n);               
+                if ~this.disp_ov || this.overlays{this.current_ov}(i, j, k, l)
+                    ii = ii+1;                    
+                    pointinfo(ii).ort = '';
+                    pointinfo(ii).int_time = 7;
+                    pointinfo(ii).bewertung = 0;
+                    pointinfo(ii).notiz = '';
+                    pointinfo(ii).ink = 0;
+                    pointinfo(ii).messzeit = 0;
+                    
+                    pointinfo(ii).name = sprintf('%i/%i/%i/%i',i-1,j-1,k-1,l-1);
+                    
+                    result(ii).chisq = squeeze(this.fit_chisq(i,j,k,l,:));
+                    result(ii).fitmodel = this.sisa_fit.name;
+                    
+                    for m = 1:length(this.sisa_fit.parnames)
+                        tmp = this.fit_params(i,j,k,l,m);
+                        switch this.sisa_fit.parnames{m}
+                            case 'A'
+                                result(ii).A1 = tmp;
+                            case 'B'
+                                result(ii).A2 = tmp;
+                            case 't1'
+                                result(ii).t1 = tmp;
+                            case 't2'
+                                result(ii).t2 = tmp;
+                            case 't3'
+                                result(ii).t3 = tmp;
+                            case 't4'
+                                result(ii).t4 = tmp;
+                            case 'offset'
+                                result(ii).offset = tmp;
+                            case 'b'
+                                result(ii).b1 = tmp;
+                            case 'b2'
+                                result(ii).b2 = tmp;
                         end
                     end
+                    result(ii).kommentar = '';
                 end
             end
-            k
-            num_points - k
-            pointinfo.ort = '';
             
-            db.insert(fileinfo, pointinfo);
+            db.insert(fileinfo, pointinfo, result);
+            
             db.close();
         end
   
