@@ -41,6 +41,10 @@ classdef SinglePlot < handle
             end
             
             this.xdata = xdata;
+            if length(ydata)>length(xdata)
+                warning('Länge der zu plottenden Vektoren stimmt nicht überein...')
+                ydata = ydata(1:length(xdata));
+            end
             this.ydata = ydata;
 
             this.ydata_err = ydata_err;
