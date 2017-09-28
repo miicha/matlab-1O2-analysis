@@ -1466,6 +1466,8 @@ classdef SiSaMode < GenericMode
         
         function DBinsert(this, varargin)
             db = db_interaction('messdaten2', 'messdaten', 'testtest', '141.20.44.176');
+
+            db.set_progress_cb(@(x) this.p.update_infos(x));
             
             fileinfo.basepath = 'D:\Michael\UNI\Promotion\Projekte\CAM_Berlin\Scans\';
             fileinfo.filename = [strrep(this.p.openpath, fileinfo.basepath, '') this.p.genericname '.h5'];
@@ -1493,7 +1495,7 @@ classdef SiSaMode < GenericMode
                 [i,j,k,l] = ind2sub(this.p.fileinfo.size, n);               
                 if ~this.disp_ov || this.overlays{this.current_ov}(i, j, k, l)
                     ii = ii+1;                    
-                    pointinfo(ii).ort = '';
+                    pointinfo(ii).ort = 'undefined';
                     pointinfo(ii).int_time = 7;
                     pointinfo(ii).bewertung = 0;
                     pointinfo(ii).notiz = '';
@@ -1504,30 +1506,13 @@ classdef SiSaMode < GenericMode
                     
                     result(ii).chisq = squeeze(this.fit_chisq(i,j,k,l,:));
                     result(ii).fitmodel = this.sisa_fit.name;
+
+                    result(ii).t_zero = this.sisa_fit.t_0;
+                    result(ii).fit_start = this.sisa_fit.offset_time;
                     
-                    for m = 1:length(this.sisa_fit.parnames)
-                        tmp = this.fit_params(i,j,k,l,m);
-                        switch this.sisa_fit.parnames{m}
-                            case 'A'
-                                result(ii).A1 = tmp;
-                            case 'B'
-                                result(ii).A2 = tmp;
-                            case 't1'
-                                result(ii).t1 = tmp;
-                            case 't2'
-                                result(ii).t2 = tmp;
-                            case 't3'
-                                result(ii).t3 = tmp;
-                            case 't4'
-                                result(ii).t4 = tmp;
-                            case 'offset'
-                                result(ii).offset = tmp;
-                            case 'b'
-                                result(ii).b1 = tmp;
-                            case 'b2'
-                                result(ii).b2 = tmp;
-                        end
-                    end
+                    result(ii).params = squeeze(this.fit_params(i,j,k,l,:));
+                    result(ii).parnames = this.sisa_fit.parnames;
+                    
                     result(ii).kommentar = '';
                 end
             end
