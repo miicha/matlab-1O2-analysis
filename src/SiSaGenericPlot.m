@@ -473,7 +473,7 @@ classdef SiSaGenericPlot < handle
             fix = zeros(this.sisa_fit.par_num,1);
             start = fix;
             for i = 1:this.sisa_fit.par_num
-                start(i) = str2double(get(this.h.pe{i}, 'string'));
+                start(i) = str2double(strrep(get(this.h.pe{i}, 'string'),',','.'));
                 fix(i) = get(this.h.pc{i}, 'value');
             end            
             

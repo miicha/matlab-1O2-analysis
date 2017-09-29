@@ -1697,8 +1697,8 @@ classdef SiSaMode < GenericMode
             lb = this.sisa_fit.lower_bounds;
             
             tmp = zeros(par_num,1);
-            for i = 1:par_num;
-                tmp(i) = str2double(get(this.h.st{i}, 'string'));
+            for i = 1:par_num
+                tmp(i) = str2double(strrep(get(this.h.st{i}, 'string'),',','.'));
                 if tmp(i) < lb(i)
                     tmp(i) = lb(i);
                 end
@@ -1764,8 +1764,8 @@ classdef SiSaMode < GenericMode
             lb = zeros(num_par,1);
             ub = lb;
             for i = 1:num_par
-                lb(i) = str2double(get(this.h.lb{i}, 'string'));
-                ub(i) = str2double(get(this.h.ub{i}, 'string'));
+                lb(i) = str2double(strrep(get(this.h.lb{i}, 'string'),',','.'));
+                ub(i) = str2double(strrep(get(this.h.ub{i}, 'string'),',','.'));
             end
             this.sisa_fit.update('upper', ub, 'lower', lb);
         end 
