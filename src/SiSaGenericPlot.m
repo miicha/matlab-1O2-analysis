@@ -800,11 +800,11 @@ classdef SiSaGenericPlot < handle
                 result.fit_start = this.sisa_fit.offset_time;
 
                 result.params = this.fit_params;
+                result.errors = this.fit_params_err;
 
                 result.parnames = this.sisa_fit.parnames;
 
                 result.kommentar = this.h.comm.String;
-
 
                 db.insert(fileinfo, pointinfo, result);
 

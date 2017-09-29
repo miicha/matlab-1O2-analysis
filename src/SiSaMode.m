@@ -1592,6 +1592,8 @@ classdef SiSaMode < GenericMode
                     result(ii).params = squeeze(this.fit_params(i,j,k,l,:));
                     result(ii).parnames = this.sisa_fit.parnames;
                     
+                    result(ii).errors = squeeze(this.fit_params_err(i,j,k,l,:));
+                    
                     result(ii).kommentar = '';
                 end
             end
