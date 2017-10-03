@@ -72,7 +72,9 @@ classdef PlotPanel < handle
             
             this.h.plotpanel = uipanel(this.h.parent);
                 this.h.axes = axes('parent', this.h.plotpanel);
+                this.h.axes.HandleVisibility = 'callback';
                 this.h.legend = axes('parent', this.h.plotpanel);
+                this.h.legend.HandleVisibility = 'callback';
                 this.h.tick_min = uicontrol(this.h.plotpanel);
                 this.h.tick_max = uicontrol(this.h.plotpanel);
                 this.h.plttxt = uicontrol(this.h.plotpanel);
