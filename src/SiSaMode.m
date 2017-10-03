@@ -118,7 +118,7 @@ classdef SiSaMode < GenericMode
             
             this.scale = this.p.scale;
             this.units = this.p.units;
-            this.scale(end) = mean(mean(mean(mean(this.int_time))));
+            this.scale(end) = mean(this.int_time(:));
             this.d_name = {'x', 'y', 'z', 'sa'};
             
             this.h.sisamode = uitab(this.h.parent);
@@ -1395,9 +1395,7 @@ classdef SiSaMode < GenericMode
                 if sum(this.data(index{:}, :))
                     i = length(this.plt);
                     this.sum_number = 1;
-                    tic
                     this.plt{i+1} = SiSaPointPlot([index{:}], this);
-                    toc
                 end
             end
         end
@@ -1542,7 +1540,7 @@ classdef SiSaMode < GenericMode
             figure
             for i = 1:num_par
                 subplot(2,m,i)
-                hist(params(i,:))
+                histogram(params(i,:))
                 title(this.sisa_fit.parnames{i})
             end
         end
@@ -1629,17 +1627,23 @@ classdef SiSaMode < GenericMode
         
         function disp_ov_sum_cb(this, varargin)            
             data = this.get_overlay_selection_data(this.data);
-            this.sum_number = size(data,2);
-            data = sum(data,2);
+            this.sum_number = size(data,1);
+            data = sum(data,1);
+            size(data)
             SiSaDataPlot(data,this);
         end
         
         function data = get_overlay_selection_data(this,data,varargin)
-            dimensionen = size(data);
-            n = dimensionen(end);
-            anzahl = sum(this.overlays{this.current_ov}(:));
-            auswahl = repmat(this.overlays{this.current_ov},[1 1 1 1 n]);
-            data = reshape(data(auswahl),anzahl,n)';
+            if this.disp_ov
+                dimensionen = size(data);
+                n = dimensionen(end);
+                anzahl = sum(this.overlays{this.current_ov}(:));
+                auswahl = repmat(this.overlays{this.current_ov},[1 1 1 1 n]);
+                data = reshape(data(auswahl),anzahl,n);
+            else
+                data = reshape(data,[],size(data,5));
+                size(data)
+            end
         end
         
         function export_slice_data_cb(this, varargin)
