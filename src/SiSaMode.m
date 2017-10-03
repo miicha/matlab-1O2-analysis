@@ -632,8 +632,8 @@ classdef SiSaMode < GenericMode
             I = I(:);
             [N,pos] = hist(I,1:max(I));
             [~,end_ch] = max(N);
-            
-            if mean(max_anf) > mean(max_end)/10
+
+            if mean(max_anf) < mean(max_end)
                 end_ch = end_ch + round(length(this.data)/4*3)-55;
             else
                 end_ch = length(this.data(1,1,1,1,:));
