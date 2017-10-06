@@ -1501,13 +1501,13 @@ classdef SiSaMode < GenericMode
         function plot_histo(this, varargin)
             params = this.get_overlay_selection_data(this.fit_params);
             
-            num_par = size(params,1);
+            num_par = size(params,2);
             m = ceil(num_par/2);
             
             figure
             for i = 1:num_par
                 subplot(2,m,i)
-                histogram(params(i,:))
+                histogram(params(:,i))
                 title(this.sisa_fit.parnames{i})
             end
         end
@@ -1557,6 +1557,7 @@ classdef SiSaMode < GenericMode
 
                     result(ii).t_zero = this.sisa_fit.t_0;
                     result(ii).fit_start = this.sisa_fit.offset_time;
+                    result(ii).fit_end = this.sisa_fit.end_channel;
                     
                     result(ii).params = squeeze(this.fit_params(i,j,k,l,:));
                     result(ii).parnames = this.sisa_fit.parnames;
