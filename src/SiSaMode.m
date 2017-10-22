@@ -1599,8 +1599,7 @@ classdef SiSaMode < GenericMode
         function disp_ov_sum_cb(this, varargin)            
             data = this.get_overlay_selection_data(this.data);
             this.sum_number = size(data,1);
-            data = sum(data,1);
-            size(data)
+            data = sum(data,1)';
             SiSaDataPlot(data,this);
         end
         
@@ -1613,7 +1612,6 @@ classdef SiSaMode < GenericMode
                 data = reshape(data(auswahl),anzahl,n);
             else
                 data = reshape(data,[],size(data,5));
-                size(data)
             end
         end
         
