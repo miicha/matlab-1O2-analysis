@@ -374,14 +374,14 @@ classdef UI < handle
                 end
             end
             
-            reader = this.guess_channel_width();
+            reader = this.read_meta();
             this.modes{1} = SiSaMode(this, double(data),reader,1);
         end
         
         function open_sisa_data(this,path, displayname)
             data = load(path);
             data = data.sisadata;
-            reader = this.guess_channel_width();
+            reader = this.read_meta();
             
             this.fileinfo.path = displayname;
             this.fileinfo.name = {path};
@@ -391,18 +391,36 @@ classdef UI < handle
             this.modes{1} = SiSaMode(this, data,reader,1);
         end
         
-        function reader = guess_channel_width(this)
+        function reader = read_meta(this)
             % try to extract channel width from filenam or path
             reader.meta.sisa.Kanalbreite = 0.02;    % set default
+
+            infofile = [this.fileinfo.path 'info.txt'];
             try
-                expression = '(\d\d[\.,]?\d*)ns';
-                match = regexp(this.fileinfo.path,expression,'tokens');
-                
-                for i = 1:length(match)
-                    tmp(i) = str2double(match{i});
+                tmp = fileread(infofile);
+                expr = '(?:ps|PS): ([\w\d-]+)';
+                match = regexp(tmp, expr, 'tokens');
+                try
+                    reader.meta.sample.ps = match{1}{1};
                 end
-                reader.meta.sisa.Kanalbreite = min(tmp)/1000;
+                expr = 'CW: ([\d\.]+) ns';
+                match = regexp(tmp, expr, 'tokens');
+                try
+                    reader.meta.sisa.Kanalbreite = str2double(match{1}{1})/1000;
+                end
             catch
+                reader.meta.sample.ps = 'unknown';
+                try
+                    expression = '(\d\d[\.,]?\d*)ns';
+                    match = regexp(this.fileinfo.path,expression,'tokens');
+
+                    for i = 1:length(match)
+                        tmp(i) = str2double(match{i});
+                    end
+                    reader.meta.sisa.Kanalbreite = min(tmp)/1000;
+                catch
+                    reader.meta.sample.ps = 'unknown';
+                end
             end
             
             
@@ -428,7 +446,7 @@ classdef UI < handle
                 wh.Children(3).Children.FontSize = 9;
                 
             end
-            this_new.destroy(true);
+%             this_new.destroy(true);
             unsafe_limit_size(this_new.h.f, [900 680]);
             close(this.h.f);
             delete(this);
@@ -698,7 +716,7 @@ classdef UI < handle
                 end
             end
             
-            reader = this.guess_channel_width();
+            reader = this.read_meta();
             this.modes{1} = SiSaMode(this, double(data),reader);
         end
         

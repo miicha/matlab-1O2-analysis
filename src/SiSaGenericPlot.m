@@ -77,6 +77,10 @@ classdef SiSaGenericPlot < handle
                 this.h.save_data_temp = uicontrol(this.h.exp_tab);
                 this.h.res_toggle = uicontrol(this.h.exp_tab);
                 this.h.info_toggle = uicontrol(this.h.exp_tab);
+                this.h.save_to_db = uicontrol(this.h.exp_tab);
+                
+                this.h.comm_header = uicontrol(this.h.exp_tab);
+                this.h.comm = uicontrol(this.h.exp_tab);
                 
             this.h.imp_tab = uitab(this.h.tabs);
                 this.h.import_diff_data = uicontrol(this.h.imp_tab);
@@ -223,6 +227,26 @@ classdef SiSaGenericPlot < handle
                           'string', 'Export fit info',...
                           'FontSize', 9,...
                           'callback', @this.toggle_info_cb);
+                      
+            set(this.h.save_to_db, 'units', 'pixels',...
+                          'position', [470 5 120 28],...
+                          'string', 'Save in DB',...
+                          'FontSize', 9,...
+                          'callback', @this.save_data_db_cb);
+                      
+            set(this.h.comm_header, 'units', 'pixels',...
+                          'style', 'text',...
+                          'position', [407 35 60 28],...
+                          'string', 'Comment:',...
+                          'FontSize', 9);
+                  
+            set(this.h.comm, 'units', 'pixels',...
+                          'style', 'edit',...
+                          'max', 2,...
+                          'HorizontalAlignment','left',...
+                          'position', [470 35 300 40],...
+                          'FontSize', 9);
+                      
                       
              %% import
             set(this.h.imp_tab, 'units', 'pixels',...
@@ -449,7 +473,7 @@ classdef SiSaGenericPlot < handle
             fix = zeros(this.sisa_fit.par_num,1);
             start = fix;
             for i = 1:this.sisa_fit.par_num
-                start(i) = str2double(get(this.h.pe{i}, 'string'));
+                start(i) = str2double(strrep(get(this.h.pe{i}, 'string'),',','.'));
                 fix(i) = get(this.h.pc{i}, 'value');
             end            
             
@@ -740,6 +764,57 @@ classdef SiSaGenericPlot < handle
             this.save_data([path name]);
         end
         
+        
+        function save_data_db_cb(this, varargin)
+            
+            if this.fitted
+                db = db_interaction('messdaten2', 'messdaten', 'testtest', '141.20.44.176');
+
+                fileinfo.basepath = this.smode.h.d_bpth.String;
+                fileinfo.filename = [strrep(this.smode.p.openpath, fileinfo.basepath, '') this.smode.p.genericname '.h5'];
+                fileinfo.ps = this.smode.h.d_ps.String;
+                fileinfo.pw = double(this.smode.reader.meta.sisa.Pulsbreite);
+                fileinfo.cw = this.smode.reader.meta.sisa.Kanalbreite*1000;
+
+                fileinfo.t_0 = this.sisa_fit.t_0;
+
+                fileinfo.probe = this.smode.h.d_probe.String;
+                fileinfo.exWL = str2double(this.smode.h.d_exwl.String);
+                fileinfo.sWL = str2double(this.smode.h.d_swl.String);    % aus Textfeld und config
+                fileinfo.note = this.smode.h.d_note.String;    % aus Textfeld und eventuell config
+                fileinfo.description = this.smode.h.d_comm.String;  % aus Datei
+
+                pointinfo.ort = 'undefined';
+                pointinfo.int_time = 7;
+                pointinfo.bewertung = 0;
+                pointinfo.notiz = '';
+                pointinfo.ink = 0;
+                pointinfo.messzeit = 0;
+
+                pointinfo.name = sprintf('%i/%i/%i/%i',this.cp-1);
+
+                result.chisq = this.chisq;
+                result.fitmodel = this.sisa_fit.name;
+
+                result.t_zero = this.sisa_fit.t_0;
+                result.fit_start = this.sisa_fit.offset_time;
+
+                result.params = this.fit_params;
+                result.errors = this.fit_params_err;
+
+                result.parnames = this.sisa_fit.parnames;
+
+                result.kommentar = this.h.comm.String;
+                
+                result.lower = this.sisa_fit.lower_bounds;
+                result.upper = this.sisa_fit.upper_bounds;
+
+                db.insert(fileinfo, pointinfo, result);
+
+                db.close();
+            end
+        end
+        
         function save_data(this, path)
             fid = fopen(path, 'w');
             
@@ -805,6 +880,7 @@ classdef SiSaGenericPlot < handle
             %ToDo checken warum genericname und savepath leer sind
             point = regexprep(num2str(this.cp), '\s+', '_');
             name = [this.smode.p.genericname '_p_' point];
+            this.smode.p.savepath
             path = fullfile(this.smode.p.savepath, name);
         end
         

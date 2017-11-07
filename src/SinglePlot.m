@@ -112,6 +112,10 @@ classdef SinglePlot < handle
 
             ax = copyobj(this.h.axes, this.h.plot_pre);
             ax.OuterPosition = [50 50 1050 690];
+            
+            this.h.plot_pre.Position = [100 100 460 310];
+            ax.OuterPosition = [10 10 450 300];
+            ax.Title.Visible = 'off';
         end
         
         function save_fig(this, path)

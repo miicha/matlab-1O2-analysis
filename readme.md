@@ -7,6 +7,9 @@ und auch generische `*.diff`s leicht auswerten und in ansprechendem Format visua
 
 ### Installation
 #### Binaries
+
+- Achtung: Binaries aus Repo entfernt, sollten eher bei den Versionen extra hochgeladen werden (hoffentlich alle exe reste entfernt)
+
 Die Binary-Versionen sollten immer einigermaßen stabil sein, enthalten aber im 
 Allgemeinen nicht die neusten Features und Bugfixes.
 

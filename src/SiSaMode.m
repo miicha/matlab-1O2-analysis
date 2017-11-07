@@ -35,11 +35,7 @@ classdef SiSaMode < GenericMode
         
         fitted = false;
         cmap = 'summer';
-        
-%         sisafit;
-        
-        % deprecated:
-        model = '1. A*(exp(-t/t1)-exp(-t/t2))+offset';      % fit model, should be global  
+        model;
         model_number = 1;
         
         channel_width = 20/1000;   % needs UI element
@@ -58,35 +54,6 @@ classdef SiSaMode < GenericMode
         fix = {};
         gstart = [0 0 0 0];
         use_gstart = [0 0 0 0]';
-        models = containers.Map(...
-                 {'A*(exp(-t/t1)-exp(-t/t2))+offset'...
-                  'A*(exp(-t/t1)-exp(-t/t2))+B*exp(-t/t2)+offset'...
-                  'A*(exp(-t/t1)-exp(-t/t2))+B*exp(-t/t1)+offset'...
-                  'A*exp(-t/t1)+B*exp(-t/t2)+offset'...
-                 },...
-                 {...
-                    % function, lower bounds, upper bounds, names of arguments
-                    {@(A, t1, t2, offset, t) A*(exp(-t/t1)-exp(-t/t2))+offset, [0 0 0 0], [inf inf inf inf], {'A', 't1', 't2', 'offset'} }...
-                    {@(A, t1, t2, B, offset, t) A*(exp(-t/t1)-exp(-t/t2))+B*exp(-t/t2)+offset, [0 0 0 0 0], [inf inf inf inf inf], {'A', 't1', 't2', 'B', 'offset'} }...
-                    {@(A, t1, t2, B, offset, t) A*(exp(-t/t1)-exp(-t/t2))+B*exp(-t/t1)+offset, [0 0 0 0 0], [inf inf inf inf inf], {'A', 't1', 't2', 'B', 'offset'} }...
-                    {@(A, t1, t2, B, offset, t) A*exp(-t/t1)+B*exp(-t/t2)+offset, [0 0 0 0 0], [inf inf inf inf inf], {'A', 't1', 't2', 'B', 'offset'} }...
-                  })
-                    
-        models_latex = containers.Map(...
-                 {'A*(exp(-t/t1)-exp(-t/t2))+offset'...
-                  'A*(exp(-t/t1)-exp(-t/t2))+B*exp(-t/t2)+offset'...
-                  'A*(exp(-t/t1)-exp(-t/t2))+B*exp(-t/t1)+offset'...
-                  'A*(exp(-t/t1)+B*exp(-t/t2)+offset'...
-                 },...
-                 {...
-                 { '$$f(t) = A\cdot \left[\exp \left(- \frac{t}{\tau_1}\right) - \exp \left(- \frac{t}{\tau_2}\right) \right] + o$$', {'A', '\tau_1', '\tau_2', 'o'}, {'Counts', '$$\mu$$s', '$$\mu$$s', 'Counts'} }...
-                 { '$$f(t) = A\cdot \left[\exp \left(- \frac{t}{\tau_1}\right) - \exp \left(- \frac{t}{\tau_2}\right) \right] + B \cdot \exp\left(- \frac{t}{\tau_2}\right) + o$$', {'A', '\tau_1', '\tau_2', 'B', 'o'}, {'Counts', '$$\mu$$s', '$$\mu$$s', 'Counts', 'Counts'} }...
-                 { '$$f(t) = A\cdot \left[\exp \left(- \frac{t}{\tau_1}\right) - \exp \left(- \frac{t}{\tau_2}\right) \right] + B \cdot \exp\left(- \frac{t}{\tau_1}\right) + o$$', {'A', '\tau_1', '\tau_2', 'B', 'o'}, {'Counts', '$$\mu$$s', '$$\mu$$s', 'Counts', 'Counts'} }...
-                 { '$$f(t) = A\cdot \exp \left(- \frac{t}{\tau_1}\right) + B\cdot \exp \left(- \frac{t}{\tau_2}\right) + o$$', {'A', '\tau_1', '\tau_2', 'B', 'o'}, {'Counts', '$$\mu$$s', '$$\mu$$s', 'Counts', 'Counts'} }...
-                 })
-             
-%          genericname;
-%          savepath;
         reader;
     end
     
@@ -118,7 +85,7 @@ classdef SiSaMode < GenericMode
             
             this.scale = this.p.scale;
             this.units = this.p.units;
-            this.scale(end) = mean(mean(mean(mean(this.int_time))));
+            this.scale(end) = mean(this.int_time(:));
             this.d_name = {'x', 'y', 'z', 'sa'};
             
             this.h.sisamode = uitab(this.h.parent);
@@ -162,6 +129,8 @@ classdef SiSaMode < GenericMode
                         this.h.sel_btn_plot = uicontrol(this.h.sel_controls);
                         this.h.export_fit_btn = uicontrol(this.h.sel_controls);
                         this.h.histo_btn = uicontrol(this.h.sel_controls);
+                        this.h.hyper_btn = uicontrol(this.h.sel_controls);
+                        this.h.dbinsert_btn = uicontrol(this.h.sel_controls);
 
                     this.h.sel_values = uipanel(this.h.sel_tab);
 
@@ -172,6 +141,23 @@ classdef SiSaMode < GenericMode
                     this.h.d_name_header = uicontrol(this.h.pres_tab);
                     this.h.d_scale_header = uicontrol(this.h.pres_tab);
                     this.h.d_unit_header = uicontrol(this.h.pres_tab);
+                    
+                    this.h.meta_controls = uipanel(this.h.pres_tab);
+                        this.h.d_exwl_header = uicontrol(this.h.meta_controls);
+                        this.h.d_exwl = uicontrol(this.h.meta_controls);
+                        this.h.d_swl_header = uicontrol(this.h.meta_controls);
+                        this.h.d_swl = uicontrol(this.h.meta_controls);
+                        this.h.d_ps_header = uicontrol(this.h.meta_controls);
+                        this.h.d_ps = uicontrol(this.h.meta_controls);
+                        this.h.d_probe_header = uicontrol(this.h.meta_controls);
+                        this.h.d_probe = uicontrol(this.h.meta_controls);
+                        this.h.d_comm_header = uicontrol(this.h.meta_controls);
+                        this.h.d_comm = uicontrol(this.h.meta_controls);
+                        this.h.d_note_header = uicontrol(this.h.meta_controls);
+                        this.h.d_note = uicontrol(this.h.meta_controls);
+                        this.h.d_bpth_header = uicontrol(this.h.meta_controls);
+                        this.h.d_bpth = uicontrol(this.h.meta_controls);
+                    
                         
             
             dims = size(data);
@@ -421,9 +407,21 @@ classdef SiSaMode < GenericMode
                          
             set(this.h.histo_btn, 'units', 'pixels',...
                              'style', 'push',...
-                             'position', [15 25 50 20],...
+                             'position', [15 25 60 20],...
                              'string', 'Histogramm',...
                              'callback', @this.plot_histo);
+                         
+            set(this.h.hyper_btn, 'units', 'pixels',...
+                             'style', 'push',...
+                             'position', [15 75 60 20],...
+                             'string', 'Hyper',...
+                             'callback', @this.plot_hyper);
+                         
+            set(this.h.dbinsert_btn, 'units', 'pixels',...
+                             'style', 'push',...
+                             'position', [85 25 50 20],...
+                             'string', 'DB insert',...
+                             'callback', @this.DBinsert);
                          
             set(this.h.export_fit_btn, 'units', 'pixels',...
                              'style', 'push',...
@@ -476,7 +474,100 @@ classdef SiSaMode < GenericMode
                                       'style', 'text',...
                                       'position', [150, 220, 60, 20],...
                                       'string', 'Einheit');
-            
+                                  
+            % -------------------------------------------------------------
+                                  
+            set(this.h.meta_controls, 'units', 'pixels',...
+                                    'position', [2 260 243 350],...
+                                    'bordertype', 'line',...
+                                    'highlightcolor', [.7 .7 .7]);
+                                  
+            set(this.h.d_exwl_header, 'units', 'pixels',...
+                                      'style', 'text',...
+                                      'position', [10, 20, 35, 20],...
+                                      'string', 'Exc.');
+                                  
+            set(this.h.d_exwl, 'units', 'pixels',...
+                                      'style', 'edit',...
+                                      'position', [10, 5, 35, 20],...
+                                      'callback', @this.update_config);
+            try
+                this.h.d_exwl.String = num2str(this.reader.meta.exWL);
+            end
+                                  
+            set(this.h.d_swl_header, 'units', 'pixels',...
+                                      'style', 'text',...
+                                      'position', [50, 20, 40, 20],...
+                                      'string', 'Emis.');
+                                  
+            set(this.h.d_swl, 'units', 'pixels',...
+                                      'style', 'edit',...
+                                      'position', [50, 5, 40, 20],...
+                                      'string', '1270',...
+                                      'callback', @this.update_config);
+                                  
+            set(this.h.d_ps_header, 'units', 'pixels',...
+                                      'style', 'text',...
+                                      'position', [95, 20, 50, 20],...
+                                      'string', 'PS');
+                                  
+            set(this.h.d_ps, 'units', 'pixels',...
+                                      'style', 'edit',...
+                                      'position', [95, 5, 50, 20],...
+                                      'string', this.reader.meta.sample.ps,...
+                                      'callback', @this.update_config);
+                                  
+            set(this.h.d_probe_header, 'units', 'pixels',...
+                                      'style', 'text',...
+                                      'position', [150, 20, 60, 20],...
+                                      'string', 'Probe');
+                                  
+            set(this.h.d_probe, 'units', 'pixels',...
+                                      'style', 'edit',...
+                                      'position', [150, 5, 80, 20],...
+                                      'tooltipString', ['Cam (IV)' 10 'Cam (topisch)'],...
+                                      'string', 'Cam (IV)',...
+                                      'callback', @this.update_config);
+                                  
+            set(this.h.d_comm_header, 'units', 'pixels',...
+                                      'style', 'text',...
+                                      'position', [10, 90, 225, 20],...
+                                      'string', 'Comment');
+                                  
+            set(this.h.d_comm, 'units', 'pixels',...
+                                      'style', 'edit',...
+                                      'position', [10, 45, 225, 50],...
+                                      'max', 2,...
+                                      'HorizontalAlignment','left',...
+                                      'callback', @this.update_config);
+          try
+              this.h.d_comm.String = this.reader.meta.sample.description;
+          end
+                                  
+            set(this.h.d_note_header, 'units', 'pixels',...
+                                      'style', 'text',...
+                                      'position', [10, 165, 225, 20],...
+                                      'string', 'Fit Result Note');
+                                  
+            set(this.h.d_note, 'units', 'pixels',...
+                                      'style', 'edit',...
+                                      'position', [10, 115, 225, 50],...
+                                      'max', 2,...
+                                      'HorizontalAlignment','left',...
+                                      'callback', @this.update_config);
+                                  
+            set(this.h.d_bpth_header, 'units', 'pixels',...
+                                      'style', 'text',...
+                                      'position', [10, 255, 225, 20],...
+                                      'string', 'Basepath');
+                                  
+            set(this.h.d_bpth, 'units', 'pixels',...
+                                      'style', 'edit',...
+                                      'string', 'D:\Michael\UNI\Promotion\Projekte\CAM_Berlin\Scans\',...
+                                      'position', [10, 220, 225, 40],...
+                                      'max', 2,...
+                                      'callback', @this.update_config);
+                          
             % init
             tmp = size(this.data);
             
@@ -515,8 +606,8 @@ classdef SiSaMode < GenericMode
             I = I(:);
             [N,pos] = hist(I,1:max(I));
             [~,end_ch] = max(N);
-            
-            if mean(max_anf) > mean(max_end)/10
+
+            if mean(max_anf) < mean(max_end)
                 end_ch = end_ch + round(length(this.data)/4*3)-55;
             else
                 end_ch = length(this.data(1,1,1,1,:));
@@ -628,7 +719,7 @@ classdef SiSaMode < GenericMode
         
         function set_gstart(this, gst)
             this.gstart = gst;
-            for i = 1:length(this.gstart);
+            for i = 1:length(this.gstart)
                 set(this.h.st{i}, 'string', gst(i));
             end
         end
@@ -967,7 +1058,7 @@ classdef SiSaMode < GenericMode
             
             for n = start:n_pixel
                 [i,j,k,l] = ind2sub(this.p.fileinfo.size, n);               
-                if this.overlays{this.current_ov}(i, j, k, l) || ~this.disp_ov
+                if ~this.disp_ov || this.overlays{this.current_ov}(i, j, k, l)
                     innertime = tic();
                     y = squeeze(this.data(i, j, k, l, :));
                     
@@ -1278,9 +1369,7 @@ classdef SiSaMode < GenericMode
                 if sum(this.data(index{:}, :))
                     i = length(this.plt);
                     this.sum_number = 1;
-                    tic
                     this.plt{i+1} = SiSaPointPlot([index{:}], this);
-                    toc
                 end
             end
         end
@@ -1332,7 +1421,7 @@ classdef SiSaMode < GenericMode
     methods (Access = private)       
         %% Callbacks:
         function load_ext_data_cb(this, varargin)
-            [name, filepath] = uigetfile({[this.p.openpath '*.fit']}, 'Dateien auswÃ¤hlen');
+            [name, filepath] = uigetfile({[this.p.openpath '*.fit']}, 'Dateien auswählen');
             if (~ischar(name) && ~iscell(name)) || ~ischar(filepath) % no file selected
                 return
             end
@@ -1419,17 +1508,83 @@ classdef SiSaMode < GenericMode
         function plot_histo(this, varargin)
             params = this.get_overlay_selection_data(this.fit_params);
             
-            num_par = size(params,1);
+            num_par = size(params,2);
             m = ceil(num_par/2);
             
-            figure(42)
+            figure
             for i = 1:num_par
                 subplot(2,m,i)
-                hist(params(i,:))
+                histogram(params(:,i))
                 title(this.sisa_fit.parnames{i})
             end
+        end
+        
+        function plot_hyper(this, varargin)
+            5
+        end
+        
+        function DBinsert(this, varargin)
+            db = db_interaction('messdaten2', 'messdaten', 'testtest', '141.20.44.176');
+
+            db.set_progress_cb(@(x) this.p.update_infos(x));
             
+            fileinfo.basepath = this.h.d_bpth.String;
+            fileinfo.filename = [strrep(this.p.openpath, fileinfo.basepath, '') this.p.genericname '.h5'];
+            fileinfo.ps = this.h.d_ps.String;
+            fileinfo.pw = double(this.reader.meta.sisa.Pulsbreite);
+            fileinfo.cw = this.reader.meta.sisa.Kanalbreite*1000;
+            fileinfo.t_0 = this.sisa_fit.t_0;
             
+            fileinfo.probe = this.h.d_probe.String;
+            fileinfo.exWL = str2double(this.h.d_exwl.String);
+            fileinfo.sWL = str2double(this.h.d_swl.String);    % aus Textfeld und config
+            fileinfo.note = this.h.d_note.String;    % aus Textfeld und eventuell config
+            fileinfo.description = this.h.d_comm.String;  % aus Datei
+            
+            if this.disp_ov
+                num_points = length(find(this.overlays{this.current_ov}));
+            else
+                num_points = prod(this.p.fileinfo.size);
+            end
+            s = prod(this.p.fileinfo.size);
+            ii = 0;
+            pointinfo = repmat( struct( 'name', 1 ), num_points, 1 );
+            result = repmat( struct( 'ort', 1 ), num_points, 1 );
+            for n = 1:s
+                [i,j,k,l] = ind2sub(this.p.fileinfo.size, n);               
+                if ~this.disp_ov || this.overlays{this.current_ov}(i, j, k, l)
+                    ii = ii+1;                    
+                    pointinfo(ii).ort = 'undefined';
+                    pointinfo(ii).int_time = 7;
+                    pointinfo(ii).bewertung = 0;
+                    pointinfo(ii).notiz = '';
+                    pointinfo(ii).ink = 0;
+                    pointinfo(ii).messzeit = 0;
+                    
+                    pointinfo(ii).name = sprintf('%i/%i/%i/%i',i-1,j-1,k-1,l-1);
+                    
+                    result(ii).chisq = squeeze(this.fit_chisq(i,j,k,l,:));
+                    result(ii).fitmodel = this.sisa_fit.name;
+
+                    result(ii).t_zero = this.sisa_fit.t_0;
+                    result(ii).fit_start = this.sisa_fit.offset_time;
+                    result(ii).fit_end = this.sisa_fit.end_channel;
+                    
+                    result(ii).params = squeeze(this.fit_params(i,j,k,l,:));
+                    result(ii).parnames = this.sisa_fit.parnames;
+                    
+                    result(ii).errors = squeeze(this.fit_params_err(i,j,k,l,:));
+                    
+                    result(ii).lower = this.sisa_fit.lower_bounds;
+                    result(ii).upper = this.sisa_fit.upper_bounds;
+                    
+                    result(ii).kommentar = this.h.d_note.String;
+                end
+            end
+            
+            db.insert(fileinfo, pointinfo, result);
+            
+            db.close();
         end
   
         function add_ov_cb(this, varargin)
@@ -1454,22 +1609,20 @@ classdef SiSaMode < GenericMode
         
         function disp_ov_sum_cb(this, varargin)            
             data = this.get_overlay_selection_data(this.data);
-            data = sum(data,2);
+            this.sum_number = size(data,1);
+            data = sum(data,1)';
             SiSaDataPlot(data,this);
         end
         
         function data = get_overlay_selection_data(this,data,varargin)
-            dimensionen = size(data);
-            n = dimensionen(end);
-            auswahl = find(this.overlays{this.current_ov});
-            anzahl = length(auswahl);
-            auswahl = repmat(this.overlays{this.current_ov},[1 1 1 1 n]);
-            
-            tmp = data(auswahl);
-            data = zeros(n,anzahl);
-            
-            for i = 1:anzahl
-                data(:,i) =tmp(i:anzahl:n*anzahl);
+            if this.disp_ov
+                dimensionen = size(data);
+                n = dimensionen(end);
+                anzahl = sum(this.overlays{this.current_ov}(:));
+                auswahl = repmat(this.overlays{this.current_ov},[1 1 1 1 n]);
+                data = reshape(data(auswahl),anzahl,n);
+            else
+                data = reshape(data,[],size(data,5));
             end
         end
         
@@ -1534,8 +1687,8 @@ classdef SiSaMode < GenericMode
             lb = this.sisa_fit.lower_bounds;
             
             tmp = zeros(par_num,1);
-            for i = 1:par_num;
-                tmp(i) = str2double(get(this.h.st{i}, 'string'));
+            for i = 1:par_num
+                tmp(i) = str2double(strrep(get(this.h.st{i}, 'string'),',','.'));
                 if tmp(i) < lb(i)
                     tmp(i) = lb(i);
                 end
@@ -1601,8 +1754,8 @@ classdef SiSaMode < GenericMode
             lb = zeros(num_par,1);
             ub = lb;
             for i = 1:num_par
-                lb(i) = str2double(get(this.h.lb{i}, 'string'));
-                ub(i) = str2double(get(this.h.ub{i}, 'string'));
+                lb(i) = str2double(strrep(get(this.h.lb{i}, 'string'),',','.'));
+                ub(i) = str2double(strrep(get(this.h.ub{i}, 'string'),',','.'));
             end
             this.sisa_fit.update('upper', ub, 'lower', lb);
         end 
@@ -1640,6 +1793,10 @@ classdef SiSaMode < GenericMode
             this.cancel_f = true;
             set(this.h.fit, 'string', 'global Fitten', 'callback', @this.fit_all_cb);
             set(this.h.hold, 'visible', 'off');
+        end
+        
+        function update_config(this, varargin)
+            varargin{1}
         end
     end
     
