@@ -162,6 +162,7 @@ classdef SiSaMode < GenericMode
                         this.h.sel_btn_plot = uicontrol(this.h.sel_controls);
                         this.h.export_fit_btn = uicontrol(this.h.sel_controls);
                         this.h.histo_btn = uicontrol(this.h.sel_controls);
+                        this.h.hyper_btn = uicontrol(this.h.sel_controls);
                         this.h.dbinsert_btn = uicontrol(this.h.sel_controls);
 
                     this.h.sel_values = uipanel(this.h.sel_tab);
@@ -442,6 +443,12 @@ classdef SiSaMode < GenericMode
                              'position', [15 25 60 20],...
                              'string', 'Histogramm',...
                              'callback', @this.plot_histo);
+                         
+            set(this.h.hyper_btn, 'units', 'pixels',...
+                             'style', 'push',...
+                             'position', [15 75 60 20],...
+                             'string', 'Hyper',...
+                             'callback', @this.plot_hyper);
                          
             set(this.h.dbinsert_btn, 'units', 'pixels',...
                              'style', 'push',...
@@ -1543,6 +1550,10 @@ classdef SiSaMode < GenericMode
                 histogram(params(i,:))
                 title(this.sisa_fit.parnames{i})
             end
+        end
+        
+        function plot_hyper(this, varargin)
+            5
         end
         
         function DBinsert(this, varargin)
