@@ -805,6 +805,9 @@ classdef SiSaGenericPlot < handle
                 result.parnames = this.sisa_fit.parnames;
 
                 result.kommentar = this.h.comm.String;
+                
+                result.lower = this.sisa_fit.lower_bounds;
+                result.upper = this.sisa_fit.upper_bounds;
 
                 db.insert(fileinfo, pointinfo, result);
 

@@ -35,11 +35,7 @@ classdef SiSaMode < GenericMode
         
         fitted = false;
         cmap = 'summer';
-        
-%         sisafit;
-        
-        % deprecated:
-        model = '1. A*(exp(-t/t1)-exp(-t/t2))+offset';      % fit model, should be global  
+        model;
         model_number = 1;
         
         channel_width = 20/1000;   % needs UI element
@@ -58,35 +54,6 @@ classdef SiSaMode < GenericMode
         fix = {};
         gstart = [0 0 0 0];
         use_gstart = [0 0 0 0]';
-        models = containers.Map(...
-                 {'A*(exp(-t/t1)-exp(-t/t2))+offset'...
-                  'A*(exp(-t/t1)-exp(-t/t2))+B*exp(-t/t2)+offset'...
-                  'A*(exp(-t/t1)-exp(-t/t2))+B*exp(-t/t1)+offset'...
-                  'A*exp(-t/t1)+B*exp(-t/t2)+offset'...
-                 },...
-                 {...
-                    % function, lower bounds, upper bounds, names of arguments
-                    {@(A, t1, t2, offset, t) A*(exp(-t/t1)-exp(-t/t2))+offset, [0 0 0 0], [inf inf inf inf], {'A', 't1', 't2', 'offset'} }...
-                    {@(A, t1, t2, B, offset, t) A*(exp(-t/t1)-exp(-t/t2))+B*exp(-t/t2)+offset, [0 0 0 0 0], [inf inf inf inf inf], {'A', 't1', 't2', 'B', 'offset'} }...
-                    {@(A, t1, t2, B, offset, t) A*(exp(-t/t1)-exp(-t/t2))+B*exp(-t/t1)+offset, [0 0 0 0 0], [inf inf inf inf inf], {'A', 't1', 't2', 'B', 'offset'} }...
-                    {@(A, t1, t2, B, offset, t) A*exp(-t/t1)+B*exp(-t/t2)+offset, [0 0 0 0 0], [inf inf inf inf inf], {'A', 't1', 't2', 'B', 'offset'} }...
-                  })
-                    
-        models_latex = containers.Map(...
-                 {'A*(exp(-t/t1)-exp(-t/t2))+offset'...
-                  'A*(exp(-t/t1)-exp(-t/t2))+B*exp(-t/t2)+offset'...
-                  'A*(exp(-t/t1)-exp(-t/t2))+B*exp(-t/t1)+offset'...
-                  'A*(exp(-t/t1)+B*exp(-t/t2)+offset'...
-                 },...
-                 {...
-                 { '$$f(t) = A\cdot \left[\exp \left(- \frac{t}{\tau_1}\right) - \exp \left(- \frac{t}{\tau_2}\right) \right] + o$$', {'A', '\tau_1', '\tau_2', 'o'}, {'Counts', '$$\mu$$s', '$$\mu$$s', 'Counts'} }...
-                 { '$$f(t) = A\cdot \left[\exp \left(- \frac{t}{\tau_1}\right) - \exp \left(- \frac{t}{\tau_2}\right) \right] + B \cdot \exp\left(- \frac{t}{\tau_2}\right) + o$$', {'A', '\tau_1', '\tau_2', 'B', 'o'}, {'Counts', '$$\mu$$s', '$$\mu$$s', 'Counts', 'Counts'} }...
-                 { '$$f(t) = A\cdot \left[\exp \left(- \frac{t}{\tau_1}\right) - \exp \left(- \frac{t}{\tau_2}\right) \right] + B \cdot \exp\left(- \frac{t}{\tau_1}\right) + o$$', {'A', '\tau_1', '\tau_2', 'B', 'o'}, {'Counts', '$$\mu$$s', '$$\mu$$s', 'Counts', 'Counts'} }...
-                 { '$$f(t) = A\cdot \exp \left(- \frac{t}{\tau_1}\right) + B\cdot \exp \left(- \frac{t}{\tau_2}\right) + o$$', {'A', '\tau_1', '\tau_2', 'B', 'o'}, {'Counts', '$$\mu$$s', '$$\mu$$s', 'Counts', 'Counts'} }...
-                 })
-             
-%          genericname;
-%          savepath;
         reader;
     end
     
@@ -564,7 +531,7 @@ classdef SiSaMode < GenericMode
                                   
             set(this.h.d_comm_header, 'units', 'pixels',...
                                       'style', 'text',...
-                                      'position', [10, 90, 80, 20],...
+                                      'position', [10, 90, 225, 20],...
                                       'string', 'Comment');
                                   
             set(this.h.d_comm, 'units', 'pixels',...
@@ -579,8 +546,8 @@ classdef SiSaMode < GenericMode
                                   
             set(this.h.d_note_header, 'units', 'pixels',...
                                       'style', 'text',...
-                                      'position', [10, 165, 60, 20],...
-                                      'string', 'Note');
+                                      'position', [10, 165, 225, 20],...
+                                      'string', 'Fit Result Note');
                                   
             set(this.h.d_note, 'units', 'pixels',...
                                       'style', 'edit',...
@@ -591,7 +558,7 @@ classdef SiSaMode < GenericMode
                                   
             set(this.h.d_bpth_header, 'units', 'pixels',...
                                       'style', 'text',...
-                                      'position', [10, 255, 60, 20],...
+                                      'position', [10, 255, 225, 20],...
                                       'string', 'Basepath');
                                   
             set(this.h.d_bpth, 'units', 'pixels',...
@@ -1454,7 +1421,7 @@ classdef SiSaMode < GenericMode
     methods (Access = private)       
         %% Callbacks:
         function load_ext_data_cb(this, varargin)
-            [name, filepath] = uigetfile({[this.p.openpath '*.fit']}, 'Dateien auswÃ¤hlen');
+            [name, filepath] = uigetfile({[this.p.openpath '*.fit']}, 'Dateien auswählen');
             if (~ischar(name) && ~iscell(name)) || ~ischar(filepath) % no file selected
                 return
             end
@@ -1541,13 +1508,13 @@ classdef SiSaMode < GenericMode
         function plot_histo(this, varargin)
             params = this.get_overlay_selection_data(this.fit_params);
             
-            num_par = size(params,1);
+            num_par = size(params,2);
             m = ceil(num_par/2);
             
             figure
             for i = 1:num_par
                 subplot(2,m,i)
-                histogram(params(i,:))
+                histogram(params(:,i))
                 title(this.sisa_fit.parnames{i})
             end
         end
@@ -1601,13 +1568,17 @@ classdef SiSaMode < GenericMode
 
                     result(ii).t_zero = this.sisa_fit.t_0;
                     result(ii).fit_start = this.sisa_fit.offset_time;
+                    result(ii).fit_end = this.sisa_fit.end_channel;
                     
                     result(ii).params = squeeze(this.fit_params(i,j,k,l,:));
                     result(ii).parnames = this.sisa_fit.parnames;
                     
                     result(ii).errors = squeeze(this.fit_params_err(i,j,k,l,:));
                     
-                    result(ii).kommentar = '';
+                    result(ii).lower = this.sisa_fit.lower_bounds;
+                    result(ii).upper = this.sisa_fit.upper_bounds;
+                    
+                    result(ii).kommentar = this.h.d_note.String;
                 end
             end
             
@@ -1639,8 +1610,7 @@ classdef SiSaMode < GenericMode
         function disp_ov_sum_cb(this, varargin)            
             data = this.get_overlay_selection_data(this.data);
             this.sum_number = size(data,1);
-            data = sum(data,1);
-            size(data)
+            data = sum(data,1)';
             SiSaDataPlot(data,this);
         end
         
@@ -1653,7 +1623,6 @@ classdef SiSaMode < GenericMode
                 data = reshape(data(auswahl),anzahl,n);
             else
                 data = reshape(data,[],size(data,5));
-                size(data)
             end
         end
         
