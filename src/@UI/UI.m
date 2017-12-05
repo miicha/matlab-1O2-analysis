@@ -256,6 +256,11 @@ classdef UI < handle
                     this.fileinfo.(fn{i}) = reader.meta.fileinfo.(fn{i});
                 end
                 this.scale = reader.meta.scale;
+                try
+                    this.units = reader.meta.units;
+                catch
+                    'generic units'
+                end
             catch
                 'no fileinfo'
             end
@@ -270,6 +275,8 @@ classdef UI < handle
                     case {'sisa','NIR'}
                         % open a SiSa tab
                         switch FileType
+                            case 'oneFolderDiff'
+                                this.modes{i} = SiSaMode(this, reader.get_sisa_data(), reader, i);
                             case {'scanning', 'bakterien'}
                                 this.modes{i} = SiSaMode(this, reader.get_sisa_data(), reader, i);
                             case 'in-vivo'
@@ -331,51 +338,8 @@ classdef UI < handle
         
         
         function openDIFF(this)
-            name = this.fileinfo.name;
-            if iscell(name)
-                for i = 1:length(name)
-                    this.fileinfo.size = [length(name), 1, 1];
-                    d = dlmread([this.fileinfo.path name{i}]);
-                    if i > 1
-                        if length(d) > size(data, 5)
-                            d = d(1:size(data, 5));
-                            this.update_infos(['    |    Länge der Daten ungleich in ' name{i}]);
-                        elseif length(d) < size(data, 5)
-                            d = [d; zeros(size(data, 5) - length(d),1)];
-                        end
-                    end
-                    data(i, 1, 1, 1,:) = d;
-                end
-                this.fileinfo.np = length(name);
-            elseif isstruct(name)
-                this.fileinfo.name = cell(length(name),1);
-                for i = 1:length(name)
-                    if name(i).isdir
-                        files = dir([name(i).name '\*.diff']);
-                        for j = 1:length(files)
-                            d = dlmread([name(i).name '\' files(j).name]);
-                            if i == 1 && j == 1
-                                data = zeros(length(name),length(files),1,1,length(d));
-                            end
-                            this.fileinfo.name{i,j} = files(j).name;
-                            data(i, j, 1, 1,:) = d;
-                        end
-                    end
-                end
-            end
-            this.data_read = true;
-            
-            tmp = size(data);
-            this.fileinfo.size = tmp(1:4);
-            
-            for i = 1:length(name)
-                if mod(i, round(length(name)/10)) == 0
-                    this.update_infos(['   |   Metadaten einlesen ' num2str(i) '.']);
-                end
-            end
-            
-            reader = this.read_meta();
-            this.modes{1} = SiSaMode(this, double(data),reader,1);
+            reader = file_reader(this.fileinfo.path, this.fileinfo.name);
+            this.open_modes(reader);
         end
         
         function open_sisa_data(this,path, displayname)
@@ -389,41 +353,6 @@ classdef UI < handle
             this.fileinfo.size = tmp(1:4);
             
             this.modes{1} = SiSaMode(this, data,reader,1);
-        end
-        
-        function reader = read_meta(this)
-            % try to extract channel width from filenam or path
-            reader.meta.sisa.Kanalbreite = 0.02;    % set default
-
-            infofile = [this.fileinfo.path 'info.txt'];
-            try
-                tmp = fileread(infofile);
-                expr = '(?:ps|PS): ([\w\d-]+)';
-                match = regexp(tmp, expr, 'tokens');
-                try
-                    reader.meta.sample.ps = match{1}{1};
-                end
-                expr = 'CW: ([\d\.]+) ns';
-                match = regexp(tmp, expr, 'tokens');
-                try
-                    reader.meta.sisa.Kanalbreite = str2double(match{1}{1})/1000;
-                end
-            catch
-                reader.meta.sample.ps = 'unknown';
-                try
-                    expression = '(\d\d[\.,]?\d*)ns';
-                    match = regexp(this.fileinfo.path,expression,'tokens');
-
-                    for i = 1:length(match)
-                        tmp(i) = str2double(match{i});
-                    end
-                    reader.meta.sisa.Kanalbreite = min(tmp)/1000;
-                catch
-                    reader.meta.sample.ps = 'unknown';
-                end
-            end
-            
-            
         end
         
         function set_savepath(this, path)
