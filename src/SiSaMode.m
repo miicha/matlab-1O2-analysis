@@ -152,6 +152,12 @@ classdef SiSaMode < GenericMode
                         this.h.d_probe_header = uicontrol(this.h.meta_controls);
                         this.h.d_probe = uicontrol(this.h.meta_controls);
                         this.h.d_inttime = uicontrol(this.h.meta_controls);
+                        
+                        this.h.d_fileRating_header = uicontrol(this.h.meta_controls);
+                        this.h.d_fileRating = uicontrol(this.h.meta_controls);
+                        this.h.d_fitResultRating_header = uicontrol(this.h.meta_controls);
+                        this.h.d_fitResultRating = uicontrol(this.h.meta_controls);
+                        
                         this.h.d_comm_header = uicontrol(this.h.meta_controls);
                         this.h.d_comm = uicontrol(this.h.meta_controls);
                         this.h.d_note_header = uicontrol(this.h.meta_controls);
@@ -536,6 +542,24 @@ classdef SiSaMode < GenericMode
                                       'position', [10, 45, 75, 20],...
                                       'string', ['Int. Time: ' num2str(this.int_time) ' s'],... 
                                       'callback', @this.update_config);
+                                  
+            set(this.h.d_fileRating, 'units', 'pixels',...
+                              'style', 'popupmenu',...
+                              'position', [95 45 55 20],...
+                              'String', {'1','2','3', '4', '5'});
+            set(this.h.d_fileRating_header, 'units', 'pixels',...
+                              'style', 'text',...
+                              'position', [95 60 55 20],...
+                              'String', 'FileRating');
+                          
+            set(this.h.d_fitResultRating, 'units', 'pixels',...
+                              'style', 'popupmenu',...
+                              'position', [160 45 55 20],...
+                              'String', {'1','2','3', '4', '5'});
+            set(this.h.d_fitResultRating_header, 'units', 'pixels',...
+                              'style', 'text',...
+                              'position', [160 60 55 20],...
+                              'String', 'Fit Rating');
                                   
             set(this.h.d_comm_header, 'units', 'pixels',...
                                       'style', 'text',...
@@ -1532,7 +1556,9 @@ classdef SiSaMode < GenericMode
         end
         
         function DBinsert(this, varargin)
-            db = db_interaction('messdaten2', 'messdaten', 'testtest', '141.20.44.176');
+            server = '141.20.44.176';
+            server = 'localhost';
+            db = db_interaction('messdaten2', 'messdaten', 'testtest', server);
 
             db.set_progress_cb(@(x) this.p.update_infos(x));
             
@@ -1542,11 +1568,12 @@ classdef SiSaMode < GenericMode
             fileinfo.pw = double(this.reader.meta.sisa.Pulsbreite);
             fileinfo.cw = this.reader.meta.sisa.Kanalbreite*1000;
             fileinfo.t_0 = this.sisa_fit.t_0;
+            fileinfo.rating = this.h.d_fileRating.Value;
             
             fileinfo.probe = this.h.d_probe.String;
             fileinfo.exWL = str2double(this.h.d_exwl.String);
             fileinfo.sWL = str2double(this.h.d_swl.String);    % aus Textfeld und config
-            fileinfo.note = this.h.d_note.String;    % aus Textfeld und eventuell config
+            fileinfo.note = 'irgendwas'; %this.h.d_note.String;    % aus Textfeld und eventuell config
             fileinfo.description = this.h.d_comm.String;  % aus Datei
             
             if this.disp_ov
@@ -1564,8 +1591,7 @@ classdef SiSaMode < GenericMode
                     ii = ii+1;                    
                     pointinfo(ii).ort = 'undefined';
                     pointinfo(ii).int_time = this.int_time;
-                    pointinfo(ii).bewertung = 0;
-                    pointinfo(ii).notiz = '';
+                    pointinfo(ii).note = '';
                     pointinfo(ii).ink = 0;
                     pointinfo(ii).messzeit = 0;
                     
@@ -1585,7 +1611,9 @@ classdef SiSaMode < GenericMode
                     
                     result(ii).lower = this.sisa_fit.lower_bounds;
                     result(ii).upper = this.sisa_fit.upper_bounds;
+                    result(ii).shortSiox = 1;
                     
+                    result(ii).rating = this.h.d_fitResultRating.Value;
                     result(ii).kommentar = this.h.d_note.String;
                 end
             end
