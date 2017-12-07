@@ -58,7 +58,7 @@ classdef SiSaMode < GenericMode
     end
     
     methods
-        function this = SiSaMode(parent, data, reader, tag)
+        function this = SiSaMode(parent, data, reader, tag, config)
             if nargin < 4
                 tag = 1;
             end
@@ -102,6 +102,8 @@ classdef SiSaMode < GenericMode
                     this.h.fitpanel = uipanel(this.h.fit_tab);
                         this.h.fittxt = uicontrol(this.h.fitpanel);
                         this.h.drpd = uicontrol(this.h.fitpanel);
+                        this.h.short_siox = uicontrol(this.h.fitpanel);
+                        this.h.short_third = uicontrol(this.h.fitpanel);
                         this.h.bounds = uipanel(this.h.fitpanel);
                             this.h.bounds_txt1 = uicontrol(this.h.bounds);
                             this.h.bounds_txt2 = uicontrol(this.h.bounds);
@@ -340,7 +342,7 @@ classdef SiSaMode < GenericMode
             %% select fit model
             set(this.h.fittxt, 'units', 'pixels',...
                              'style', 'text',...
-                             'position', [15 220 50 15],...
+                             'position', [15 240 50 15],...
                              'HorizontalAlignment', 'left',...
                              'string', 'Fitmodell:');
 
@@ -348,10 +350,26 @@ classdef SiSaMode < GenericMode
                            'style', 'popupmenu',...
                            'string', this.sisa_fit_info.model_names,...
                            'value', 1,...
-                           'position', [15 205 220 15],...
+                           'position', [15 225 220 15],...
                            'callback', @this.set_model_cb,...
                            'BackgroundColor', [1 1 1],...
                            'FontSize', 9);
+                       
+           set(this.h.short_siox, 'units', 'pixels',...
+                             'style', 'checkbox',...
+                             'position', [15 134 105 15],...
+                             'HorizontalAlignment', 'left',...
+                             'string', 'Short SiOx',...
+                             'callback', @this.update_config,...
+                             'Value', config.short_siox);
+                         
+           set(this.h.short_third, 'units', 'pixels',...
+                             'style', 'checkbox',...
+                             'position', [110 134 105 15],...
+                             'HorizontalAlignment', 'left',...
+                             'callback', @this.update_config,...
+                             'string', 'Short Third',...
+                             'Value', config.short_third);
                        
             set(this.h.bounds, 'units', 'pixels',...
                              'position', [2 2 239 180],...
@@ -666,7 +684,7 @@ classdef SiSaMode < GenericMode
             this.p.update_infos();
             
             
-            this.set_model(1);
+            this.set_model(config.last_model);
             
             this.x_data = this.sisa_fit.get_x_axis();
             
@@ -1017,6 +1035,8 @@ classdef SiSaMode < GenericMode
             ub = zeros(num_par, 1);
             lb = ones(num_par, 1)*100;
             curr_p = 0;
+            short_siox = this.h.short_siox.Value;
+            short_third = this.h.short_third.Value;
             for n = 1:prod(this.p.fileinfo.size)
                 [i,j,k,l] = ind2sub(this.p.fileinfo.size, n);
                 d = squeeze(this.data(i, j, k, l, :));
@@ -1025,7 +1045,7 @@ classdef SiSaMode < GenericMode
                 end
                 curr_p = curr_p + 1;
 %                 sf.update('t0', this.t_zero, 'offset_t', this.t_zero + this.t_offset);
-                ps = sf.estimate(d);
+                ps = sf.estimate(d,short_siox,short_third);
                 this.est_params(i, j, k, l, :) = ps;
                 if mod(curr_p, round(this.p.fileinfo.np/20)) == 0
                     this.p.update_infos(['   |   Parameter abschätzen ' num2str(curr_p) '/' num2str(this.p.fileinfo.np) '.']);
@@ -1288,13 +1308,16 @@ classdef SiSaMode < GenericMode
             
             % update positions and sizes
             
-            fit_options_height = n*23 + 98;
+            fit_options_height = n*23 + 118;
             
             set(this.h.fitpanel, 'position', [2 55 243 fit_options_height]);
             
-            set(this.h.fittxt, 'position', [15 n*23+65 50 15]); % 'Fitmodell'
+            set(this.h.fittxt, 'position', [15 n*23+85 50 15]); % 'Fitmodell'
 
-            set(this.h.drpd, 'position', [15 n*23+50 220 15]);
+            set(this.h.drpd, 'position', [15 n*23+70 220 15]);
+            
+            this.h.short_siox.Position = [15 n*23+42 105 15];
+            this.h.short_third.Position = [110 n*23+42 105 15];
             
             fit_param_height = n*23 + 35;
                        
@@ -1774,7 +1797,8 @@ classdef SiSaMode < GenericMode
        
         % fitmodel from dropdown
         function set_model_cb(this, varargin)            
-            this.set_model(get(this.h.drpd, 'value'));
+            this.set_model(this.h.drpd.Value);
+            this.update_config();
         end 
         
         % colormap
@@ -1832,7 +1856,11 @@ classdef SiSaMode < GenericMode
         end
         
         function update_config(this, varargin)
-            varargin{1}
+            this.p.siox_config.short_siox = this.h.short_siox.Value;
+            this.p.siox_config.short_third = this.h.short_third.Value;
+            this.p.siox_config.last_model = this.h.drpd.Value;
+            this.p.saveini();
+%             varargin{1}
         end
     end
     

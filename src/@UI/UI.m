@@ -23,6 +23,7 @@ classdef UI < handle
         savepath; % persistent, in ini
         dbpath; % persistent, in ini
         open_nsTAS_path; % persistent, in ini
+        siox_config; % persistent, in ini
 
         h = struct();        % handles
     end
@@ -276,9 +277,9 @@ classdef UI < handle
                         % open a SiSa tab
                         switch FileType
                             case 'oneFolderDiff'
-                                this.modes{i} = SiSaMode(this, reader.get_sisa_data(), reader, i);
+                                this.modes{i} = SiSaMode(this, reader.get_sisa_data(), reader, i, this.siox_config);
                             case {'scanning', 'bakterien'}
-                                this.modes{i} = SiSaMode(this, reader.get_sisa_data(), reader, i);
+                                this.modes{i} = SiSaMode(this, reader.get_sisa_data(), reader, i, this.siox_config);
                             case 'in-vivo'
                                 tmp = size(reader.data.sisa.data);
                                 this.fileinfo.size = tmp(1:4);
@@ -352,7 +353,7 @@ classdef UI < handle
             tmp =  size(data);
             this.fileinfo.size = tmp(1:4);
             
-            this.modes{1} = SiSaMode(this, data,reader,1);
+            this.modes{1} = SiSaMode(this, data,reader,1, this.siox_config);
         end
         
         function set_savepath(this, path)
@@ -462,6 +463,21 @@ classdef UI < handle
                 if isfield(conf, 'keep_aspect')
                     this.h.config_keep_AR.Checked = conf.keep_aspect;
                 end
+                if isfield(conf, 'short_siox')
+                    this.siox_config.short_siox = str2double(conf.short_siox);
+                else
+                    this.siox_config.short_siox = 0;
+                end
+                if isfield(conf, 'short_third')
+                    this.siox_config.short_third = str2double(conf.short_third);
+                else
+                    this.siox_config.short_third = 0;
+                end
+                if isfield(conf, 'last_model')
+                    this.siox_config.last_model = str2double(conf.last_model);
+                else
+                    this.siox_config.last_model = 1;
+                end
             else
                 this.openpath = [p filesep()];
                 this.savepath = [p filesep()];
@@ -478,6 +494,9 @@ classdef UI < handle
             strct.read_fluo = this.h.config_read_fluo.Checked;
             strct.keep_aspect = this.h.config_keep_AR.Checked;
             strct.check_version = this.h.config_check_version.Checked;
+            strct.last_model = this.siox_config.last_model;
+            strct.short_third = this.siox_config.short_third;
+            strct.short_siox = this.siox_config.short_siox;
 
             writeini([p filesep() 'config.ini'], strct);
         end
@@ -646,7 +665,7 @@ classdef UI < handle
             end
             
             reader = this.read_meta();
-            this.modes{1} = SiSaMode(this, double(data),reader);
+            this.modes{1} = SiSaMode(this, double(data),reader, 1, this.siox_config);
         end
         
         
