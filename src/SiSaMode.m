@@ -1026,7 +1026,6 @@ classdef SiSaMode < GenericMode
         end
 
         function estimate_parameters(this)
-            % ToDo in fit-tools auslagern
             sf = this.sisa_fit;
             num_par = this.sisa_fit_info.par_num{sf.curr_fitfun};
             
@@ -1121,16 +1120,14 @@ classdef SiSaMode < GenericMode
                     if sum(y) == 0
                         continue
                     end
+                    
+                    start = squeeze(this.est_params(i, j, k, l, :));
                     if ~isempty(g_par) % any parameter global startpoint?
-                        start = squeeze(this.est_params(i, j, k, l, :));
                         start(g_par) = this.gstart(g_par);
-                        sf.set_start(start);
-                        [par, p_err, chi] = sf.fit(y);
-                    else
-                        start = squeeze(this.est_params(i, j, k, l, :)); 
-                        sf.set_start(start);
-                        [par, p_err, chi] = sf.fit(y);
                     end
+                    sf.set_start(start);
+                    [par, p_err, chi] = sf.fit(y);
+                        
                     m = m + 1;
                     this.fit_params(i, j, k, l, :) = par;
                     this.fit_params_err(i, j, k, l, :) = p_err;
@@ -1608,6 +1605,9 @@ classdef SiSaMode < GenericMode
             ii = 0;
             pointinfo = repmat( struct( 'name', 1 ), num_points, 1 );
             result = repmat( struct( 'ort', 1 ), num_points, 1 );
+            
+            g_par = find(this.use_gstart);
+            
             for n = 1:s
                 [i,j,k,l] = ind2sub(this.p.fileinfo.size, n);               
                 if ~this.disp_ov || this.overlays{this.current_ov}(i, j, k, l)
@@ -1631,6 +1631,12 @@ classdef SiSaMode < GenericMode
                     result(ii).parnames = this.sisa_fit.parnames;
                     
                     result(ii).errors = squeeze(this.fit_params_err(i,j,k,l,:));
+                    
+                    start = squeeze(this.est_params(i, j, k, l, :));
+                    if ~isempty(g_par) % any parameter global startpoint?
+                        start(g_par) = this.gstart(g_par);
+                    end                    
+                    result(ii).start = start;
                     
                     result(ii).lower = this.sisa_fit.lower_bounds;
                     result(ii).upper = this.sisa_fit.upper_bounds;
