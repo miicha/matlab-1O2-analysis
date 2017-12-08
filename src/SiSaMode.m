@@ -1608,6 +1608,7 @@ classdef SiSaMode < GenericMode
             
             g_par = find(this.use_gstart);
             
+            short_siox = this.h.short_siox.Value
             for n = 1:s
                 [i,j,k,l] = ind2sub(this.p.fileinfo.size, n);               
                 if ~this.disp_ov || this.overlays{this.current_ov}(i, j, k, l)
@@ -1640,14 +1641,16 @@ classdef SiSaMode < GenericMode
                     
                     result(ii).lower = this.sisa_fit.lower_bounds;
                     result(ii).upper = this.sisa_fit.upper_bounds;
-                    result(ii).shortSiox = 1;
+                    result(ii).shortSiox = short_siox;
                     
                     result(ii).rating = this.h.d_fitResultRating.Value;
                     result(ii).kommentar = this.h.d_note.String;
                 end
             end
             
-            db.insert(fileinfo, pointinfo, result);
+            num_results_inserted = db.insert(fileinfo, pointinfo, result);
+            
+            sprintf('Es wurden %i Ergebnisse von insegsamt %i in die Datenbank eingetragen.', num_results_inserted, ii)
             
             db.close();
         end
