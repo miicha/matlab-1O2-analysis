@@ -22,6 +22,7 @@ classdef SiSaGenericPlot < handle
         export_res = true;
         res;
         ub                  % upper bounds (different from parent due to sum)
+        start
     end
     
     properties (Access = private)
@@ -477,7 +478,7 @@ classdef SiSaGenericPlot < handle
                 start(i) = str2double(strrep(get(this.h.pe{i}, 'string'),',','.'));
                 fix(i) = get(this.h.pc{i}, 'value');
             end            
-            
+            this.start = start;
             if sum(fix) == this.sisa_fit.par_num
                 msgbox('Kann ohne freie Parameter nicht fitten.', 'Fehler','modal');
                 return;
@@ -769,7 +770,7 @@ classdef SiSaGenericPlot < handle
         function save_data_db_cb(this, varargin)
             
             if this.fitted
-                db = db_interaction('messdaten2', 'messdaten', 'testtest', '141.20.44.176');
+                db = db_interaction('messdaten2', 'messdaten', 'testtest', 'localhost');
 
                 fileinfo.basepath = this.smode.h.d_bpth.String;
                 fileinfo.filename = [strrep(this.smode.p.openpath, fileinfo.basepath, '') this.smode.p.genericname '.h5'];
@@ -788,21 +789,26 @@ classdef SiSaGenericPlot < handle
                 pointinfo.ort = 'undefined';
                 pointinfo.int_time = 7;
                 pointinfo.bewertung = 0;
-                pointinfo.notiz = '';
+                pointinfo.note = '';
                 pointinfo.ink = 0;
                 pointinfo.messzeit = 0;
 
                 pointinfo.name = sprintf('%i/%i/%i/%i',this.cp-1);
-
+                pointinfo.name
                 result.chisq = this.chisq;
                 result.fitmodel = this.sisa_fit.name;
 
                 result.t_zero = this.sisa_fit.t_0;
                 result.fit_start = this.sisa_fit.offset_time;
+                result.fit_end = this.sisa_fit.end_channel;
 
                 result.params = this.fit_params;
                 result.errors = this.fit_params_err;
-
+                
+                result.start = this.start;
+                
+                result.shortSiox = this.smode.h.short_siox.Value;
+                
                 result.parnames = this.sisa_fit.parnames;
 
                 result.kommentar = this.h.comm.String;
@@ -810,7 +816,8 @@ classdef SiSaGenericPlot < handle
                 result.lower = this.sisa_fit.lower_bounds;
                 result.upper = this.sisa_fit.upper_bounds;
 
-                db.insert(fileinfo, pointinfo, result);
+                num_results_inserted = db.insert(fileinfo, pointinfo, result)
+                
 
                 db.close();
             end

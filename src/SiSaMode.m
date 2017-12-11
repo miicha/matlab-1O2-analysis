@@ -1608,7 +1608,7 @@ classdef SiSaMode < GenericMode
             
             g_par = find(this.use_gstart);
             
-            short_siox = this.h.short_siox.Value
+            short_siox = this.h.short_siox.Value;
             for n = 1:s
                 [i,j,k,l] = ind2sub(this.p.fileinfo.size, n);               
                 if ~this.disp_ov || this.overlays{this.current_ov}(i, j, k, l)
