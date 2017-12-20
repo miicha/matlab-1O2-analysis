@@ -15,4 +15,4 @@
 	url = git@git.daten.tk:michael.pfitzner/db-interaction.git
 [submodule "3rd-party/file-reader"]
 	path = 3rd-party/file-reader
-	url = D:/Git-Projekte/file-reader
+	url = git@git.daten.tk:michael.pfitzner/file-reader.git
