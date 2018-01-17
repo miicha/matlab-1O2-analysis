@@ -759,6 +759,7 @@ classdef SiSaMode < GenericMode
             set(this.h.param, 'visible', 'on',...
                             'string', [par_names, 'A_korr', 'Summe']);
             this.plot_array();
+            this.set_param_fix_cb();
         end
     
         function set_scale(this, scl)
@@ -1577,7 +1578,7 @@ classdef SiSaMode < GenericMode
         
         function DBinsert(this, varargin)
             server = '141.20.44.176';
-            server = 'localhost';
+%             server = 'localhost';
             db = db_interaction('messdaten2', 'messdaten', 'testtest', server);
 
             db.set_progress_cb(@(x) this.p.update_infos(x));
@@ -1755,7 +1756,9 @@ classdef SiSaMode < GenericMode
             lb = this.sisa_fit.lower_bounds;
             
             tmp = zeros(par_num,1);
+            this.use_gstart = tmp;
             for i = 1:par_num
+                this.use_gstart(i) = this.h.gst{i}.Value;
                 tmp(i) = str2double(strrep(get(this.h.st{i}, 'string'),',','.'));
                 if tmp(i) < lb(i)
                     tmp(i) = lb(i);
