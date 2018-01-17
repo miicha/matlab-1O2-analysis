@@ -481,6 +481,9 @@ classdef UI < handle
             else
                 this.openpath = [p filesep()];
                 this.savepath = [p filesep()];
+                this.siox_config.last_model = 1;
+                this.siox_config.short_siox = 0;
+                this.siox_config.short_third = 0;
             end
         end
         
