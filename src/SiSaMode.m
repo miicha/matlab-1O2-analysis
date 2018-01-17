@@ -1573,7 +1573,7 @@ classdef SiSaMode < GenericMode
         end
         
         function plot_hyper(this, varargin)
-            5
+            this.reader.meta.pointinfo.point_time
         end
         
         function DBinsert(this, varargin)
@@ -1617,8 +1617,14 @@ classdef SiSaMode < GenericMode
                     pointinfo(ii).ort = 'undefined';
                     pointinfo(ii).int_time = this.int_time;
                     pointinfo(ii).note = '';
-                    pointinfo(ii).ink = 0;
-                    pointinfo(ii).messzeit = 0;
+                    
+                    [~,indx]=ismember(this.reader.meta.pointinfo.point_names,[i-1,j-1,k-1],'rows');                    
+                    try
+                        pointinfo(ii).messzeit = round(this.reader.meta.pointinfo.point_time(indx == 1));
+                    catch
+                        pointinfo(ii).messzeit = 0;
+                    end
+                    pointinfo(ii).ink = (this.reader.meta.sample.measure_time - this.reader.meta.sample.prep_time) + pointinfo(ii).messzeit; % in seconds
                     
                     pointinfo(ii).name = sprintf('%i/%i/%i/%i',i-1,j-1,k-1,l-1);
                     
