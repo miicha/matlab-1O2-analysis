@@ -256,7 +256,8 @@ classdef UI < handle
                 for i = 1:length(fn)
                     this.fileinfo.(fn{i}) = reader.meta.fileinfo.(fn{i});
                 end
-                this.scale = reader.meta.scale;
+                scale = reader.meta.scale;
+                this.scale = [scale, ones(4-numel(scale))];
                 try
                     this.units = reader.meta.units;
                 catch
