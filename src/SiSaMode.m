@@ -104,6 +104,7 @@ classdef SiSaMode < GenericMode
                         this.h.drpd = uicontrol(this.h.fitpanel);
                         this.h.short_siox = uicontrol(this.h.fitpanel);
                         this.h.short_third = uicontrol(this.h.fitpanel);
+                        this.h.weighting = uicontrol(this.h.fitpanel);
                         this.h.bounds = uipanel(this.h.fitpanel);
                             this.h.bounds_txt1 = uicontrol(this.h.bounds);
                             this.h.bounds_txt2 = uicontrol(this.h.bounds);
@@ -365,11 +366,19 @@ classdef SiSaMode < GenericMode
                          
            set(this.h.short_third, 'units', 'pixels',...
                              'style', 'checkbox',...
-                             'position', [110 134 105 15],...
+                             'position', [80 134 105 15],...
                              'HorizontalAlignment', 'left',...
                              'callback', @this.update_config,...
                              'string', 'Short Third',...
                              'Value', config.short_third);
+                         
+           set(this.h.weighting, 'units', 'pixels',...
+                             'style', 'checkbox',...
+                             'position', [120 134 105 15],...
+                             'HorizontalAlignment', 'left',...
+                             'callback', @this.set_weighting_cb,...
+                             'string', 'weighting',...
+                             'Value', config.weighting);
                        
             set(this.h.bounds, 'units', 'pixels',...
                              'position', [2 2 239 180],...
@@ -1315,7 +1324,8 @@ classdef SiSaMode < GenericMode
             set(this.h.drpd, 'position', [15 n*23+70 220 15]);
             
             this.h.short_siox.Position = [15 n*23+42 105 15];
-            this.h.short_third.Position = [110 n*23+42 105 15];
+            this.h.short_third.Position = [90 n*23+42 105 15];
+            this.h.weighting.Position = [170 n*23+42 105 15];
             
             fit_param_height = n*23 + 35;
                        
@@ -1819,6 +1829,11 @@ classdef SiSaMode < GenericMode
             this.update_config();
         end 
         
+        function set_weighting_cb(this, varargin)
+            this.sisa_fit.update('weighting', this.h.weighting.Value);
+            this.update_config();
+        end
+        
         % colormap
         function set_cmap_cb(this, varargin)
             cmaps = get(this.h.colormap_drpd, 'string'); 
@@ -1876,9 +1891,9 @@ classdef SiSaMode < GenericMode
         function update_config(this, varargin)
             this.p.siox_config.short_siox = this.h.short_siox.Value;
             this.p.siox_config.short_third = this.h.short_third.Value;
+            this.p.siox_config.weighting = this.h.weighting.Value;
             this.p.siox_config.last_model = this.h.drpd.Value;
             this.p.saveini();
-%             varargin{1}
         end
     end
     

@@ -464,6 +464,11 @@ classdef UI < handle
                 if isfield(conf, 'keep_aspect')
                     this.h.config_keep_AR.Checked = conf.keep_aspect;
                 end
+                if isfield(conf, 'weighting')
+                    this.siox_config.weighting = str2double(conf.weighting);
+                else
+                    this.siox_config.weighting = 1;
+                end
                 if isfield(conf, 'short_siox')
                     this.siox_config.short_siox = str2double(conf.short_siox);
                 else
@@ -485,6 +490,7 @@ classdef UI < handle
                 this.siox_config.last_model = 1;
                 this.siox_config.short_siox = 0;
                 this.siox_config.short_third = 0;
+                this.siox_config.weighting = 1;
             end
         end
         
@@ -501,6 +507,7 @@ classdef UI < handle
             strct.last_model = this.siox_config.last_model;
             strct.short_third = this.siox_config.short_third;
             strct.short_siox = this.siox_config.short_siox;
+            strct.weighting = this.siox_config.weighting;
 
             writeini([p filesep() 'config.ini'], strct);
         end

@@ -494,7 +494,7 @@ classdef SiSaGenericPlot < handle
                 end
                 this.sisa_fit.update('lower,',this.smode.sisa_fit.lower_bounds, 'upper', this.ub);
             end                
-            this.sisa_fit.update('start',start,'fixed',fix);
+            this.sisa_fit.update('start',start,'fixed',fix, 'weighting', this.smode.sisa_fit.weighting);
             
             if length(this.diff_data) > 1
                 [p, p_err, chi, this.res] = this.sisa_fit.fit(this.data_backup,this.diff_data(:,2), this.h.faktor_slider.Value);
