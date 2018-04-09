@@ -58,6 +58,7 @@ if newver
     opt.CharacterEncoding = 'ISO-8859-1';
     opt.RequestMethod = 'post';
     opt.HeaderFields = headerFields;
+    opt.Timeout = Inf;
 
     webwrite('http://www.daten.tk/webhook/upl.php', data, opt)
 end
