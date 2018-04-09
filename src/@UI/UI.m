@@ -76,7 +76,7 @@ classdef UI < handle
             uimenu(this.h.menu, 'label', 'Save State (experimentell!)',...
                               'callback', @this.save_global_state_cb);
                           
-            uimenu(this.h.menu, 'label', 'close all',...
+            uimenu(this.h.menu, 'label', 'Close all figures',...
                               'callback', @this.destroy_children_cb);
                           
             this.h.configmenu.Label = 'Settings';
@@ -520,16 +520,16 @@ classdef UI < handle
                     % some problem with the file system?!
                     % doesn't matter all that much, actually; just try
                     % again.
-                    continue;
+                    continue
                 end
-                break;
+                break
             end
-            
+
             for i = 1:length(this.modes)
-                this.modes{i}.destroy(false);
+                this.modes{i}.destroy(children_only);
             end
-%             this.modes = {};
-%             delete(this.h.tabs)
+    %             this.modes = {};
+    %             delete(this.h.tabs)
             
             if ~children_only
                 delete(this.h.f);
@@ -778,9 +778,7 @@ classdef UI < handle
         end
         
         function destroy_children_cb(this, varargin)
-            
             this.destroy(true);
-            
         end
         
         function open_versioninfo_cb(this, varargin)
