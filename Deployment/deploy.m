@@ -22,7 +22,7 @@ end
 %% compile the binary
 if build
     fprintf('\nBuilding the binary...\n')
-    mcc -e  -o SiSaScanAuswertung -d . ../src/startUI.m
+    mcc -e  -o SiSaScanAuswertung -d ./bin ../src/startUI.m
     fprintf('...Done.\n\n')
     if ~newver
         warning('Will not push the new version and will not update the version number.');
@@ -46,5 +46,19 @@ if newver
         disp('Successfully pushed the new version''s binaries to GitLab!');
         fprintf('\n ----- \n\n');
     end
+    
+    % upload binary
+    fid = fopen('./bin/SiSaScanAuswertung.exe', 'r');
+    data = char(fread(fid)');
+    fclose(fid);
+    headerFields = [{'project', 'sisa-scan-auswertung'}; {'name', ['SiSaScanAuswertung-' local_version '.exe']}];
+    headerFields = string(headerFields);
+    opt = weboptions;
+    opt.MediaType = 'application/octet-stream';
+    opt.CharacterEncoding = 'ISO-8859-1';
+    opt.RequestMethod = 'post';
+    opt.HeaderFields = headerFields;
+
+    webwrite('http://www.daten.tk/webhook/upl.php', data, opt)
 end
 rmpath(path_to_prjct);
