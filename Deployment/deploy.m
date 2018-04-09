@@ -12,7 +12,7 @@ newver = true;
 ov = urlread(version_url);
 
 %%
-if UI.compare_versions(local_version, ov);
+if UI.compare_versions(local_version, ov)
     newver = false;
     warning(['Local version (' local_version ') is NOT greater than '...
              'online version (' ov ').']);
@@ -20,6 +20,7 @@ if UI.compare_versions(local_version, ov);
 end
 
 %% compile the binary
+cd('bin')
 if build
     fprintf('\nBuilding the binary...\n')
     mcc -e  -o SiSaScanAuswertung -d . ../src/startUI.m
