@@ -20,7 +20,6 @@ if UI.compare_versions(local_version, ov)
 end
 
 %% compile the binary
-cd('bin')
 if build
     fprintf('\nBuilding the binary...\n')
     mcc -e  -o SiSaScanAuswertung -d . ../src/startUI.m
