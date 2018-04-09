@@ -260,11 +260,7 @@ classdef UI < handle
                 this.scale = [scale, ones(4-numel(scale))];
                 try
                     this.units = reader.meta.units;
-                catch
-                    'generic units'
                 end
-            catch
-                'no fileinfo'
             end
             FileType = reader.fileType;
             
