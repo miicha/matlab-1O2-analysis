@@ -8,6 +8,7 @@ classdef UI < handle
     
     properties
         version = '0.5.2';
+        lastopened = 0;
         fileinfo = struct('path', '', 'size', [0 0 0 0],...
                           'name', '', 'np', 0); 
                       
@@ -115,7 +116,8 @@ classdef UI < handle
             %% check version (only if called as a binary)
             
             this.loadini();
-            if strcmp(this.h.config_check_version.Checked,'on')
+            % check at most once per hour
+            if strcmp(this.h.config_check_version.Checked,'on') && (now() - this.lastopened > 1/24)
                 this.check_version();
             end
                                  
@@ -452,6 +454,9 @@ classdef UI < handle
                 else
                     this.savepath = [p filesep()];
                 end
+                if isfield(conf, 'lastopened')
+                    this.lastopened = str2num(conf.lastopened);
+                end
                 if isfield(conf, 'read_fluo')
                     this.h.config_read_fluo.Checked = conf.read_fluo;
                 end
@@ -494,6 +499,7 @@ classdef UI < handle
         function saveini(this)
             p = get_executable_dir();
             strct.version = this.version;
+            strct.lastopened = now();
             strct.openpath = this.openpath;
             strct.dbpath = this.dbpath;
             strct.open_nsTAS_path = this.open_nsTAS_path;
