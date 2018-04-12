@@ -45,7 +45,7 @@ if newver
     done = system(str);
     if done == 0
         fprintf('\n\n ----- \n\n');
-        disp('Successfully pushed the new version''s binaries to GitLab!');
+        disp('Successfully pushed the new version''s tag to GitLab!');
         fprintf('\n ----- \n\n');
     end
     
@@ -62,6 +62,14 @@ if newver
     opt.HeaderFields = headerFields;
     opt.Timeout = Inf;
 
-    webwrite('http://www.daten.tk/webhook/upl.php', data, opt)
+    response = webwrite('http://www.daten.tk/webhook/upl.php', data, opt);
+    if contains(response, '...file written')
+        fprintf('\n\n ----- \n\n');
+        disp('Successfully pushed the new version''s binaries to the share!');
+        fprintf('\n ----- \n\n');
+    else
+        disp('Failed to push binaries to share:');
+        disp(response);
+    end
 end
 rmpath(path_to_prjct);
