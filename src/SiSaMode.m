@@ -636,7 +636,7 @@ classdef SiSaMode < GenericMode
             end
             
             % find mean of t_0
-            [max_anf, I] = max(this.data(:,:,:,:,search_start:round(length(this.data)/4)), [], 5);
+            [max_anf, I] = max(this.data(:,:,:,:,search_start:round(size(this.data, 5)/4)), [], 5);
             
             
 %             tmp = diff(this.data, 1, 5);
@@ -653,9 +653,7 @@ classdef SiSaMode < GenericMode
             [~,t_0] = max(N);
             t_0 = t_0 + search_start-1;
             
-            
-            [max_end, I] = max(this.data(:,:,:,:,round(length(this.data)/4*3):end), [], 5);           
-            
+            [max_end, I] = max(this.data(:,:,:,:,round(size(this.data, 5)/4*3):end), [], 5);           
             I = squeeze(I(:,:,1));
             I = I(:);
             [N,pos] = hist(I,1:max(I));
