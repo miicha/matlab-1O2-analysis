@@ -1092,6 +1092,7 @@ classdef SiSaMode < GenericMode
             % set cancel button:
             set(this.h.fit, 'string', 'Abbrechen', 'callback', @this.cancel_fit_cb);
             set(this.h.hold, 'visible', 'on');
+            set(this.h.fit_par, 'visible', 'on');
             
             s = num2cell(size(this.est_params));
             if start == 1
@@ -1114,10 +1115,6 @@ classdef SiSaMode < GenericMode
                 if ~this.disp_ov || this.overlays{this.current_ov}(i, j, k, l)
                     innertime = tic();
                     y = squeeze(this.data(i, j, k, l, :));
-                    
-                    if n == 1
-                        set(this.h.fit_par, 'visible', 'on');
-                    end
                 
                     if sum(y) == 0
                         continue
