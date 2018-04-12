@@ -47,7 +47,7 @@ classdef LaserMode < GenericMode
             this.plotpanel.plot_array(this.data, 'm1');
         end
         
-        function function click_on_axes_cb(this, index, button, shift, ctrl, alt)
+        function click_on_axes_cb(this, index, button, shift, ctrl, alt)
             % dummy against errors
         end
 
