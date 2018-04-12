@@ -19,6 +19,7 @@ classdef SiSaMode < GenericMode
         overlays = {};  % 1 is always the automatically generated overlay,
                         % additional overlays can be added
         overlay_num2name = {'', 'Overlay 1'};
+        multi_select = {}
         current_ov = 1;
         overlay_data;
         disp_ov = false;
@@ -1420,27 +1421,47 @@ classdef SiSaMode < GenericMode
         end
         
         % mouseclicks
-        function left_click_on_axes(this, index)
+        function click_on_axes_cb(this, index, button, shift, ctrl, alt)
             if ~strcmp(this.p.fileinfo.path, '')
-                if sum(this.data(index{:}, :))
-                    i = length(this.plt);
-                    this.sum_number = 1;
-                    this.plt{i+1} = SiSaPointPlot([index{:}], this);
+                if button == 1 % left
+                    if sum(this.data(index{:}, :))
+                        i = length(this.plt);
+                        this.sum_number = 1;
+                        this.plt{i+1} = SiSaPointPlot([index{:}], this);
+                    end
+                elseif button == 3 % right
+                    if ~this.disp_ov
+                        this.set_disp_ov(true);
+                    end
+                    if sum(this.data(index{:}, :))
+                        if shift % switch rectangle
+                            if ~isempty(this.multi_select)
+                                indrange = {};
+                                for i = 1:length(index)
+                                    i1 = this.multi_select{i};
+                                    i2 = index{i};
+                                    if i1 > i2
+                                        indrange{i} = i2:i1;
+                                    else
+                                        indrange{i} = i1:i2;
+                                    end
+                                end
+                                
+                                this.overlays{this.current_ov}(indrange{:}) = ...
+                                  ~this.overlays{this.current_ov}(indrange{:});
+                                
+                                this.multi_select = {};
+                            else
+                                this.multi_select = index;
+                            end
+                        else % point
+                            this.overlays{this.current_ov}(index{:}) = ...
+                              ~this.overlays{this.current_ov}(index{:});
+                        end
+                    end
+                    this.plot_array();
                 end
             end
-        end
-        
-        function right_click_on_axes(this, index)
-            if ~this.disp_ov
-                this.set_disp_ov(true);
-            end
-            if ~strcmp(this.p.fileinfo.path, '')
-                if sum(this.data(index{:}, :))
-                    this.overlays{this.current_ov}(index{:}) = ...
-                    ~this.overlays{this.current_ov}(index{:});
-                end
-            end
-            this.plot_array();
         end
         
         function resize(this, varargin)

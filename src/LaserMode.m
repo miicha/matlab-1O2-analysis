@@ -47,14 +47,10 @@ classdef LaserMode < GenericMode
             this.plotpanel.plot_array(this.data, 'm1');
         end
         
-        function right_click_on_axes(this, point)
+        function function click_on_axes_cb(this, index, button, shift, ctrl, alt)
             % dummy against errors
         end
-        
-        function left_click_on_axes(this, point)
-            % dummy against errors
-        end
-        
+
         function resize(this, varargin)
             mP = get(this.h.parent, 'position');
             mP(4) = mP(4) - 25;

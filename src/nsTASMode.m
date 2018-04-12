@@ -43,8 +43,8 @@ classdef nsTASMode < GenericMode
             
         end
         
-        function left_click_on_axes(this, point)            
-            if sum(squeeze(this.data(point{1:4}, :))) ~= 0
+        function click_on_axes_cb(this, point, button, shift, ctrl, alt)
+            if sum(squeeze(this.data(point{1:4}, :))) ~= 0 && button == 1
                 nsTASPlot(squeeze(this.x_data(point{1:4}, :)), squeeze(this.data(point{1:4}, :)), squeeze(this.y_err(point{1:4}, :)),...
                            fullfile(this.p.savepath, this.p.genericname),...
                            'title', num2str(cell2mat(point)));

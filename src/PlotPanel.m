@@ -499,13 +499,18 @@ classdef PlotPanel < handle
 
         function aplot_click_cb(this, varargin)
             index = this.get_current_point();
-            switch get(this.p.get_figure(), 'SelectionType')
-                case 'normal'
-                    this.p.left_click_on_axes(index);
-                case 'alt'
-                    this.p.right_click_on_axes(index);
-                case 'extend' % shift + click
-                    this.create_slice(index);
+            modifiers = this.p.get_figure().CurrentModifier;
+            wasShiftPressed = ismember('shift',   modifiers);  % true/false
+            wasCtrlPressed  = ismember('control', modifiers);  % true/false
+            wasAltPressed   = ismember('alt',     modifiers);  % true/false
+            
+            mouseButton = varargin{2}.Button;
+            
+            % shift-leftclick:
+            if wasShiftPressed && mouseButton == 1
+                this.create_slice(index);
+            else % other
+                this.p.click_on_axes_cb(index, mouseButton, wasShiftPressed, wasCtrlPressed, wasAltPressed);
             end
         end 
 

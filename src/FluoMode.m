@@ -94,18 +94,14 @@ classdef FluoMode < GenericMode
             this.plotpanel.plot_array(this.data(:, :, :, :, :), 'a');
         end
         
-        function left_click_on_axes(this, point)
-            if sum(squeeze(this.data(point{1:4}, :))) > 0
+        function click_on_axes_cb(this, point, button, shift, ctrl, alt)
+            if sum(squeeze(this.data(point{1:4}, :))) > 0 && button == 1 % left click
                 SinglePlot(this.wavelengths, squeeze(this.data(point{1:4}, :)), [],...
                            fullfile(this.p.savepath, this.p.genericname),...
                            'title', num2str(cell2mat(point)));
             end
         end
-        
-        function right_click_on_axes(this, point)
-            % nothing yet. Do something about that! :)
-        end
-        
+      
         function resize(this, varargin)
             mP = get(this.h.parent, 'position');
             mP(4) = mP(4) - 25;
