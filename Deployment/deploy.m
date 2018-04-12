@@ -22,7 +22,9 @@ end
 %% compile the binary
 if build
     fprintf('\nBuilding the binary...\n')
-    mcc -e  -o SiSaScanAuswertung -d ./bin ../src/startUI.m
+    binpath = [path_to_prjct '/../Deployment/bin'];
+    startpath = [path_to_prjct '/startUI.m'];
+    mcc('-e', '-o', 'SiSaScanAuswertung', '-d', binpath, startpath)
     fprintf('...Done.\n\n')
     if ~newver
         warning('Will not push the new version and will not update the version number.');
