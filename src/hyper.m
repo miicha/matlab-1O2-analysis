@@ -29,13 +29,13 @@ classdef hyper < handle
     methods
         % create new instance with basic controls
         function this = hyper(filename, pos)
+%             pos = [88 66];
+%             filename = 'D:\Michael\Uni\Promotion\Projekte\CAM_Berlin\Scans\20170411\Ei 1.2 240min IV ueber Aderkreuzung-20170411_161729.h5';
             
             this.kinetik_start = pos(1);
             this.np = pos(2);
 %             addpath(genpath([pwd '\3rdParty']));
             this.h.figure = figure(4375);
-            
-            this.h.figure
             
             cmap = colormap('lines');
             this.short_color = cmap(2,:);
@@ -49,24 +49,27 @@ classdef hyper < handle
                            'string', 'Bilder Speichern',...
                            'callback', @this.save_figures);
 
-                       
-%             filename = 'D:\Michael\Uni\Promotion\Projekte\CAM_Berlin\Scans\20170411\Ei 1.2 240min IV ueber Aderkreuzung-20170411_161729.h5';
-            
 %             filename = 'D:\Michael\Uni\Promotion\Projekte\CAM_Berlin\Scans\20170410\Ei 1.7 1h stelle 2-20170410_180151.h5';
-            
-            if ~exist('reader', 'var')
+            if ischar(filename)
                 this.reader = HDF5_reader(filename);
                 this.reader.readfluo = false;
                 this.reader.read_data;
+            else
+                this.reader = filename;
             end
             
             this.prepare_data();
             
             this.h.map = subplot(2,1,1);
+            [~,r,g,b] = this.calc_rgb();
+            this.calc_points(r,g,b);
             this.show_image();
+            set(this.h.map,'ButtonDownFcn', @this.aplot_click_cb);
             
             this.h.kinetik = subplot(2,1,2); 
-            this.show_kinetic(this.h.kinetik);
+            this.show_kinetic();
+            
+            get(this.h.map)
             
             %% Kinetik
             
@@ -83,19 +86,15 @@ classdef hyper < handle
         
         function show_kinetic(this,varargin)
             
-            ax = varargin{1};
-            this.max_long
-            this.max_short
+            ax = this.h.kinetik;
+            axes(this.h.kinetik);
             tmp = flipud(permute(this.sisa_data,[2,1,3]));
-            kin = squeeze(tmp(this.max_short(2),this.max_short(1),:));            
+            kin = squeeze(tmp(this.max_short(2),this.max_short(1),:));          
             kin2 = squeeze(tmp(this.max_long(2),this.max_long(1),:));
             
             x_achse = 1:length(kin);
             x_achse = (x_achse-this.np)*this.cw;
-            
-            
-                    
-            
+
             alpha = 0.1;
             
             plot_max1 = max(kin(this.kinetik_start:end));
@@ -133,7 +132,7 @@ classdef hyper < handle
             
             
 %             [906 92 694 880]
-            this.h.figure.OuterPosition = [20 150 450 880];
+%             this.h.figure.OuterPosition = [20 150 450 880];
             
 %             this.h.figure.FontSize = 20;
             
@@ -187,8 +186,8 @@ classdef hyper < handle
             f2.delete()
         end
         
-        function show_image(this, varargin)
-            ax = this.h.map;
+        function [clor,r,g,b] = calc_rgb(this,varargin)
+            
             r = sum(this.sisa_data(:,:,this.kinetik_start:this.g_start-1),3);
             g = sum(this.sisa_data(:,:,this.g_start:this.b_start-1),3);
             b = sum(this.sisa_data(:,:,this.b_start:end),3);
@@ -198,38 +197,13 @@ classdef hyper < handle
             clor(:,:,3) = b'/max(b(:));
             clor = flipud(clor);
 
-%             clor(:,:,1) = r';
-%             clor(:,:,2) = g';
-%             clor(:,:,3) = b';
-%             clor = flipud(clor/max(clor(:)));
-            
-            
-            
-%             [ii,jj] = find(clor(:,:,2)>0.5);
-%             this.short_color = squeeze(mean(mean(clor(ii,jj,:))))
-%             
-%             
-%             [ii,jj] = find(clor(:,:,3)>0.5);
-%             this.long_color = squeeze(mean(mean(clor(ii,jj,:))))
-            
-            r2 = mean(this.sisa_data(:,:,this.kinetik_start:this.g_start-1),3);
-            g2 = mean(this.sisa_data(:,:,this.g_start:this.b_start-1),3);
-            b2 = mean(this.sisa_data(:,:,this.b_start:end),3);
-            clor2(:,:,1) = r2';
-            clor2(:,:,2) = g2';
-            clor2(:,:,3) = b2';
-            clor2 = flipud(clor2/max(max(max(clor2))));
-            
-            
-%             [a,b] = max(max(clor(:,:,3)))
-%             [Ii,Jj] = ind2sub(size(clor(:,:,1)), b)
             
             r = squeeze(clor(:,:,1));
             g = squeeze(clor(:,:,2));
             b = squeeze(clor(:,:,3));
-            
-            [~, pos] = max(r(:));
-            
+        end
+        
+        function calc_points(this,r,g,b)
             [~, pos1] = max(g(:));
             
             [~, pos2] = max(b(:));
@@ -239,10 +213,18 @@ classdef hyper < handle
 %             this.max_short = [J-1, I-0];
             [I,J] = ind2sub(size(r), pos2);
             this.max_long = [J,I];
+        end
+        
+        function show_image(this, varargin)
+            ax = this.h.map;
+            
+            clor = this.calc_rgb();
+            
+            
 %             hold on
             
             
-            imshow(clor,'InitialMagnification',3000, 'Parent', ax)
+            tmp = imshow(clor,'InitialMagnification',3000, 'Parent', ax);
 %             title('Summe')
             
             p1 = patch(ax,[this.max_short(1)-0.5, this.max_short(1)-0.5, this.max_short(1)+0.5, this.max_short(1)+0.5], [this.max_short(2)-0.5, this.max_short(2)+0.5, this.max_short(2)+0.5, this.max_short(2)-0.5], this.short_color);
@@ -269,7 +251,7 @@ classdef hyper < handle
             
 %             hold off
             
-            
+            set(tmp,'ButtonDownFcn', @this.aplot_click_cb);
         end
         
         function plot_click(this, varargin)
@@ -287,6 +269,7 @@ classdef hyper < handle
             this.current_draggable = 'left';
             cpoint = get(this.h.axes, 'CurrentPoint');
             cpoint = cpoint(1, 1);
+            this.g_real_start = cpoint;
             this.h.left.XData = [cpoint cpoint];
             
             this.h.red_area.XData(2) = cpoint;
@@ -297,6 +280,7 @@ classdef hyper < handle
             this.current_draggable = 'right';
             cpoint = get(this.h.axes, 'CurrentPoint');
             cpoint = cpoint(1, 1);
+            this.b_real_start = cpoint;
             this.h.right.XData = [cpoint cpoint];
             
             this.h.green_area.XData(2) = cpoint;
@@ -321,6 +305,50 @@ classdef hyper < handle
             set(this.h.figure, 'WindowButtonMotionFcn', '');
             set(this.h.figure, 'WindowButtonUpFcn', '');
             this.show_image();
+            this.show_kinetic();
         end        
+    end
+    
+    methods (Access = private)
+        function aplot_click_cb(this, varargin)
+            index = this.get_current_point()
+            modifiers = this.h.figure.CurrentModifier;
+            wasShiftPressed = ismember('shift',   modifiers);  % true/false
+%             wasCtrlPressed  = ismember('control', modifiers);  % true/false
+%             wasAltPressed   = ismember('alt',     modifiers);  % true/false
+            
+            mouseButton = varargin{2}.Button;
+            
+            % shift-leftclick:
+            if mouseButton == 1
+                this.max_short = index;
+            elseif mouseButton == 3 % other
+                this.max_long = index;
+            end
+            this.show_image();
+            this.show_kinetic();
+        end 
+        
+        function index = get_current_point(this)
+            cp = get(this.h.map, 'CurrentPoint');
+            cp = round(cp(1, 1:2));
+            cp(cp == 0) = 1;
+            
+            index = cp;
+
+%             index{this.curr_dims(1)} = cp(1); % x ->
+%             index{this.curr_dims(2)} = cp(2); % y ^
+%             for i = 3:length(this.dims)
+%                 index{this.curr_dims(i)} = this.ind{this.curr_dims(i)};
+%             end
+%             
+%             for i = 1:4
+%                 if index{i} > this.dims(i)
+%                     index{i} = this.dims(i);
+%                 elseif index{i} <= 0
+%                      index{i} = 1;
+%                 end
+%             end
+        end
     end
 end
