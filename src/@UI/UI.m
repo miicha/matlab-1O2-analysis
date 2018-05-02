@@ -31,7 +31,7 @@ classdef UI < handle
 
     methods
     % create new instance with basic controls
-        function this = UI(path, name, pos)
+        function this = UI(path, name, pos, maximised)
             %% initialize all UI objects:
             this.h.f = figure();
             
@@ -137,10 +137,15 @@ classdef UI < handle
             %% init
             this.resize();
             this.loadini();
-
+            
             if nargin > 1
-                if nargin == 3
+                if nargin > 3
                     set(this.h.f, 'position', pos);
+                    if nargin > 4
+                        if maximised
+                            this.maximise();
+                        end
+                    end
                 end
                 pause(.1);
                 this.open_file(path, name);
@@ -269,7 +274,7 @@ classdef UI < handle
             
             i = 1;
             this.modes = {};
-            
+            reader.meta.modes_in_file
             for mode = reader.meta.modes_in_file
                 mode = mode{1};
                 switch mode
@@ -567,6 +572,16 @@ classdef UI < handle
             end
         end
         
+        function maximise(this)
+            jFrame = handle(this.h.f).JavaFrame;
+            jFrame.setMaximized(1);
+        end
+        
+        function m = isMaximised(this)
+            jFrame = handle(this.h.f).JavaFrame;
+            m = jFrame.isMaximized();
+        end
+        
         %% Callbacks
         % callback for opening a new file
         % destroys current figure and creates a new one
@@ -580,11 +595,12 @@ classdef UI < handle
             this.openpath = filepath;
             this.saveini();
             set(this.h.f, 'visible', 'off');
+            
             global debug_u
             if debug_u == true
-                debug_u = UI(filepath, name, get(this.h.f, 'position'));
+                debug_u = UI(filepath, name, get(this.h.f, 'position'), this.isMaximised());
             else
-                UI(filepath, name, get(this.h.f, 'position'));
+                UI(filepath, name, get(this.h.f, 'position'), this.isMaximised());
             end
             close(this.h.f);
             delete(this);
@@ -608,9 +624,9 @@ classdef UI < handle
             set(this.h.f, 'visible', 'off');
             global debug_u
             if debug_u == true
-                debug_u = UI(filepath, names, get(this.h.f, 'position'));
+                debug_u = UI(filepath, names, get(this.h.f, 'position'), this.isMaximised());
             else
-                UI(filepath, names, get(this.h.f, 'position'));
+                UI(filepath, names, get(this.h.f, 'position'), this.isMaximised());
             end
             close(this.h.f);
             delete(this);

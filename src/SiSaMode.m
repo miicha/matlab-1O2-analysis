@@ -141,6 +141,7 @@ classdef SiSaMode < GenericMode
                     this.h.savefig = uicontrol(this.h.pres_tab);
                     this.h.prevfig = uicontrol(this.h.pres_tab);
                     this.h.ch_width = uicontrol(this.h.pres_tab);
+                    this.h.ch_width_label = uicontrol(this.h.pres_tab);
                     this.h.d_name_header = uicontrol(this.h.pres_tab);
                     this.h.d_scale_header = uicontrol(this.h.pres_tab);
                     this.h.d_unit_header = uicontrol(this.h.pres_tab);
@@ -483,9 +484,15 @@ classdef SiSaMode < GenericMode
                               'string', 'Preview',...
                               'callback', @this.generate_export_fig_cb);
                           
+            set(this.h.ch_width_label, 'units', 'pixels',...
+                                       'style', 'text',...
+                                       'position', [10 40 170 28],...
+                                       'horizontalAlignment', 'left',...
+                                       'string', 'Channel Width [ns]:');
+                          
             set(this.h.ch_width, 'units', 'pixels',...
                               'style', 'popupmenu',...
-                              'position', [185 2 55 28],...
+                              'position', [185 44 55 28],...
                               'String', {'13.33','20','40', '50', '80'},...
                               'callback', @this.change_channel_width);
 
@@ -1429,7 +1436,7 @@ classdef SiSaMode < GenericMode
                         this.set_disp_ov(true);
                     end
                     if sum(this.data(index{:}, :))
-                        if shift % switch rectangle
+                        if shift || ~isempty(this.multi_select) % switch rectangle
                             if ~isempty(this.multi_select)
                                 indrange = {};
                                 for i = 1:length(index)
