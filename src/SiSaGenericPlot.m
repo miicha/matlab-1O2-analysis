@@ -315,10 +315,10 @@ classdef SiSaGenericPlot < handle
             x_after = x_ges(this.sisa_fit.end_channel:end);
             y_after = datal(this.sisa_fit.end_channel:end);
             
-            plot(x_before, y_before, '.-', 'Color', [.8 .8 1]);
-            this.h.data_line = plot(x_fit, y_fit, 'Marker', '.', 'Color', [.8 .8 1], 'MarkerEdgeColor', 'blue');
+            plot(this.h.axes, x_before, y_before, '.-', 'Color', [.8 .8 1]);
+            this.h.data_line = plot(this.h.axes, x_fit, y_fit, 'Marker', '.', 'Color', [.8 .8 1], 'MarkerEdgeColor', 'blue');
             
-            plot(x_after, y_after, '.-', 'Color', [.8 .8 1]);
+            plot(this.h.axes, x_after, y_after, '.-', 'Color', [.8 .8 1]);
             
             this.h.zeroline = line([0 0], [0 realmax], 'Color', [.7 0 .5],... 
                       'ButtonDownFcn', @this.plot_click, 'LineWidth', 1.2, 'LineStyle', '--',...
@@ -364,15 +364,15 @@ classdef SiSaGenericPlot < handle
             
             if ischar(add)
                 if nargin > 4 && mod(nargin - 3, 2) == 0
-                    plot(data(:, 1), data(:, 2), add, varargin{:})
+                    plot(this.h.axes, data(:, 1), data(:, 2), add, varargin{:})
                 else
-                    plot(data(:, 1), data(:, 2), add)
+                    plot(this.h.axes, data(:, 1), data(:, 2), add)
                 end
             else
                 if nargin > 4 && mod(nargin - 3, 2) == 0
-                    plot(data(:, 1), data(:, 2), varargin{:})
+                    plot(this.h.axes, data(:, 1), data(:, 2), varargin{:})
                 else
-                    plot(data(:, 1), data(:, 2))
+                    plot(this.h.axes, data(:, 1), data(:, 2))
                 end
             end
                         
@@ -407,11 +407,11 @@ classdef SiSaGenericPlot < handle
                         sisadata = sisamodel.eval([p(1:3); p(6)], x_axis);
                 end
                 hold on
-                plot(x_axis,  sisadata, 'color', [1 0.6 0.2], 'LineWidth', 1.5, 'HitTest', 'off');
+                plot(this.h.axes, x_axis,  sisadata, 'color', [1 0.6 0.2], 'LineWidth', 1.5, 'HitTest', 'off');
                 hold off
             end
             hold on
-            this.h.fit_line = plot(x_axis,  fitdata, 'r', 'LineWidth', 1.5, 'HitTest', 'off');
+            this.h.fit_line = plot(this.h.axes, x_axis,  fitdata, 'r', 'LineWidth', 1.5, 'HitTest', 'off');
             hold off
             
             
@@ -434,13 +434,13 @@ classdef SiSaGenericPlot < handle
             x_after = x_ges(this.sisa_fit.end_channel:end);
             y_after = residues(this.sisa_fit.end_channel:end);
             
-            plot(x_res,y_res, 'b.');
+            plot(this.h.res, x_res,y_res, 'b.');
             
             hold on
             % vor fitbereich
-            plot(x_before,y_before, '.', 'Color', [.8 .8 1]);
+            plot(this.h.res, x_before,y_before, '.', 'Color', [.8 .8 1]);
             % nach fitbereich
-            plot(x_after,y_after, '.', 'Color', [.8 .8 1]);
+            plot(this.h.res, x_after,y_after, '.', 'Color', [.8 .8 1]);
             % nulllinie
             line([min(x_ges)-1 max(x_ges)+1], [0 0], 'Color', 'r', 'LineWidth', 1.5);
             xlim([min(x_ges)-1 max(x_ges)+1]);
