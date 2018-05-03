@@ -42,6 +42,18 @@ alte Version mit allen Bugs (ähh, Features) wiederhergestellt wird.
 - Die Binaries haben eine Versionskontrolle eingebaut, die beim Start auf neue
 Binary-Versionen checkt. Dazu ist natürlich eine Internetverbindung erforderlich.
 
+#### Maus-Shortcuts
+
+Im SiSa-Mode gibt es ein paar nützliche Shortcuts:
+
+- Linksklick: Öffnet Datensatz.
+- Rechtsklick: Schaltet Overlay für aktuellen Punkt um.
+- Shift-Rechtsklick: Schaltet Overlay für alle Punkte zwischen jetzigem Punkt und nächstem mit Rechtsklick ausgewählten Punkt um.
+- Shift-Linksklick: Erzeugt neuen Slice zwischen jetzigem Punkt und dem nächsten mit Linksklick ausgewählten Punkt.
+	- Linksklick aus Slice-Endpunkt: Erlaubt Verschieben des Punktes.
+	- Rechtsklick auf Slice-Endpunkt: Plottet aktuellen Parameter über den Slice.
+	- Doppelklick auf Slice-Endpunkt: Löscht den Slice.
+
 ---
 #### Wichtig!
 Matlab wurde mit Version R2014b auf ein neues Plot-Backend umgestellt. 

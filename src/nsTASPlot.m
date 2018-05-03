@@ -76,9 +76,9 @@ classdef nsTASPlot < SinglePlot
         function plot(this)
             axes(this.h.axes);
             if isempty(this.ydata_err)
-                this.h.p = plot(this.xdata, this.ydata);
+                this.h.p = plot(this.h.axes, this.xdata, this.ydata);
             else
-                this.h.p = errorbar(this.xdata, this.ydata, this.ydata_err);
+                this.h.p = errorbar(this.h.axes, this.xdata, this.ydata, this.ydata_err);
             end
 %             length(this.plot_args)
             for i = 1:2:length(this.plot_args)
