@@ -140,12 +140,13 @@ classdef UI < handle
             
             if nargin > 1
                 if nargin > 3
-                    set(this.h.f, 'position', pos);
-                    if nargin > 4
-                        if maximised
-                            this.maximise();
-                        end
+                    if maximised
+                        this.maximise();
+                    else
+                        set(this.h.f, 'position', pos);
                     end
+                elseif nargin > 2
+                    set(this.h.f, 'position', pos);
                 end
                 pause(.1);
                 this.open_file(path, name);
@@ -592,15 +593,21 @@ classdef UI < handle
             if (~ischar(name) && ~iscell(name)) || ~ischar(filepath) % no file selected
                 return
             end
+            
+            m = this.isMaximised();
+            pos = get(this.h.f, 'position');
+            
             this.openpath = filepath;
             this.saveini();
             set(this.h.f, 'visible', 'off');
             
+            
+            
             global debug_u
             if debug_u == true
-                debug_u = UI(filepath, name, get(this.h.f, 'position'), this.isMaximised());
+                debug_u = UI(filepath, name, pos, m);
             else
-                UI(filepath, name, get(this.h.f, 'position'), this.isMaximised());
+                UI(filepath, name, pos, m);
             end
             close(this.h.f);
             delete(this);
@@ -618,15 +625,19 @@ classdef UI < handle
             if ~isstruct(names) || isempty(names) % no file selected
                 return
             end
+            
+            m = this.isMaximised();
+            pos = get(this.h.f, 'position');
+            
             filepath = [fileparts(names(1).name) '\'];
             this.openpath = filepath;
             this.saveini();
             set(this.h.f, 'visible', 'off');
             global debug_u
             if debug_u == true
-                debug_u = UI(filepath, names, get(this.h.f, 'position'), this.isMaximised());
+                debug_u = UI(filepath, names, pos, m);
             else
-                UI(filepath, names, get(this.h.f, 'position'), this.isMaximised());
+                UI(filepath, names, pos, m);
             end
             close(this.h.f);
             delete(this);
