@@ -35,7 +35,7 @@ classdef hyper < handle
             this.kinetik_start = pos(1);
             this.np = pos(2);
 %             addpath(genpath([pwd '\3rdParty']));
-            this.h.figure = figure(4375);
+            this.h.figure = figure;
             
             cmap = colormap('lines');
             this.short_color = cmap(2,:);
@@ -97,8 +97,8 @@ classdef hyper < handle
 
             alpha = 0.1;
             
-            plot_max1 = max(kin(this.kinetik_start:end));
-            plot_max2 = max(kin2(this.kinetik_start:end));
+            plot_max1 = max(kin(this.kinetik_start+10:end));
+            plot_max2 = max(kin2(this.kinetik_start+10:end));
             
             if plot_max1 > plot_max2
                 plot_max = plot_max1*1.1;
@@ -129,12 +129,6 @@ classdef hyper < handle
 
             plot(x_achse, kin2, 'color', this.long_color)
             hold off
-            
-            
-%             [906 92 694 880]
-%             this.h.figure.OuterPosition = [20 150 450 880];
-            
-%             this.h.figure.FontSize = 20;
             
             this.h.left = line([this.g_real_start this.g_real_start], [0 realmax], 'Color', [.7 0 .5],... 
                       'ButtonDownFcn', @this.plot_click, 'LineWidth', 1.2, 'LineStyle', '--',...
