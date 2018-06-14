@@ -659,6 +659,7 @@ classdef SiSaMode < GenericMode
             
             I = squeeze(I(:,:,1));
             I = I(:);
+            I = I(I>1);
             [N,pos] = hist(I,1:max(I));
             [~,t_0] = max(N);
             t_0 = t_0 + search_start-1;
@@ -1429,7 +1430,8 @@ classdef SiSaMode < GenericMode
         function click_on_axes_cb(this, index, button, shift, ctrl, alt)
             if ~strcmp(this.p.fileinfo.path, '')
                 if button == 1 % left
-                    if sum(this.data(index{:}, :))
+%                     if sum(this.data(index{:}, :))
+                    if ~isnan(this.data(index{:}))
                         i = length(this.plt);
                         this.sum_number = 1;
                         this.plt{i+1} = SiSaPointPlot([index{:}], this);
