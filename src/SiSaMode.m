@@ -32,6 +32,8 @@ classdef SiSaMode < GenericMode
         
         disp_fit_params = 0;
         
+        sisa_data_size;
+        
         d_name;
         
         fitted = false;
@@ -632,11 +634,7 @@ classdef SiSaMode < GenericMode
                                       'max', 2,...
                                       'callback', @this.update_config);
                           
-            % init
-            tmp = size(this.data);
-            
-            this.overlays{1} = ones(tmp(1), tmp(2), tmp(3), tmp(4));
-            this.overlays{2} = zeros(tmp(1), tmp(2), tmp(3), tmp(4));
+            % init          
             
             this.read_channel_width();
             
@@ -646,6 +644,12 @@ classdef SiSaMode < GenericMode
             end
             
             % find mean of t_0
+            tmp = size(this.data);
+            this.sisa_data_size = tmp(1:4);
+            
+            this.overlays{1} = ones(tmp(1), tmp(2), tmp(3), tmp(4));
+            this.overlays{2} = zeros(tmp(1), tmp(2), tmp(3), tmp(4));     
+            
             [max_anf, I] = max(this.data(:,:,:,:,search_start:round(size(this.data, 5)/4)), [], 5);
             
             
@@ -659,7 +663,6 @@ classdef SiSaMode < GenericMode
             
             I = squeeze(I(:,:,1));
             I = I(:);
-            I = I(I>1);
             [N,pos] = hist(I,1:max(I));
             [~,t_0] = max(N);
             t_0 = t_0 + search_start-1;
@@ -761,8 +764,8 @@ classdef SiSaMode < GenericMode
             par_num = this.sisa_fit_info.par_num{number};
             par_names = this.sisa_fit_info.par_names{number};
             
-            this.fit_params = nan(this.p.fileinfo.size(1), this.p.fileinfo.size(2),...
-                                this.p.fileinfo.size(3), this.p.fileinfo.size(4), par_num);
+            this.fit_params = nan(this.sisa_data_size(1), this.sisa_data_size(2),...
+                                this.sisa_data_size(3), this.sisa_data_size(4), par_num);
             this.l_max = nan(par_num + 1, 1);
             this.l_min = nan(par_num + 1, 1);
             this.model = str;
@@ -1042,15 +1045,15 @@ classdef SiSaMode < GenericMode
             sf = this.sisa_fit;
             num_par = this.sisa_fit_info.par_num{sf.curr_fitfun};
             
-            this.est_params = zeros(this.p.fileinfo.size(1), this.p.fileinfo.size(2),...
-                              this.p.fileinfo.size(3), this.p.fileinfo.size(4), num_par);
+            this.est_params = zeros(this.sisa_data_size(1), this.sisa_data_size(2),...
+                              this.sisa_data_size(3), this.sisa_data_size(4), num_par);
             ub = zeros(num_par, 1);
             lb = ones(num_par, 1)*100;
             curr_p = 0;
             short_siox = this.h.short_siox.Value;
             short_third = this.h.short_third.Value;
-            for n = 1:prod(this.p.fileinfo.size)
-                [i,j,k,l] = ind2sub(this.p.fileinfo.size, n);
+            for n = 1:prod(this.sisa_data_size)
+                [i,j,k,l] = ind2sub(this.sisa_data_size, n);
                 d = squeeze(this.data(i, j, k, l, :));
                 if sum(d) == 0
                     continue
@@ -1098,7 +1101,7 @@ classdef SiSaMode < GenericMode
             if this.disp_ov
                 ma = length(find(this.overlays{this.current_ov}));
             else
-                ma = prod(this.p.fileinfo.size);
+                ma = prod(this.sisa_data_size);
             end
             % set cancel button:
             set(this.h.fit, 'string', 'Abbrechen', 'callback', @this.cancel_fit_cb);
@@ -1115,14 +1118,14 @@ classdef SiSaMode < GenericMode
             
             lt = 0;
             m = 1;
-            n_pixel = prod(this.p.fileinfo.size);
+            n_pixel = prod(this.sisa_data_size);
 
             % configure sisa-fit-tools
             sf = this.sisa_fit;
             sf.update('fixed',this.fix,'start',this.gstart);%, 't0', this.t_zero, 'offset_t', this.t_zero + this.t_offset);
             
             for n = start:n_pixel
-                [i,j,k,l] = ind2sub(this.p.fileinfo.size, n);               
+                [i,j,k,l] = ind2sub(this.sisa_data_size, n);               
                 if ~this.disp_ov || this.overlays{this.current_ov}(i, j, k, l)
                     innertime = tic();
                     y = squeeze(this.data(i, j, k, l, :));
@@ -1186,7 +1189,7 @@ classdef SiSaMode < GenericMode
             
             gcp(); % get or start parallel pool
             
-            n_pixel = prod(this.p.fileinfo.size);
+            n_pixel = prod(this.sisa_data_size);
             s = num2cell(size(this.est_params));
             if start == 1
                 this.fit_params = nan(s{:});
@@ -1201,10 +1204,10 @@ classdef SiSaMode < GenericMode
             d = reshape(this.data, n_pixel, 1, t_length);
            
             parcount = this.sisa_fit_info.par_num{this.sisa_fit.curr_fitfun};
-            e_pars = reshape(this.est_params, prod(this.p.fileinfo.size), 1, parcount);
-            f_pars = reshape(this.fit_params, prod(this.p.fileinfo.size), parcount);
-            f_pars_e = reshape(this.fit_params_err, prod(this.p.fileinfo.size), parcount);
-            f_chisq = reshape(this.fit_chisq, prod(this.p.fileinfo.size), 1);
+            e_pars = reshape(this.est_params, prod(this.sisa_data_size), 1, parcount);
+            f_pars = reshape(this.fit_params, prod(this.sisa_data_size), parcount);
+            f_pars_e = reshape(this.fit_params_err, prod(this.sisa_data_size), parcount);
+            f_chisq = reshape(this.fit_chisq, prod(this.sisa_data_size), 1);
 
             g_par = find(this.use_gstart);
             global_start = this.gstart;
@@ -1219,7 +1222,7 @@ classdef SiSaMode < GenericMode
             
             for n = start:this.p.par_size:n_pixel
                 if n == start
-                    this.p.update_infos(['   |   Fitte ' num2str(start) '/' num2str(prod(this.p.fileinfo.size)) ' (parallel).'])
+                    this.p.update_infos(['   |   Fitte ' num2str(start) '/' num2str(prod(this.sisa_data_size)) ' (parallel).'])
                 end
                 if n == n_pixel - rest + 1
                     inner_upper = rest - 2;
@@ -1248,14 +1251,14 @@ classdef SiSaMode < GenericMode
                 end
                 lt = lt + toc(innertime);
                 
-                this.p.update_infos(['   |   Fitte ' num2str(n+inner_upper) '/' num2str(prod(this.p.fileinfo.size)) ' (parallel): '...
+                this.p.update_infos(['   |   Fitte ' num2str(n+inner_upper) '/' num2str(prod(this.sisa_data_size)) ' (parallel): '...
                    format_time(lt/(n+inner_upper-start)*(n_pixel-(n+inner_upper))) ' verbleibend.'])
                 
                 this.last_fitted = n;
                 if this.disp_fit_params
-                    this.fit_params = reshape(f_pars, [this.p.fileinfo.size size(f_pars, 2)]);
-                    this.fit_params_err = reshape(f_pars_e, [this.p.fileinfo.size size(f_pars, 2)]);
-                    this.fit_chisq = reshape(f_chisq, this.p.fileinfo.size);
+                    this.fit_params = reshape(f_pars, [this.sisa_data_size size(f_pars, 2)]);
+                    this.fit_params_err = reshape(f_pars_e, [this.sisa_data_size size(f_pars, 2)]);
+                    this.fit_chisq = reshape(f_chisq, this.sisa_data_size);
                     this.plot_array();
                 end
                 
@@ -1276,9 +1279,9 @@ classdef SiSaMode < GenericMode
             
             % write back to the 'global' arrays
             this.fitted = true;
-            this.fit_params = reshape(f_pars, [this.p.fileinfo.size size(f_pars, 2)]);
-            this.fit_params_err = reshape(f_pars_e, [this.p.fileinfo.size size(f_pars, 2)]);
-            this.fit_chisq = reshape(f_chisq, this.p.fileinfo.size);
+            this.fit_params = reshape(f_pars, [this.sisa_data_size size(f_pars, 2)]);
+            this.fit_params_err = reshape(f_pars_e, [this.sisa_data_size size(f_pars, 2)]);
+            this.fit_chisq = reshape(f_chisq, this.sisa_data_size);
             this.plot_array();
         end
         
@@ -1633,9 +1636,9 @@ classdef SiSaMode < GenericMode
             if this.disp_ov
                 num_points = length(find(this.overlays{this.current_ov}));
             else
-                num_points = prod(this.p.fileinfo.size);
+                num_points = prod(this.sisa_data_size);
             end
-            s = prod(this.p.fileinfo.size);
+            s = prod(this.sisa_data_size);
             ii = 0;
             pointinfo = repmat( struct( 'name', 1 ), num_points, 1 );
             result = repmat( struct( 'ort', 1 ), num_points, 1 );
@@ -1644,7 +1647,7 @@ classdef SiSaMode < GenericMode
             
             short_siox = this.h.short_siox.Value;
             for n = 1:s
-                [i,j,k,l] = ind2sub(this.p.fileinfo.size, n);               
+                [i,j,k,l] = ind2sub(this.sisa_data_size, n);               
                 if ~this.disp_ov || this.overlays{this.current_ov}(i, j, k, l)
                     ii = ii+1;                    
                     pointinfo(ii).ort = 'undefined';
