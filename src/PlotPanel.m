@@ -351,8 +351,8 @@ classdef PlotPanel < handle
                 y_tick = 1:y_label_res:y;
             end
             
-            x_tick_label = num2cell((0:x_label_res:x-1)*this.p.p.scale(1));
-            y_tick_label = num2cell((0:y_label_res:y-1)*this.p.p.scale(2));
+            x_tick_label = num2cell((0:x_label_res:x-1)*this.p.scale(1));
+            y_tick_label = num2cell((0:y_label_res:y-1)*this.p.scale(2));
             
             set(ax, 'xtick', x_tick, 'ytick', y_tick,...
                     'xticklabel', x_tick_label,...
