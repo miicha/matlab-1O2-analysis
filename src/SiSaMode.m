@@ -86,7 +86,11 @@ classdef SiSaMode < GenericMode
             
             this.h.parent = parent.h.modepanel;
             
-            this.scale = this.p.scale;
+            if isfield(reader.meta, 'sisaScale')
+                this.scale = reader.meta.sisaScale;
+            else
+                this.scale = this.p.scale;
+            end
             this.units = this.p.units;
             this.scale(end) = mean(this.int_time(:));
             this.d_name = {'x', 'y', 'z', 'sa'};
