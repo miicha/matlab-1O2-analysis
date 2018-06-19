@@ -746,6 +746,7 @@ classdef SiSaGenericPlot < handle
                 return
             end
             this.save_fig([path name]);
+            this.smode.p.set_savepath(path)
         end
         
         function save_fig_cb(this, varargin)
@@ -758,6 +759,7 @@ classdef SiSaGenericPlot < handle
                 return
             end
             this.save_data([path name]);
+            this.smode.p.set_savepath(path)
         end
         
         function save_data_temp_cb(this, varargin)
@@ -888,7 +890,6 @@ classdef SiSaGenericPlot < handle
             %ToDo checken warum genericname und savepath leer sind
             point = regexprep(num2str(this.cp), '\s+', '_');
             name = [this.smode.p.genericname '_p_' point];
-            this.smode.p.savepath
             path = fullfile(this.smode.p.savepath, name);
         end
         

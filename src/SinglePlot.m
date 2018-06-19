@@ -184,6 +184,7 @@ classdef SinglePlot < handle
             end
             this.generate_export_fig('off');
             this.save_fig([path name]);
+%             this.smode.p.set_savepath(path);
         end
         
         function save_data_cb(this, varargin)
@@ -192,6 +193,7 @@ classdef SinglePlot < handle
                 return
             end
             this.save_data([path name]);
+%             this.smode.p.set_savepath(path);
         end
         
         function resize(this, varargin)
