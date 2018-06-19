@@ -150,7 +150,7 @@ classdef hyper < handle
             xlabel('time [\mus]')
 
             ylim([0 plot_max])
-            xlim([-0.5 80])
+            xlim([-0.5 floor(x_achse(end)/10)*10])
             
             
             ax.FontSize = this.fsize;
