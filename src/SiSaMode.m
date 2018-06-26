@@ -716,6 +716,8 @@ classdef SiSaMode < GenericMode
             s = num2cell(size(this.est_params));
             this.fit_chisq = nan(s{1:4});
             
+            this.sisa_fit.update('weighting', this.h.weighting.Value);
+            
             %% Hintergrundfarbe abhängig von Detektionswellenlänge
             if isfield(reader, 'meta') && isfield(reader.meta, 'sisa') && isfield(reader.meta.sisa, 'Optik')
                 if reader.meta.sisa.Optik == 1270
