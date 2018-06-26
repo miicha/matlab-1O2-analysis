@@ -54,6 +54,11 @@ classdef SiSaPointPlot < SiSaGenericPlot
             
             this.set_window_name(name);
             this.plotdata();
+            
+            par_names = this.sisa_fit.parnames;
+            for i = 1:this.sisa_fit.par_num
+                set(this.h.pc{i}, 'Value', ismember(par_names(i), this.smode.fix));
+            end
         end
         
         function getdata(this, ~)
