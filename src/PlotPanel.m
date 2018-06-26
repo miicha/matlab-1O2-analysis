@@ -243,6 +243,7 @@ classdef PlotPanel < handle
             
             % plotting:
             % Memo to self: Don't try using HeatMaps... seriously.
+            set(0,'CurrentFigure',this.p.get_figure());
             if gcf == this.p.get_figure()  % don't plot when figure is in background
                 set(this.p.get_figure(), 'CurrentAxes', this.h.axes); 
                 cla

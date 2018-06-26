@@ -10,6 +10,21 @@ classdef SiSaPointPlot < SiSaGenericPlot
     methods
         function this = SiSaPointPlot(point, smode)    
             this = this@SiSaGenericPlot(smode);
+            
+            this.h.set_startvalues = uicontrol(this.h.fit_tab);
+            this.h.set_fitvalues = uicontrol(this.h.fit_tab);
+            
+            set(this.h.set_startvalues, 'units', 'pixels',...
+                          'position', [225 35 80 28],...
+                          'string', 'copy as start',...
+                          'FontSize', 9,...
+                          'callback', @this.cb_set_startvalues);
+            
+            set(this.h.set_fitvalues, 'units', 'pixels',...
+                          'position', [225 5 80 28],...
+                          'string', 'set as fitted',...
+                          'FontSize', 9,...
+                          'callback', @this.cb_set_fitvalues);
 
             %% get data from main UI
             
@@ -26,7 +41,8 @@ classdef SiSaPointPlot < SiSaGenericPlot
             
             this.getdata();
             
-            this.est_params = this.sisa_fit.estimate(this.data);
+            this.est_params = squeeze(this.smode.est_params(this.cp(1), this.cp(2), this.cp(3), this.cp(4), :));
+%             this.sisa_fit.estimate(this.data);
             this.generate_param();
             
              
@@ -41,6 +57,7 @@ classdef SiSaPointPlot < SiSaGenericPlot
         end
         
         function getdata(this, ~)
+            
             this.chisq = 0;
             this.data = squeeze(this.smode.data(this.cp(1), this.cp(2), this.cp(3), this.cp(4), :));
             if this.fitted
@@ -49,5 +66,33 @@ classdef SiSaPointPlot < SiSaGenericPlot
                 this.fit_params_err = squeeze(this.smode.fit_params_err(this.cp(1), this.cp(2), this.cp(3), this.cp(4), :));
             end
         end
+        
+        function cb_set_startvalues(this, varargin)
+            this.set_point_values(true)
+        end
+        
+        function cb_set_fitvalues(this, varargin)
+            this.set_point_values(false)
+        end
+        
+        function set_point_values(this,estimates)    % estimates: true --> set as start values otherwise as fit result
+            if this.sisa_fit.curr_fitfun ~= this.smode.sisa_fit.curr_fitfun || ...
+                    this.smode.sisa_fit.t_0 ~= this.sisa_fit.t_0
+                this.smode.sisa_fit.t_0 = this.sisa_fit.t_0;
+                this.smode.set_model(this.sisa_fit.curr_fitfun);
+            end
+            
+            if this.fitted
+                if estimates
+                    this.smode.est_params(this.cp(1), this.cp(2), this.cp(3), this.cp(4), :) = this.fit_params;
+                else
+                    this.smode.fit_params(this.cp(1), this.cp(2), this.cp(3), this.cp(4), :) = this.fit_params;
+                    this.smode.fit_params_err(this.cp(1), this.cp(2), this.cp(3), this.cp(4), :) = this.fit_params_err;
+                    this.smode.fit_chisq(this.cp(1), this.cp(2), this.cp(3), this.cp(4), :) = this.chisq;
+                end
+                this.smode.plot_array();
+            end
+        end
+        
     end
 end
