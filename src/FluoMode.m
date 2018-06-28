@@ -28,7 +28,7 @@ classdef FluoMode < GenericMode
                 this.scale = this.p.scale;
                 this.units = this.p.units;
 
-                this.scale(4) = int_time/1000;
+                this.scale(4) = double(int_time)/1000;
                 this.units{4} = 't [s]';
                 this.units{5} = 'nm';
 
@@ -40,6 +40,9 @@ classdef FluoMode < GenericMode
                 this.h.diffbutton = uicontrol(this.h.evalpanel);
                 this.h.quotientbutton = uicontrol(this.h.evalpanel);
                 this.h.wl2 = uicontrol(this.h.evalpanel);
+                
+                this.h.start_wl = uicontrol(this.h.evalpanel);
+                this.h.end_wl = uicontrol(this.h.evalpanel);
 
                 this.h.plotpanel = uipanel(this.h.fluomode);
 
@@ -65,6 +68,19 @@ classdef FluoMode < GenericMode
                            'position', [2 35 120 28],...
                            'string', 'Quotienten anzeigen',...
                            'callback', @this.show_quot_cb);
+                       
+                set(this.h.start_wl, 'units', 'pixels',...
+                                  'position', [10 250 50 15],...
+                                  'style', 'edit',...
+                                  'string', '670',...
+                                  'horizontalAlignment', 'left',...
+                                  'callback', @this.change_int_area_cb);
+                set(this.h.end_wl, 'units', 'pixels',...
+                                  'position', [60 250 50 15],...
+                                  'style', 'edit',...
+                                  'string', '670',...
+                                  'horizontalAlignment', 'left',...
+                                  'callback', @this.change_int_area_cb);
                        
                set(this.h.wl2, 'units', 'pixels',...
                                   'position', [150 25 50 15],...
@@ -126,7 +142,7 @@ classdef FluoMode < GenericMode
         function show_diff_cb(this, varargin)
             if this.plotpanel.h.d5_select.Value == 5
                
-                [ind1, ind2] = acquire_WLs(this, varargin);
+                [ind1, ind2] = acquire_WLs(this, varargin)
                 
                 plot_data = squeeze(this.data(ind1{:}))-squeeze(this.data(ind2{:}));
                 
@@ -185,6 +201,20 @@ classdef FluoMode < GenericMode
 
         function data = get_data(this)
             data = this.data(:, :, :, :, :);
+        end
+        
+        function change_int_area_cb(this, varargin)
+            wl1_index = find(this.wavelengths >= str2double(this.h.start_wl.String)-0.1,1,'first');
+            wl2_index = find(this.wavelengths <= str2double(this.h.end_wl.String)+0.1,1,'last');
+            
+            ind1 = this.plotpanel.ind;
+            ind2 = ind1;
+            ind2{5} = wl2_index;
+            ind1{5} = wl1_index;
+            
+            plot_data = squeeze(sum(this.data(ind1{1:4},ind1{5}:ind2{5}),5));
+            figure(1234)
+            show_plot(this, plot_data)
         end
     end
 end
