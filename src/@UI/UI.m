@@ -84,6 +84,12 @@ classdef UI < handle
             this.h.config_read_fluo = uimenu(this.h.configmenu,...
                               'label', 'Read Fluorescence',...
                               'callback', @this.config_read_fluo_cb);
+            this.h.config_read_all_fluo = uimenu(this.h.configmenu,...
+                              'label', 'Read all Fluorescence',...
+                              'callback', @this.config_read_all_fluo_cb);
+            this.h.config_3d = uimenu(this.h.configmenu,...
+                              'label', '3D-samples',...
+                              'callback', @this.config_3d_cb);
             this.h.config_keep_AR = uimenu(this.h.configmenu,...
                               'label', 'Keep Aspect Ratio',...
                               'callback', @this.config_keep_AR_cb);
@@ -248,15 +254,21 @@ classdef UI < handle
             else
                 readfluo = false;
             end
+            if strcmp(this.h.config_read_all_fluo.Checked,'on')
+                read_all_fluo = true;
+            else
+                read_all_fluo = false;
+            end
             
             % Daten einlesen (abhängig von Einstellungen)
-            reader = HDF5_reader(filepath);
-            reader.readfluo = readfluo;
-            
+            reader = HDF5_reader(filepath,readfluo,read_all_fluo);            
             reader.set_progress_cb(@this.update_infos);
+            tic
             reader.read_data();
-            
+            read_data = toc
+            tic
             this.open_modes(reader);
+            open_modes = toc
         end
         
         function open_modes(this, reader)
@@ -275,7 +287,7 @@ classdef UI < handle
             
             i = 1;
             this.modes = {};
-            reader.meta.modes_in_file
+%             reader.meta.modes_in_file
             for mode = reader.meta.modes_in_file
                 mode = mode{1};
                 switch mode
@@ -466,6 +478,12 @@ classdef UI < handle
                 if isfield(conf, 'read_fluo')
                     this.h.config_read_fluo.Checked = conf.read_fluo;
                 end
+                if isfield(conf, 'read_all_fluo')
+                    this.h.config_read_all_fluo.Checked = conf.read_all_fluo;
+                end
+                if isfield(conf, 'single_3d')
+                    this.h.config_3d.Checked = conf.single_3d;
+                end
                 if isfield(conf, 'check_version')
                     this.h.config_check_version.Checked = conf.check_version;
                 end
@@ -511,6 +529,9 @@ classdef UI < handle
             strct.open_nsTAS_path = this.open_nsTAS_path;
             strct.savepath = this.savepath;
             strct.read_fluo = this.h.config_read_fluo.Checked;
+            strct.read_all_fluo = this.h.config_read_all_fluo.Checked;
+            strct.read_all_fluo = this.h.config_read_all_fluo.Checked;
+            strct.single_3d = this.h.config_3d.Checked;
             strct.keep_aspect = this.h.config_keep_AR.Checked;
             strct.check_version = this.h.config_check_version.Checked;
             strct.last_model = this.siox_config.last_model;
@@ -778,6 +799,24 @@ classdef UI < handle
             end
             this.saveini();            
         end
+        
+        function config_read_all_fluo_cb(this,varargin)
+            if strcmp(this.h.config_read_all_fluo.Checked,'on')
+                this.h.config_read_all_fluo.Checked = 'off';
+            else
+                this.h.config_read_all_fluo.Checked = 'on';
+            end
+            this.saveini();            
+        end
+        
+        function config_3d_cb(this,varargin)
+            if strcmp(this.h.config_3d.Checked,'on')
+                this.h.config_3d.Checked = 'off';
+            else
+                this.h.config_3d.Checked = 'on';
+            end
+            this.saveini();            
+        end        
         
         function config_check_version_cb(this,varargin)
             if strcmp(this.h.config_check_version.Checked,'on')

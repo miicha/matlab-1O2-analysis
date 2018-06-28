@@ -18,7 +18,7 @@ classdef FluoMode < GenericMode
                 if nargin < 3
                     wavelengths = 1:size(data, 5);
                     int_time = 100;
-                end                
+                end
 
                 this.p = parent;
                 this.data = data;
@@ -95,11 +95,23 @@ classdef FluoMode < GenericMode
         end
         
         function click_on_axes_cb(this, point, button, shift, ctrl, alt)
-            if sum(squeeze(this.data(point{1:4}, :))) > 0 && button == 1 % left click
-                SinglePlot(this.wavelengths, squeeze(this.data(point{1:4}, :)), [],...
-                           fullfile(this.p.savepath, this.p.genericname),...
-                           'title', num2str(cell2mat(point)));
+            tmp = squeeze(this.data(point{1:3},:, :));
+            if strcmp(this.p.h.config_3d.Checked,'on') && length(tmp(~isnan(tmp))) > 3000   %ToDo find decent implementation
+                if sum(squeeze(this.data(point{1:4}, :))) > 0 && button == 1 % left click
+                    SinglePlot(this.wavelengths, tmp, [],...
+                        fullfile(this.p.savepath, this.p.genericname),...
+                        'title', num2str(cell2mat(point)), 'timescale', this.scale(4),...
+                        'xlabel','Wavelength [nm]', 'ylabel', 't [s]');
+                end
+                this.units{5}
+            else
+                if sum(squeeze(this.data(point{1:4}, :))) > 0 && button == 1 % left click
+                    SinglePlot(this.wavelengths, squeeze(this.data(point{1:4}, :)), [],...
+                        fullfile(this.p.savepath, this.p.genericname),...
+                        'title', num2str(cell2mat(point)));
+                end
             end
+            
         end
       
         function resize(this, varargin)
