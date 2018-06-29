@@ -633,11 +633,12 @@ classdef SiSaMode < GenericMode
                                   
             set(this.h.d_bpth, 'units', 'pixels',...
                                       'style', 'edit',...
-                                      'string', 'D:\Michael\UNI\Promotion\Projekte\CAM_Berlin\Scans\',...
                                       'position', [10, 240, 225, 40],...
                                       'max', 2,...
                                       'callback', @this.update_config);
-                          
+            try
+                this.h.d_bpth.String = this.p.basepath;
+            end
             % init          
             
             this.read_channel_width();
@@ -1925,6 +1926,7 @@ classdef SiSaMode < GenericMode
             this.p.siox_config.short_third = this.h.short_third.Value;
             this.p.siox_config.weighting = this.h.weighting.Value;
             this.p.siox_config.last_model = this.h.drpd.Value;
+            this.p.basepath = this.h.d_bpth.String;
             this.p.saveini();
         end
     end

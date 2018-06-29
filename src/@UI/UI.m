@@ -25,6 +25,7 @@ classdef UI < handle
         dbpath; % persistent, in ini
         open_nsTAS_path; % persistent, in ini
         siox_config; % persistent, in ini
+        basepath;
 
         h = struct();        % handles
     end
@@ -510,6 +511,9 @@ classdef UI < handle
                 else
                     this.siox_config.last_model = 1;
                 end
+                if isfield(conf, 'basepath')
+                    this.basepath = conf.basepath;
+                end
             else
                 this.openpath = [p filesep()];
                 this.savepath = [p filesep()];
@@ -538,6 +542,7 @@ classdef UI < handle
             strct.short_third = this.siox_config.short_third;
             strct.short_siox = this.siox_config.short_siox;
             strct.weighting = this.siox_config.weighting;
+            strct.basepath = this.basepath;
 
             writeini([p filesep() 'config.ini'], strct);
         end
