@@ -135,15 +135,10 @@ classdef UI < handle
             this.par_size = feature('numCores')*6;
             
             %% add to PATH
-            if isunix()
-                folder_delimiter = '/';
-            else
-                folder_delimiter = '\';
-            end
-            softwarefolder = strsplit(get_executable_dir, folder_delimiter);
-            softwarefolder = strjoin(softwarefolder(1:end-1),folder_delimiter);
-            addpath(genpath([softwarefolder folder_delimiter '3rd-party']));
-            addpath([softwarefolder folder_delimiter 'src']);
+            softwarefolder = strsplit(get_executable_dir, filesep());
+            softwarefolder = strjoin(softwarefolder(1:end-1),filesep());
+            addpath(genpath([softwarefolder filesep() '3rd-party']));
+            addpath([softwarefolder filesep() 'src']);
             
             %% init
             this.resize();
