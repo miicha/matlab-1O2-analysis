@@ -789,6 +789,7 @@ classdef SiSaMode < GenericMode
                             'string', [par_names, 'A_korr', 'Summe']);
             this.plot_array();
             this.set_param_fix_cb();
+            this.DBcheck();
         end
     
         function set_scale(this, scl)
@@ -1661,6 +1662,7 @@ classdef SiSaMode < GenericMode
             g_par = find(this.use_gstart);
             
             short_siox = this.h.short_siox.Value;
+            weighting = this.h.weighting.Value;
             for n = 1:s
                 [i,j,k,l] = ind2sub(this.sisa_data_size, n);               
                 if ~this.disp_ov || this.overlays{this.current_ov}(i, j, k, l)
@@ -1700,6 +1702,7 @@ classdef SiSaMode < GenericMode
                     result(ii).lower = this.sisa_fit.lower_bounds;
                     result(ii).upper = this.sisa_fit.upper_bounds;
                     result(ii).shortSiox = short_siox;
+                    result(ii).weighting = weighting;
                     
                     result(ii).rating = this.h.d_fitResultRating.Value;
                     result(ii).kommentar = this.h.d_note.String;
@@ -1717,9 +1720,15 @@ classdef SiSaMode < GenericMode
             basepath = this.h.d_bpth.String;
             filename = [strrep(this.p.openpath, basepath, '') this.p.genericname '.h5'];
             db = db_interaction('messdaten2', this.p.dbuser, this.p.dbpw, this.p.dbserver);
-            anzahl = db.check_file_exists(basepath, filename, this.model)
+            anzahl_in_db = db.check_file_exists(basepath, filename, this.model)
             db.close();
+            if anzahl_in_db > 1
+                this.h.sisamode.BackgroundColor = [0.3 .8 .5];
+            else
+                this.h.sisamode.BackgroundColor = [0.9400 0.9400 0.9400];
+            end
         end
+        
         function add_ov_cb(this, varargin)
             if varargin{1} == this.h.ov_add_from_auto
                 name = [this.h.ov_drpd.String{this.h.ov_drpd.Value} ' '...

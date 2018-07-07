@@ -196,6 +196,9 @@ classdef UI < handle
             else
                 % single selection
                 [~, n, ext] = fileparts(name);
+                
+                this.genericname = n;
+                
                 if regexp(ext, 'h5$')
                     this.fileinfo.name = {name};
                     this.openHDF5();
@@ -211,9 +214,6 @@ classdef UI < handle
                     this.openASC();
                 end
             end
-            
-
-            this.genericname = n;
             
             this.saveini();
         end
