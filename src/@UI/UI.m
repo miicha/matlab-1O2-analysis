@@ -26,9 +26,17 @@ classdef UI < handle
         open_nsTAS_path; % persistent, in ini
         siox_config; % persistent, in ini
         basepath;
+        
 
         h = struct();        % handles
     end
+    
+    properties (SetAccess = protected)
+        dbuser = '';
+        dbserver = 'localhost';
+        dbpw = '';
+    end
+    
 
     methods
     % create new instance with basic controls
@@ -457,6 +465,16 @@ classdef UI < handle
                     this.dbpath = [p filesep()];
                 end
                 
+                if isfield(conf, 'dbuser')
+                    this.dbuser = conf.dbuser;
+                end
+                if isfield(conf, 'dbserver')
+                    this.dbserver = conf.dbserver;
+                end
+                if isfield(conf, 'dbpw')
+                    this.dbpw = conf.dbpw;
+                end
+                
                 if isfield(conf, 'savepath')
                     this.savepath = conf.savepath;
                 else
@@ -529,6 +547,9 @@ classdef UI < handle
             strct.lastopened = now();
             strct.openpath = this.openpath;
             strct.dbpath = this.dbpath;
+            strct.dbuser = this.dbuser;
+            strct.dbserver = this.dbserver;
+            strct.dbpw = this.dbpw;
             strct.open_nsTAS_path = this.open_nsTAS_path;
             strct.savepath = this.savepath;
             strct.read_fluo = this.h.config_read_fluo.Checked;

@@ -140,6 +140,7 @@ classdef SiSaMode < GenericMode
                         this.h.histo_btn = uicontrol(this.h.sel_controls);
                         this.h.hyper_btn = uicontrol(this.h.sel_controls);
                         this.h.dbinsert_btn = uicontrol(this.h.sel_controls);
+                        this.h.dbcheck_btn = uicontrol(this.h.sel_controls);
 
                     this.h.sel_values = uipanel(this.h.sel_tab);
 
@@ -458,6 +459,12 @@ classdef SiSaMode < GenericMode
                              'position', [85 25 50 20],...
                              'string', 'DB insert',...
                              'callback', @this.DBinsert);
+                         
+            set(this.h.dbcheck_btn, 'units', 'pixels',...
+                             'style', 'push',...
+                             'position', [15 100 50 20],...
+                             'string', 'DB check',...
+                             'callback', @this.DBcheck);
                          
             set(this.h.export_fit_btn, 'units', 'pixels',...
                              'style', 'push',...
@@ -1622,7 +1629,8 @@ classdef SiSaMode < GenericMode
         function DBinsert(this, varargin)
             server = '141.20.44.176';
 %             server = 'localhost';
-            db = db_interaction('messdaten2', 'messdaten', 'testtest', server);
+
+            db = db_interaction('messdaten2', this.p.dbuser, this.p.dbpw, this.p.dbserver);
 
             db.set_progress_cb(@(x) this.p.update_infos(x));
             
@@ -1705,6 +1713,13 @@ classdef SiSaMode < GenericMode
             db.close();
         end
   
+        function DBcheck(this, varargin)
+            basepath = this.h.d_bpth.String;
+            filename = [strrep(this.p.openpath, basepath, '') this.p.genericname '.h5'];
+            db = db_interaction('messdaten2', this.p.dbuser, this.p.dbpw, this.p.dbserver);
+            anzahl = db.check_file_exists(basepath, filename, this.model)
+            db.close();
+        end
         function add_ov_cb(this, varargin)
             if varargin{1} == this.h.ov_add_from_auto
                 name = [this.h.ov_drpd.String{this.h.ov_drpd.Value} ' '...
