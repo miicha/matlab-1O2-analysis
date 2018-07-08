@@ -58,7 +58,7 @@ classdef SiSaPointPlot < SiSaGenericPlot
             par_names = this.sisa_fit.parnames;
             for i = 1:this.sisa_fit.par_num
                 set(this.h.pc{i}, 'Value', ismember(par_names(i), this.smode.fix));
-                if this.smode.use_gstart(i) == 1
+                if this.smode.use_gstart(i) == 1 && this.smode.fitted == 0
                     this.h.pe{i}.String = num2str(this.smode.gstart(i));
                 end
             end
