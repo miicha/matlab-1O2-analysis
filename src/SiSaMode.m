@@ -1094,15 +1094,20 @@ classdef SiSaMode < GenericMode
             
             
             this.gstart = (ub+lb)./2;
-            
             if sf.curr_fitfun == 16
                 lb(end) = 0;
                 ub(end) = 1/2;
                 this.gstart(end) = 0.8;
             end
+            ub = ub*3;
+            lb = lb*0.3;
+
+            offset_index = find(strcmp(this.sisa_fit_info.par_names{this.sisa_fit.curr_fitfun},'offset'));
+            lb(offset_index) = this.int_time/2-0.7;
+            ub(offset_index) = this.int_time/2+0.7;
             
             % set bounds from estimated parameters            
-            this.sisa_fit.update('upper', ub*3, 'lower', lb*0.3);
+            this.sisa_fit.update('upper', ub, 'lower', lb);
             
             
             
@@ -1240,7 +1245,7 @@ classdef SiSaMode < GenericMode
                     this.p.update_infos(['   |   Fitte ' num2str(start) '/' num2str(prod(this.sisa_data_size)) ' (parallel).'])
                 end
                 if n == n_pixel - rest + 1
-                    inner_upper = rest - 2;
+                    inner_upper = rest - 1;
                 end
                 
                 innertime = tic();
@@ -1268,7 +1273,7 @@ classdef SiSaMode < GenericMode
                 
                 this.p.update_infos(['   |   Fitte ' num2str(n+inner_upper) '/' num2str(prod(this.sisa_data_size)) ' (parallel): '...
                    format_time(lt/(n+inner_upper-start)*(n_pixel-(n+inner_upper))) ' verbleibend.'])
-                
+
                 this.last_fitted = n;
                 if this.disp_fit_params
                     this.fit_params = reshape(f_pars, [this.sisa_data_size size(f_pars, 2)]);
