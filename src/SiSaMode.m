@@ -955,6 +955,7 @@ classdef SiSaMode < GenericMode
             end
             
             if ~children_only
+                delete(this.h.sisamode)
                 delete(this);
             end
         end

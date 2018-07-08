@@ -363,6 +363,13 @@ classdef UI < handle
             this.data_read = true;
         end
         
+        function close_modes(this)
+            this.modes
+%             this.destroy(true);
+            for i = 1:length(this.modes)
+                this.modes{i}.destroy(false);
+            end
+        end
         
         function openDIFF(this)
             reader = file_reader(this.fileinfo.path, this.fileinfo.name);
@@ -640,27 +647,10 @@ classdef UI < handle
                 return
             end
             
-            m = this.isMaximised();
-            pos = get(this.h.f, 'position');
-            
             this.openpath = filepath;
             this.saveini();
-            set(this.h.f, 'visible', 'off');
-            
-            
-            
-            global debug_u
-            if debug_u == true
-                debug_u = UI(filepath, name, pos, m);
-            else
-                UI(filepath, name, pos, m);
-            end
-            close(this.h.f);
-            delete(this);
-            
-%             %% add to PATH
-%             addpath(genpath([get_executable_dir '\..\3rd-party']));
-%             addpath([get_executable_dir '\..\src']);
+            this.close_modes();
+            this.open_file(filepath, name);
         end
         
         function open_folder_cb(this, varargin)

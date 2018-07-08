@@ -216,5 +216,12 @@ classdef FluoMode < GenericMode
             figure(1234)
             show_plot(this, plot_data)
         end
+        
+        function destroy(this, children_only)
+            if ~children_only
+                delete(this.h.fluomode)
+                delete(this);
+            end
+        end
     end
 end
