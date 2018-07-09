@@ -12,15 +12,20 @@ classdef hyper < handle
         h = struct();        % handles
         
         sisa_data;
+        sisa_point_names;
         current_draggable
         kinetik_real_start
         g_real_start
         b_real_start
         
         max_short
+        short_name
         max_long
+        long_name
         short_color = [0.19 0.76 0.41];
         long_color = [0.05 0.32 0.95];
+        
+        shown_points;
         
         reader;
         
@@ -69,7 +74,7 @@ classdef hyper < handle
             this.h.kinetik = subplot(2,1,2); 
             this.show_kinetic();
             
-            get(this.h.map)
+%             get(this.h.map)
             
             %% Kinetik
             
@@ -81,6 +86,8 @@ classdef hyper < handle
             this.g_real_start = (this.g_start-this.np)*this.cw;
             this.b_real_start = (this.b_start-this.np)*this.cw;
             tmp = this.reader.get_sisa_data();
+            tmp2 = this.reader.data.sisa_point_name;
+            this.sisa_point_names = squeeze(tmp2(:,:,1,1,:));
             this.sisa_data = squeeze(tmp(:,:,1,1,:));
         end
         
@@ -111,6 +118,7 @@ classdef hyper < handle
             this.h.red_area = area(ax,x,y,'FaceColor','red');
             this.h.red_area.FaceAlpha = alpha;
             this.h.red_area.EdgeColor = 'none';
+            legend();
             
             hold on
             
@@ -124,10 +132,10 @@ classdef hyper < handle
             this.h.blue_area.FaceAlpha = alpha;
             this.h.blue_area.EdgeColor = 'none';
             
-            plot(ax,x_achse, kin, 'color', this.short_color);
+            short_line = plot(ax,x_achse, kin, 'color', this.short_color);
             this.h.axes = gca;
 
-            plot(x_achse, kin2, 'color', this.long_color)
+            long_line = plot(x_achse, kin2, 'color', this.long_color);
             hold off
             
             this.h.left = line([this.g_real_start this.g_real_start], [0 realmax], 'Color', [.7 0 .5],... 
@@ -155,6 +163,10 @@ classdef hyper < handle
             
             ax.FontSize = this.fsize;
             
+            legend([short_line long_line],{num2str(this.short_name),num2str(this.long_name)})
+
+%             legend({num2str(this.short_name),num2str(this.long_name)})
+            
         end
         
         function save_figures(this,varargin)
@@ -166,7 +178,7 @@ classdef hyper < handle
             f1 = figure; % Open a new figure with handle f1
             ax = axes(f1);
             this.show_image(ax);
-            ax = gca
+            ax = gca;
             
             save2pdf('map', 'width', width, 'texi', false, 'fontsize',fsize, 'aspectratio', 1.3)
             
@@ -207,6 +219,8 @@ classdef hyper < handle
 %             this.max_short = [J-1, I-0];
             [I,J] = ind2sub(size(r), pos2);
             this.max_long = [J,I];
+            [~,this.long_name] = this.get_current_point(this.max_long);
+            [~,this.short_name] = this.get_current_point(this.max_short);
         end
         
         function show_image(this, varargin)
@@ -305,7 +319,7 @@ classdef hyper < handle
     
     methods (Access = private)
         function aplot_click_cb(this, varargin)
-            index = this.get_current_point()
+            [index, name] = this.get_current_point();
             modifiers = this.h.figure.CurrentModifier;
             wasShiftPressed = ismember('shift',   modifiers);  % true/false
 %             wasCtrlPressed  = ismember('control', modifiers);  % true/false
@@ -316,33 +330,27 @@ classdef hyper < handle
             % shift-leftclick:
             if mouseButton == 1
                 this.max_short = index;
+                this.short_name = name;
             elseif mouseButton == 3 % other
                 this.max_long = index;
+                this.long_name = name;
             end
             this.show_image();
             this.show_kinetic();
         end 
         
-        function index = get_current_point(this)
-            cp = get(this.h.map, 'CurrentPoint');
-            cp = round(cp(1, 1:2));
-            cp(cp == 0) = 1;
-            
-            index = cp;
-
-%             index{this.curr_dims(1)} = cp(1); % x ->
-%             index{this.curr_dims(2)} = cp(2); % y ^
-%             for i = 3:length(this.dims)
-%                 index{this.curr_dims(i)} = this.ind{this.curr_dims(i)};
-%             end
-%             
-%             for i = 1:4
-%                 if index{i} > this.dims(i)
-%                     index{i} = this.dims(i);
-%                 elseif index{i} <= 0
-%                      index{i} = 1;
-%                 end
-%             end
+        function [index, name] = get_current_point(this,varargin)
+            if nargin == 1
+                cp = get(this.h.map, 'CurrentPoint');
+                cp = round(cp(1, 1:2));
+                cp(cp == 0) = 1;
+                index = cp;
+            else
+                index = varargin{1};
+            end
+            tmp = size(this.sisa_data);
+            name(1) = squeeze(this.sisa_point_names(index(1),1,1));
+            name(2) = squeeze(this.sisa_point_names(1,tmp(2)+1-index(2),2));
         end
     end
 end
