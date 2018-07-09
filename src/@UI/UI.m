@@ -96,6 +96,10 @@ classdef UI < handle
             this.h.config_read_all_fluo = uimenu(this.h.configmenu,...
                               'label', 'Read all Fluorescence',...
                               'callback', @this.config_read_all_fluo_cb);
+            this.h.config_remove_non_sisa = uimenu(this.h.configmenu,...
+                              'label', 'Remove non SiSa',...
+                              'callback', @this.config_remove_non_sisa_cb);
+                          
             this.h.config_3d = uimenu(this.h.configmenu,...
                               'label', '3D-samples',...
                               'callback', @this.config_3d_cb);
@@ -268,8 +272,14 @@ classdef UI < handle
                 read_all_fluo = false;
             end
             
-            % Daten einlesen (abhï¿½ngig von Einstellungen)
-            reader = HDF5_reader(filepath,readfluo,read_all_fluo);            
+            if strcmp(this.h.config_remove_non_sisa.Checked,'on')
+                remove_non_sisa = true;
+            else
+                remove_non_sisa = false;
+            end
+            
+            % Daten einlesen (abhängig von Einstellungen)
+            reader = HDF5_reader(filepath,readfluo,read_all_fluo,remove_non_sisa);            
             reader.set_progress_cb(@this.update_infos);
             tic
             reader.read_data();
@@ -506,6 +516,10 @@ classdef UI < handle
                 if isfield(conf, 'read_all_fluo')
                     this.h.config_read_all_fluo.Checked = conf.read_all_fluo;
                 end
+                if isfield(conf, 'remove_non_sisa')
+                    this.h.config_remove_non_sisa.Checked = conf.remove_non_sisa;
+                end
+                
                 if isfield(conf, 'single_3d')
                     this.h.config_3d.Checked = conf.single_3d;
                 end
@@ -562,6 +576,7 @@ classdef UI < handle
             strct.read_fluo = this.h.config_read_fluo.Checked;
             strct.read_all_fluo = this.h.config_read_all_fluo.Checked;
             strct.read_all_fluo = this.h.config_read_all_fluo.Checked;
+            strct.remove_non_sisa = this.h.config_remove_non_sisa.Checked;
             strct.single_3d = this.h.config_3d.Checked;
             strct.keep_aspect = this.h.config_keep_AR.Checked;
             strct.check_version = this.h.config_check_version.Checked;
@@ -823,6 +838,15 @@ classdef UI < handle
             end
             this.saveini();            
         end
+        
+        function config_remove_non_sisa_cb(this,varargin)
+            if strcmp(this.h.config_remove_non_sisa.Checked,'on')
+                this.h.config_remove_non_sisa.Checked = 'off';
+            else
+                this.h.config_remove_non_sisa.Checked = 'on';
+            end
+            this.saveini();            
+        end        
         
         function config_3d_cb(this,varargin)
             if strcmp(this.h.config_3d.Checked,'on')
