@@ -772,7 +772,7 @@ classdef SiSaGenericPlot < handle
         function save_data_db_cb(this, varargin)
             
             if this.fitted
-                db = db_interaction('messdaten2', 'messdaten', 'testtest', 'localhost');
+                db = db_interaction('messdaten2', this.smode.p.dbuser, this.smode.p.dbpw, this.smode.p.dbserver);
 
                 fileinfo.basepath = this.smode.h.d_bpth.String;
                 fileinfo.filename = [strrep(this.smode.p.openpath, fileinfo.basepath, '') this.smode.p.genericname '.h5'];
@@ -810,6 +810,7 @@ classdef SiSaGenericPlot < handle
                 result.start = this.start;
                 
                 result.shortSiox = this.smode.h.short_siox.Value;
+                result.weighting = this.smode.h.weighting.Value;
                 
                 result.parnames = this.sisa_fit.parnames;
 
