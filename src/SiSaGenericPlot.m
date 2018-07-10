@@ -397,7 +397,7 @@ classdef SiSaGenericPlot < handle
             set(this.h.f,'CurrentAxes',this.h.axes)
             
             % extrahierte SiSa-Daten Plotten
-            if get(this.h.drpd, 'value') == 2 || get(this.h.drpd, 'value') == 3
+            if get(this.h.drpd, 'value') == 2 || get(this.h.drpd, 'value') == 3 || get(this.h.drpd, 'value') == 5
                 sisamodel = sisafit(1);
                 sisamodel.copy_data(this.sisa_fit);
                 switch this.h.drpd.Value
@@ -405,6 +405,8 @@ classdef SiSaGenericPlot < handle
                         sisadata = sisamodel.eval([p(1:3); p(5)], x_axis);
                     case 3
                         sisadata = sisamodel.eval([p(1:3); p(6)], x_axis);
+                    case 5
+                        sisadata = sisamodel.eval([p(1:3); p(8)], x_axis);
                 end
                 hold on
                 plot(this.h.axes, x_axis,  sisadata, 'color', [1 0.6 0.2], 'LineWidth', 1.5, 'HitTest', 'off');
