@@ -26,21 +26,18 @@ classdef hyper < handle
         long_color = [0.05 0.32 0.95];
         
         shown_points;
-        
         reader;
+        filename
         
     end
     
     methods
         % create new instance with basic controls
-        function this = hyper(filename, pos)
-%             pos = [88 66];
-%             filename = 'D:\Michael\Uni\Promotion\Projekte\CAM_Berlin\Scans\20170411\Ei 1.2 240min IV ueber Aderkreuzung-20170411_161729.h5';
-            
+        function this = hyper(filename, pos, reader)
             this.kinetik_start = pos(1);
             this.np = pos(2);
-%             addpath(genpath([pwd '\3rdParty']));
             this.h.figure = figure;
+            this.h.figure.Position = [5 350 560 960];
             
             cmap = colormap('lines');
             this.short_color = cmap(2,:);
@@ -53,15 +50,15 @@ classdef hyper < handle
                            'position', [105 2 140 28],...
                            'string', 'Bilder Speichern',...
                            'callback', @this.save_figures);
-
-%             filename = 'D:\Michael\Uni\Promotion\Projekte\CAM_Berlin\Scans\20170410\Ei 1.7 1h stelle 2-20170410_180151.h5';
-            if ischar(filename)
+                       
+            if nargin<3
                 this.reader = HDF5_reader(filename);
                 this.reader.readfluo = false;
                 this.reader.read_data;
             else
-                this.reader = filename;
+                this.reader = reader;
             end
+            this.filename = filename;
             
             this.prepare_data();
             
@@ -85,19 +82,27 @@ classdef hyper < handle
             this.kinetik_real_start = (this.kinetik_start-this.np)*this.cw;
             this.g_real_start = (this.g_start-this.np)*this.cw;
             this.b_real_start = (this.b_start-this.np)*this.cw;
-            tmp = this.reader.get_sisa_data();
-            tmp2 = this.reader.data.sisa_point_name;
+            [tmp,tmp2] = this.reader.get_sisa_data();
             this.sisa_point_names = squeeze(tmp2(:,:,1,1,:));
             this.sisa_data = squeeze(tmp(:,:,1,1,:));
         end
         
         function show_kinetic(this,varargin)
+            if nargin == 2
+                ax = varargin{1};
+            else
+                ax = this.h.kinetik;
+            end
+            axes(ax);
+            if length(size(this.sisa_data)) == 3
+                tmp = flipud(permute(this.sisa_data,[2,1,3]));
+                kin = squeeze(tmp(this.max_short(2),this.max_short(1),:));          
+                kin2 = squeeze(tmp(this.max_long(2),this.max_long(1),:));
+            else
+                kin = this.sisa_data(this.max_short(1),:);
+                kin2 = this.sisa_data(this.max_long(1),:);
+            end
             
-            ax = this.h.kinetik;
-            axes(this.h.kinetik);
-            tmp = flipud(permute(this.sisa_data,[2,1,3]));
-            kin = squeeze(tmp(this.max_short(2),this.max_short(1),:));          
-            kin2 = squeeze(tmp(this.max_long(2),this.max_long(1),:));
             
             x_achse = 1:length(kin);
             x_achse = (x_achse-this.np)*this.cw;
@@ -176,27 +181,30 @@ classdef hyper < handle
             width = 0.35;
             
             f1 = figure; % Open a new figure with handle f1
-            ax = axes(f1);
-            this.show_image(ax);
-            ax = gca;
+            ax1 = subplot(2,1,1);
+            this.show_image(ax1);
+
+            ax2 = subplot(2,1,2);
+            this.show_kinetic(ax2);
             
-            save2pdf('map', 'width', width, 'texi', false, 'fontsize',fsize, 'aspectratio', 1.3)
+            wh = [560 1120];
+            f1.Position(3:4) = wh;
+            print(f1,strrep(this.filename,'.h5','.pdf'),'-dpdf', '-r0','-fillpage')
+%             save2pdf('kinetik', 'width', width, 'texi', false, 'fontsize',fsize, 'aspectratio', 2/4)
             
-            f1.delete();
-            
-            f2 = figure; % Open a new figure with handle f1
-            ax = axes(f2);
-            this.show_kinetic(ax);
-            save2pdf('kinetik', 'width', width, 'texi', false, 'fontsize',fsize, 'aspectratio', 4/3)
-            
-            f2.delete()
+            f1.delete()
         end
         
         function [clor,r,g,b] = calc_rgb(this,varargin)
-            
-            r = sum(this.sisa_data(:,:,this.kinetik_start:this.g_start-1),3);
-            g = sum(this.sisa_data(:,:,this.g_start:this.b_start-1),3);
-            b = sum(this.sisa_data(:,:,this.b_start:end),3);
+            if length(size(this.sisa_data)) < 3
+                r = sum(this.sisa_data(:,this.kinetik_start:this.g_start-1),2);
+                g = sum(this.sisa_data(:,this.g_start:this.b_start-1),2);
+                b = sum(this.sisa_data(:,this.b_start:end),2);
+            else
+                r = sum(this.sisa_data(:,:,this.kinetik_start:this.g_start-1),3);
+                g = sum(this.sisa_data(:,:,this.g_start:this.b_start-1),3);
+                b = sum(this.sisa_data(:,:,this.b_start:end),3);
+            end
             
             clor(:,:,1) = r'/max(r(:));
             clor(:,:,2) = g'/max(g(:));
@@ -224,7 +232,11 @@ classdef hyper < handle
         end
         
         function show_image(this, varargin)
-            ax = this.h.map;
+            if nargin == 2
+                ax = varargin{1};
+            else
+                ax = this.h.map;
+            end
             
             clor = this.calc_rgb();
             
@@ -350,7 +362,9 @@ classdef hyper < handle
             end
             tmp = size(this.sisa_data);
             name(1) = squeeze(this.sisa_point_names(index(1),1,1));
-            name(2) = squeeze(this.sisa_point_names(1,tmp(2)+1-index(2),2));
+            if length(tmp)>2
+                name(2) = squeeze(this.sisa_point_names(1,tmp(2)+1-index(2),2));
+            end
         end
     end
 end

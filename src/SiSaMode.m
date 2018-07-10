@@ -706,8 +706,8 @@ classdef SiSaMode < GenericMode
             set(this.h.tabs, 'visible', 'on');
             
             
-            uimenu(this.p.h.menu, 'Label', 'Load data and substract from current dataset',...
-                                  'callback', @this.load_ext_data_cb)
+            this.h.load_substract = uimenu(this.p.h.menu, 'Label', 'Load data and substract from current dataset',...
+                                  'callback', @this.load_ext_data_cb);
   
             this.p.update_infos();
             
@@ -955,6 +955,7 @@ classdef SiSaMode < GenericMode
             end
             
             if ~children_only
+                delete(this.h.load_substract)
                 delete(this.h.sisamode)
                 delete(this);
             end
@@ -1628,8 +1629,8 @@ classdef SiSaMode < GenericMode
         end
         
         function plot_hyper(this, varargin)
- 
-            hy = hyper(this.reader,[this.sisa_fit.offset_time this.sisa_fit.t_0]);
+            
+            hy = hyper([this.p.openpath this.p.genericname '.h5'],[this.sisa_fit.offset_time this.sisa_fit.t_0],this.reader);
 %             this.reader.meta.pointinfo.point_time
         end
         
