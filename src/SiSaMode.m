@@ -1740,9 +1740,9 @@ classdef SiSaMode < GenericMode
                     result(ii).rating = this.h.d_fitResultRating.Value;
                     result(ii).kommentar = this.h.d_note.String;
                     
-                    result(ii).sisa_intens = this.squeeze(this.sisa_esti(i,j,k,l,:));
-                    result(ii).sisa_intens_err = this.squeeze(this.sisa_esti_err(i,j,k,l,:));
-                    result(ii).fluo_val = this.this.squeeze(this.fluo_val(i,j,k,l,:));
+                    result(ii).sisa_intens = squeeze(this.sisa_esti(i,j,k,l,:));
+                    result(ii).sisa_intens_err = squeeze(this.sisa_esti_err(i,j,k,l,:));
+                    result(ii).fluo_val = squeeze(this.fluo_val(i,j,k,l,:));
                 end
             end
             
