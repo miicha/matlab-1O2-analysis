@@ -818,6 +818,9 @@ classdef SiSaGenericPlot < handle
                 
                 result.lower = this.sisa_fit.lower_bounds;
                 result.upper = this.sisa_fit.upper_bounds;
+                [differenz, abw] = this.sisa_fit.get_sisa_estimate();
+                result.sisa_intens = differenz;
+                result.sisa_intens_err = abw;
 
                 num_results_inserted = db.insert(fileinfo, pointinfo, result)
                 
