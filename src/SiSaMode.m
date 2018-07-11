@@ -691,9 +691,7 @@ classdef SiSaMode < GenericMode
                 end_ch = length(this.data(1,1,1,1,:));
             end
             
-            this.sisa_fit.update('t0',t_0, 'offset',t_0+25, 'end_chan', end_ch);
-            
-            this.x_data = this.sisa_fit.get_x_axis();
+            this.sisa_fit.update('t0',t_0, 'offset',t_0+25, 'end_chan', end_ch, 'weighting', this.h.weighting.Value);
             
             % UI stuff
             % folgende 3 Zeilen wahrscheinlich unnütz...
@@ -723,8 +721,6 @@ classdef SiSaMode < GenericMode
             % initialise here, so we can check whether a point is fitted or not
             s = num2cell(size(this.est_params));
             this.fit_chisq = nan(s{1:4});
-            
-            this.sisa_fit.update('weighting', this.h.weighting.Value);
             
             %% Hintergrundfarbe abhängig von Detektionswellenlänge
             if isfield(reader, 'meta') && isfield(reader.meta, 'sisa') && isfield(reader.meta.sisa, 'Optik')
