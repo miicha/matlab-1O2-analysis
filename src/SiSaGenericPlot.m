@@ -11,6 +11,8 @@ classdef SiSaGenericPlot < handle
         h = struct();       % handles
         fit_params;         % fitted parameters
         fit_params_err;     % ertimated errors of fitted parameters
+        sisa_esti;
+        fluo_val;
         cp;
         diff_data;
         data_backup;
@@ -821,6 +823,7 @@ classdef SiSaGenericPlot < handle
                 [differenz, abw] = this.sisa_fit.get_sisa_estimate();
                 result.sisa_intens = differenz;
                 result.sisa_intens_err = abw;
+                result.fluo_val = this.fluo_val;
 
                 num_results_inserted = db.insert(fileinfo, pointinfo, result)
                 

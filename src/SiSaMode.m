@@ -10,6 +10,10 @@ classdef SiSaMode < GenericMode
         fit_params;
         fit_params_err;
         fit_chisq;
+        sisa_esti;
+        sisa_esti_err;
+        fluo_val;
+            
         est_params;
         last_fitted;
         int_time = 5;
@@ -692,7 +696,7 @@ classdef SiSaMode < GenericMode
             end
             
             this.sisa_fit.update('t0',t_0, 'offset',t_0+25, 'end_chan', end_ch, 'weighting', this.h.weighting.Value);
-            
+
             % UI stuff
             % folgende 3 Zeilen wahrscheinlich unnütz...
             par_names = this.sisa_fit_info.par_names{this.model_number};
@@ -721,6 +725,7 @@ classdef SiSaMode < GenericMode
             % initialise here, so we can check whether a point is fitted or not
             s = num2cell(size(this.est_params));
             this.fit_chisq = nan(s{1:4});
+            this.fluo_val = this.fit_chisq;
             
             %% Hintergrundfarbe abhängig von Detektionswellenlänge
             if isfield(reader, 'meta') && isfield(reader.meta, 'sisa') && isfield(reader.meta.sisa, 'Optik')
@@ -976,9 +981,14 @@ classdef SiSaMode < GenericMode
             if this.disp_fit_params
                 switch param
                     case length(this.est_params(1, 1, 1, 1, :)) + 1
-                        plot_data = this.corrected_amplitude(this.fit_params);
-                    case length(this.est_params(1, 1, 1, 1, :)) + 2
                         plot_data = this.fit_chisq;
+                    case length(this.est_params(1, 1, 1, 1, :)) + 2
+%                         plot_data = this.corrected_amplitude(this.fit_params);
+                        plot_data = this.sisa_esti;
+                    case length(this.est_params(1, 1, 1, 1, :)) + 3
+                        plot_data = this.fluo_val;
+                    case length(this.est_params(1, 1, 1, 1, :)) + 4
+                        plot_data = this.fluo_val./this.sisa_esti;
                     otherwise
                         plot_data = this.fit_params(:, :, :, :, param);
                 end
@@ -989,6 +999,9 @@ classdef SiSaMode < GenericMode
                     case length(this.est_params(1, 1, 1, 1, :)) + 2
                         plot_data = this.data_sum;
                     otherwise
+                        if param > length(this.est_params(1, 1, 1, 1, :))
+                            param = length(this.est_params(1, 1, 1, 1, :));
+                        end
                         plot_data = this.est_params(:, :, :, :, param);
                 end
             end
@@ -1226,6 +1239,9 @@ classdef SiSaMode < GenericMode
             f_pars = reshape(this.fit_params, prod(this.sisa_data_size), parcount);
             f_pars_e = reshape(this.fit_params_err, prod(this.sisa_data_size), parcount);
             f_chisq = reshape(this.fit_chisq, prod(this.sisa_data_size), 1);
+            f_s_est = f_chisq;
+            f_s_est_err = f_chisq;
+            fluo = f_chisq;
 
             g_par = find(this.use_gstart);
             global_start = this.gstart;
@@ -1262,6 +1278,7 @@ classdef SiSaMode < GenericMode
                             sf.set_start(e_pars(n+i, :));
                             [par, p_err, chi] = sf.fit(y);
                         end
+                        [f_s_est(n+i), f_s_est_err(n+i)] = sf.get_sisa_estimate();
                         f_pars(n+i, :) = par;
                         f_pars_e(n+i, :) = p_err;
                         f_chisq(n+i) = chi;
@@ -1277,6 +1294,8 @@ classdef SiSaMode < GenericMode
                     this.fit_params = reshape(f_pars, [this.sisa_data_size size(f_pars, 2)]);
                     this.fit_params_err = reshape(f_pars_e, [this.sisa_data_size size(f_pars, 2)]);
                     this.fit_chisq = reshape(f_chisq, this.sisa_data_size);
+                    this.sisa_esti = reshape(f_s_est, this.sisa_data_size);
+                    this.sisa_esti_err = reshape(f_s_est_err, this.sisa_data_size);
                     this.plot_array();
                 end
                 
@@ -1300,6 +1319,17 @@ classdef SiSaMode < GenericMode
             this.fit_params = reshape(f_pars, [this.sisa_data_size size(f_pars, 2)]);
             this.fit_params_err = reshape(f_pars_e, [this.sisa_data_size size(f_pars, 2)]);
             this.fit_chisq = reshape(f_chisq, this.sisa_data_size);
+            this.sisa_esti = reshape(f_s_est, this.sisa_data_size);
+            this.sisa_esti_err = reshape(f_s_est_err, this.sisa_data_size);
+
+            try
+                n_pixel = prod(this.sisa_data_size);
+                for n = 1:n_pixel
+                    [i,j,k,l] = ind2sub(this.sisa_data_size, n);
+                    pointname = squeeze(this.reader.data.sisa_point_name(i, j, k, l, :));
+                    this.fluo_val(i,j,k,l) = this.p.modes{1}.get_mean_value(pointname,720);
+                end
+            end
             this.plot_array();
         end
         
@@ -1709,6 +1739,10 @@ classdef SiSaMode < GenericMode
                     
                     result(ii).rating = this.h.d_fitResultRating.Value;
                     result(ii).kommentar = this.h.d_note.String;
+                    
+                    result(ii).sisa_intens = this.squeeze(this.sisa_esti(i,j,k,l,:));
+                    result(ii).sisa_intens_err = this.squeeze(this.sisa_esti_err(i,j,k,l,:));
+                    result(ii).fluo_val = this.this.squeeze(this.fluo_val(i,j,k,l,:));
                 end
             end
             
@@ -1805,14 +1839,17 @@ classdef SiSaMode < GenericMode
             if ~strcmp(ov, nv)
                 if strcmp(nv, get(this.h.fit_par, 'string'))
                     this.disp_fit_params = true;
-                    params = [par_names, 'A_korr', 'Chi^2'];
+                    params = [par_names, 'Chi^2','SiSa_esti', 'Fluo', 'Fluo/SiSa'];
                 else
                     this.disp_fit_params = false;
                     params = [par_names, 'A_korr', 'Summe'];
                 end
+
                 set(this.h.param, 'visible', 'on',...
                                   'string', params);
-                
+                if length(params) < this.h.param.Value
+                    this.h.param.Value = length(params);
+                end
                 this.generate_mean();
                 if (this.fitted || this.hold_f || this.cancel_f)
                     this.compute_ov();
