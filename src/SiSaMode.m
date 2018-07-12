@@ -145,7 +145,7 @@ classdef SiSaMode < GenericMode
                         this.h.hyper_btn = uicontrol(this.h.sel_controls);
                         this.h.dbinsert_btn = uicontrol(this.h.sel_controls);
                         this.h.dbcheck_btn = uicontrol(this.h.sel_controls);
-
+                        this.h.dbupdPoints_btn = uicontrol(this.h.sel_controls);
                     this.h.sel_values = uipanel(this.h.sel_tab);
 
                 this.h.pres_tab = uitab(this.h.tabs);
@@ -469,6 +469,12 @@ classdef SiSaMode < GenericMode
                              'position', [15 100 50 20],...
                              'string', 'DB check',...
                              'callback', @this.DBcheck);
+                         
+            set(this.h.dbupdPoints_btn, 'units', 'pixels',...
+                             'style', 'push',...
+                             'position', [75 100 50 20],...
+                             'string', 'DB upd_points',...
+                             'callback', @this.DBupdatePoints);
                          
             set(this.h.export_fit_btn, 'units', 'pixels',...
                              'style', 'push',...
@@ -1712,7 +1718,12 @@ classdef SiSaMode < GenericMode
                     end
                     pointinfo(ii).ink = (this.reader.meta.sample.measure_time - this.reader.meta.sample.prep_time) + pointinfo(ii).messzeit; % in seconds
                     
-                    pointinfo(ii).name = sprintf('%i/%i/%i/%i',i-1,j-1,k-1,l-1);
+                    try
+                        name = sprintf('%i/%i/%i/%i',squeeze(this.reader.data.sisa_point_name(i, j, k, l, :))-1);
+                    catch
+                        name = sprintf('%i/%i/%i/%i',i-1,j-1,k-1,l-1);
+                    end
+                    pointinfo(ii).name = name;
                     
                     pointinfo(ii).sisa_intens = squeeze(this.sisa_esti(i,j,k,l,:));
                     pointinfo(ii).sisa_intens_err = squeeze(this.sisa_esti_err(i,j,k,l,:));
@@ -1765,6 +1776,56 @@ classdef SiSaMode < GenericMode
             else
                 this.h.sisamode.BackgroundColor = [0.9400 0.9400 0.9400];
             end
+        end
+        
+        function DBupdatePoints(this, varargin)
+            db = db_interaction('messdaten2', this.p.dbuser, this.p.dbpw, this.p.dbserver);
+
+            db.set_progress_cb(@(x) this.p.update_infos(x));
+            
+            fileinfo.basepath = this.h.d_bpth.String;
+            fileinfo.filename = [strrep(this.p.openpath, fileinfo.basepath, '') this.p.genericname '.h5'];
+
+            
+            if this.disp_ov
+                num_points = length(find(this.overlays{this.current_ov}));
+            else
+                num_points = prod(this.sisa_data_size);
+            end
+            s = prod(this.sisa_data_size);
+            ii = 0;
+            pointinfo = repmat( struct( 'name', 1 ), num_points, 1 );
+
+            for n = 1:s
+                [i,j,k,l] = ind2sub(this.sisa_data_size, n);               
+                if ~this.disp_ov || this.overlays{this.current_ov}(i, j, k, l)
+                    ii = ii+1;                    
+                    pointinfo(ii).ort = 'undefined';
+                    pointinfo(ii).int_time = this.int_time;
+                    pointinfo(ii).note = '';
+                    
+                    [~,indx]=ismember(this.reader.meta.pointinfo.point_names,[i-1,j-1,k-1],'rows');                    
+                    try
+                        pointinfo(ii).messzeit = round(this.reader.meta.pointinfo.point_time(indx == 1));
+                    catch
+                        pointinfo(ii).messzeit = 0;
+                    end
+                    pointinfo(ii).ink = (this.reader.meta.sample.measure_time - this.reader.meta.sample.prep_time) + pointinfo(ii).messzeit; % in seconds
+                    
+                    pointinfo(ii).name = sprintf('%i/%i/%i/%i',i-1,j-1,k-1,l-1);
+                    pointinfo(ii).realname = sprintf('%i/%i/%i/%i',squeeze(this.reader.data.sisa_point_name(i, j, k, l, :))-1);
+                    
+                    pointinfo(ii).sisa_intens = squeeze(this.sisa_esti(i,j,k,l,:));
+                    pointinfo(ii).sisa_intens_err = squeeze(this.sisa_esti_err(i,j,k,l,:));
+                    pointinfo(ii).fluo_val = squeeze(this.fluo_val(i,j,k,l,:));
+                end
+            end
+            
+            num_results_updated = db.updatePointInfo(fileinfo, pointinfo);
+            
+            sprintf('Es wurden %i Ergebnisse von insegsamt %i in der Datenbank aktualisiert.', num_results_updated, ii)
+            
+            db.close();
         end
         
         function add_ov_cb(this, varargin)
