@@ -1714,6 +1714,10 @@ classdef SiSaMode < GenericMode
                     
                     pointinfo(ii).name = sprintf('%i/%i/%i/%i',i-1,j-1,k-1,l-1);
                     
+                    pointinfo(ii).sisa_intens = squeeze(this.sisa_esti(i,j,k,l,:));
+                    pointinfo(ii).sisa_intens_err = squeeze(this.sisa_esti_err(i,j,k,l,:));
+                    pointinfo(ii).fluo_val = squeeze(this.fluo_val(i,j,k,l,:));
+                    
                     result(ii).chisq = squeeze(this.fit_chisq(i,j,k,l,:));
                     result(ii).fitmodel = this.sisa_fit.name;
 
@@ -1740,9 +1744,6 @@ classdef SiSaMode < GenericMode
                     result(ii).rating = this.h.d_fitResultRating.Value;
                     result(ii).kommentar = this.h.d_note.String;
                     
-                    result(ii).sisa_intens = squeeze(this.sisa_esti(i,j,k,l,:));
-                    result(ii).sisa_intens_err = squeeze(this.sisa_esti_err(i,j,k,l,:));
-                    result(ii).fluo_val = squeeze(this.fluo_val(i,j,k,l,:));
                 end
             end
             

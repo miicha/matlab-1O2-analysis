@@ -796,6 +796,13 @@ classdef SiSaGenericPlot < handle
                 pointinfo.note = '';
                 pointinfo.ink = 0;
                 pointinfo.messzeit = 0;
+                
+                [differenz, abw] = this.sisa_fit.get_sisa_estimate();
+                pointinfo.sisa_intens = differenz;
+                pointinfo.sisa_intens_err = abw;
+                pointinfo.fluo_val = this.fluo_val;
+                
+                
 
                 pointinfo.name = sprintf('%i/%i/%i/%i',this.cp-1);
                 pointinfo.name
@@ -820,10 +827,7 @@ classdef SiSaGenericPlot < handle
                 
                 result.lower = this.sisa_fit.lower_bounds;
                 result.upper = this.sisa_fit.upper_bounds;
-                [differenz, abw] = this.sisa_fit.get_sisa_estimate();
-                result.sisa_intens = differenz;
-                result.sisa_intens_err = abw;
-                result.fluo_val = this.fluo_val;
+                
 
                 num_results_inserted = db.insert(fileinfo, pointinfo, result)
                 
