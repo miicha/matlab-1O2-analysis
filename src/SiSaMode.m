@@ -146,6 +146,7 @@ classdef SiSaMode < GenericMode
                         this.h.dbinsert_btn = uicontrol(this.h.sel_controls);
                         this.h.dbcheck_btn = uicontrol(this.h.sel_controls);
                         this.h.dbupdPoints_btn = uicontrol(this.h.sel_controls);
+                        this.h.load_bounds_btn = uicontrol(this.h.sel_controls);
                     this.h.sel_values = uipanel(this.h.sel_tab);
 
                 this.h.pres_tab = uitab(this.h.tabs);
@@ -476,6 +477,12 @@ classdef SiSaMode < GenericMode
                              'string', 'DB upd_points',...
                              'callback', @this.DBupdatePoints);
                          
+            set(this.h.load_bounds_btn, 'units', 'pixels',...
+                             'style', 'push',...
+                             'position', [15 150 50 20],...
+                             'string', 'load bounds',...
+                             'callback', @this.load_bounds);
+                         
             set(this.h.export_fit_btn, 'units', 'pixels',...
                              'style', 'push',...
                              'position', [85 50 50 20],...
@@ -732,6 +739,8 @@ classdef SiSaMode < GenericMode
             s = num2cell(size(this.est_params));
             this.fit_chisq = nan(s{1:4});
             this.fluo_val = this.fit_chisq;
+            
+            this.set_fit_bounds(config.vals);
             
             %% Hintergrundfarbe abhängig von Detektionswellenlänge
             if isfield(reader, 'meta') && isfield(reader.meta, 'sisa') && isfield(reader.meta.sisa, 'Optik')
@@ -1557,6 +1566,29 @@ classdef SiSaMode < GenericMode
             set(this.h.ov_controls, 'Position', tmp);
             set(this.h.sel_controls, 'Position', tmp);
         end
+        
+        function vals = get_fit_bounds(this, varargin)
+            par_num = this.sisa_fit_info.par_num{this.sisa_fit.curr_fitfun};
+            vals = nan(par_num,3);
+            for i = 1:par_num
+                    vals(i,1) = str2double(strrep(get(this.h.lb{i}, 'string'),',','.'));
+                    vals(i,2) = str2double(strrep(get(this.h.ub{i}, 'string'),',','.'));
+                    vals(i,3) = str2double(strrep(get(this.h.st{i}, 'string'),',','.'));
+            end
+        end
+        
+        function set_fit_bounds(this, vals)
+            par_num = this.sisa_fit_info.par_num{this.sisa_fit.curr_fitfun}-1;
+            if par_num > size(vals,1)
+                par_num = size(vals,1);
+            end
+            for i = 1:par_num
+                this.h.lb{i}.String = num2str(vals(i,1));
+                this.h.ub{i}.String = num2str(vals(i,2));
+                this.h.st{i}.String = num2str(vals(i,3));
+            end
+            this.set_bounds_cb();
+        end
     end
     
     methods (Access = private)       
@@ -1769,12 +1801,25 @@ classdef SiSaMode < GenericMode
             basepath = this.h.d_bpth.String;
             filename = [strrep(this.p.openpath, basepath, '') this.p.genericname '.h5'];
             db = db_interaction('messdaten2', this.p.dbuser, this.p.dbpw, this.p.dbserver);
-            anzahl_in_db = db.check_file_exists(basepath, filename, this.model)
+            [points_in_db,anzahl_in_db] = db.check_file_exists(basepath, filename, this.model)
             db.close();
             if anzahl_in_db > 1
                 this.h.sisamode.BackgroundColor = [0.3 .8 .5];
             else
                 this.h.sisamode.BackgroundColor = [0.9400 0.9400 0.9400];
+            end
+        end
+        
+        function load_bounds(this, varargin)
+            p = get_executable_dir();
+            [FILENAME, PATHNAME] = uigetfile([p filesep() '*.mat'], 'irgendwas');
+            if ~FILENAME
+                return
+            end
+            file = [PATHNAME FILENAME];
+            vals = load(file);
+            try
+                this.set_fit_bounds(vals.vals);
             end
         end
         

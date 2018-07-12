@@ -28,6 +28,10 @@ classdef GenericMode < handle
         function f = get_figure(this)
             f = this.p.h.f;
         end
+        function vals = get_fit_bounds(this)
+            vals = [];
+            % needs to be implemented
+        end
     end
 end
 

@@ -103,6 +103,11 @@ classdef UI < handle
             this.h.config_3d = uimenu(this.h.configmenu,...
                               'label', '3D-samples',...
                               'callback', @this.config_3d_cb);
+                          
+            this.h.config_load_bounds = uimenu(this.h.configmenu,...
+                              'label', 'Use saved bounds',...
+                              'callback', @this.config_load_bounds_cb);
+                          
             this.h.config_keep_AR = uimenu(this.h.configmenu,...
                               'label', 'Keep Aspect Ratio',...
                               'callback', @this.config_keep_AR_cb);
@@ -552,6 +557,16 @@ classdef UI < handle
                 if isfield(conf, 'basepath')
                     this.basepath = conf.basepath;
                 end
+                
+                if isfield(conf, 'load_bounds')
+                    file = [p filesep() 'bounds.mat'];
+                    this.h.config_load_bounds.Checked = conf.load_bounds;
+                    this.siox_config.vals = [];
+                    if strcmp(conf.load_bounds, 'on') && exist(file, 'file')
+                        vals = load(file);
+                        this.siox_config.vals = vals.vals;
+                    end
+                end
             else
                 this.openpath = [p filesep()];
                 this.savepath = [p filesep()];
@@ -575,7 +590,6 @@ classdef UI < handle
             strct.savepath = this.savepath;
             strct.read_fluo = this.h.config_read_fluo.Checked;
             strct.read_all_fluo = this.h.config_read_all_fluo.Checked;
-            strct.read_all_fluo = this.h.config_read_all_fluo.Checked;
             strct.remove_non_sisa = this.h.config_remove_non_sisa.Checked;
             strct.single_3d = this.h.config_3d.Checked;
             strct.keep_aspect = this.h.config_keep_AR.Checked;
@@ -584,8 +598,19 @@ classdef UI < handle
             strct.short_third = this.siox_config.short_third;
             strct.short_siox = this.siox_config.short_siox;
             strct.weighting = this.siox_config.weighting;
+            strct.load_bounds = this.h.config_load_bounds.Checked;
             strct.basepath = this.basepath;
-
+            
+            for i = 1:length(this.modes)
+                tmp = this.modes{i}.get_fit_bounds;
+                if isempty(tmp)
+                    continue
+                end
+                vals = tmp;
+                save([p filesep() 'bounds.mat'],'vals');
+            end
+            
+            
             writeini([p filesep() 'config.ini'], strct);
         end
         
@@ -855,7 +880,16 @@ classdef UI < handle
                 this.h.config_3d.Checked = 'on';
             end
             this.saveini();            
-        end        
+        end
+        
+        function config_load_bounds_cb(this,varargin)
+            if strcmp(this.h.config_load_bounds.Checked,'on')
+                this.h.config_load_bounds.Checked = 'off';
+            else
+                this.h.config_load_bounds.Checked = 'on';
+            end
+            this.saveini();            
+        end
         
         function config_check_version_cb(this,varargin)
             if strcmp(this.h.config_check_version.Checked,'on')
