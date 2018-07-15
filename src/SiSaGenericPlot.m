@@ -12,6 +12,7 @@ classdef SiSaGenericPlot < handle
         fit_params;         % fitted parameters
         fit_params_err;     % ertimated errors of fitted parameters
         sisa_esti;
+        sisa_esti_err;
         fluo_val;
         cp;
         diff_data;
@@ -239,8 +240,8 @@ classdef SiSaGenericPlot < handle
                       
             set(this.h.comm_header, 'units', 'pixels',...
                           'style', 'text',...
-                          'position', [407 35 60 28],...
-                          'string', 'Comment:',...
+                          'position', [392 35 75 28],...
+                          'string', 'Fit-Comment:',...
                           'FontSize', 9);
                   
             set(this.h.comm, 'units', 'pixels',...
@@ -774,7 +775,7 @@ classdef SiSaGenericPlot < handle
         function save_data_db_cb(this, varargin)
             
             if this.fitted
-                db = db_interaction('messdaten2', this.smode.p.dbuser, this.smode.p.dbpw, this.smode.p.dbserver);
+                
 
                 fileinfo.basepath = this.smode.h.d_bpth.String;
                 fileinfo.filename = [strrep(this.smode.p.openpath, fileinfo.basepath, '') this.smode.p.genericname '.h5'];
@@ -800,12 +801,12 @@ classdef SiSaGenericPlot < handle
                 [differenz, abw] = this.sisa_fit.get_sisa_estimate();
                 pointinfo.sisa_intens = differenz;
                 pointinfo.sisa_intens_err = abw;
-                pointinfo.fluo_val = this.fluo_val;
                 
+                
+                pointinfo.fluo_val = this.fluo_val;
                 
 
                 pointinfo.name = sprintf('%i/%i/%i/%i',this.cp-1);
-                pointinfo.name
                 result.chisq = this.chisq;
                 result.fitmodel = this.sisa_fit.name;
 
@@ -827,11 +828,9 @@ classdef SiSaGenericPlot < handle
                 
                 result.lower = this.sisa_fit.lower_bounds;
                 result.upper = this.sisa_fit.upper_bounds;
-                
 
+                db = db_interaction('messdaten2', this.smode.p.dbuser, this.smode.p.dbpw, this.smode.p.dbserver);
                 num_results_inserted = db.insert(fileinfo, pointinfo, result)
-                
-
                 db.close();
             end
         end
