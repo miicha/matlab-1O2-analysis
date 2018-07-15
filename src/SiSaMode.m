@@ -1337,12 +1337,14 @@ classdef SiSaMode < GenericMode
             this.sisa_esti = reshape(f_s_est, this.sisa_data_size);
             this.sisa_esti_err = reshape(f_s_est_err, this.sisa_data_size);
 
-            try
-                n_pixel = prod(this.sisa_data_size);
-                for n = 1:n_pixel
-                    [i,j,k,l] = ind2sub(this.sisa_data_size, n);
-                    pointname = squeeze(this.reader.data.sisa_point_name(i, j, k, l, :));
-                    this.fluo_val(i,j,k,l) = this.p.modes{1}.get_mean_value(pointname,720);
+            for m = 1:length(this.p.modes)
+                if isa(this.p.modes{m},'FluoMode')
+                    n_pixel = prod(this.sisa_data_size);
+                    for n = 1:n_pixel
+                        [i,j,k,l] = ind2sub(this.sisa_data_size, n);
+                        pointname = squeeze(this.reader.data.sisa_point_name(i, j, k, l, :));
+                        this.fluo_val(i,j,k,l) = this.p.modes{m}.get_mean_value(pointname,720);
+                    end
                 end
             end
             this.plot_array();

@@ -73,12 +73,17 @@ classdef SiSaPointPlot < SiSaGenericPlot
                 this.fit_params = squeeze(this.smode.fit_params(this.cp(1), this.cp(2), this.cp(3), this.cp(4), :));
                 this.fit_params_err = squeeze(this.smode.fit_params_err(this.cp(1), this.cp(2), this.cp(3), this.cp(4), :));
                 this.sisa_esti = squeeze(this.smode.sisa_esti(this.cp(1), this.cp(2), this.cp(3), this.cp(4), :));
-                try
-                    pointname = pointname'+[1 1 0 0];
-                    this.fluo_val = this.smode.p.modes{1}.get_mean_value(pointname,720);
-                    tmp{1} = this.sisa_esti;
-                    tmp{2} = this.fluo_val;
-                    tmp{3} = this.sisa_esti/this.fluo_val
+                this.sisa_esti_err = squeeze(this.smode.sisa_esti_err(this.cp(1), this.cp(2), this.cp(3), this.cp(4), :));
+                
+                for i = 1:length(this.smode.p.modes)
+                    if isa(this.smode.p.modes{i},'FluoMode')
+                        pointname = pointname';
+                        this.fluo_val = this.smode.p.modes{1}.get_mean_value(pointname,720);
+                        tmp{1} = this.sisa_esti;
+                        tmp{2} = this.sisa_esti_err;
+                        tmp{3} = this.fluo_val;
+                        tmp{4} = this.sisa_esti/this.fluo_val
+                    end
                 end
             end
         end
