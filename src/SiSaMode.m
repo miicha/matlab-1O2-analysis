@@ -1281,7 +1281,7 @@ classdef SiSaMode < GenericMode
                 parfor i = 0:inner_upper
                     if (ov(n+i) || ~d_ov)
                         y = squeeze(d(n+i, :))';
-                        if sum(y) == 0
+                        if all(isnan(y)) || sum(y) == 0
                             continue;
                         end
                         if ~isempty(g_par)
@@ -1508,7 +1508,7 @@ classdef SiSaMode < GenericMode
                     if ~this.disp_ov
                         this.set_disp_ov(true);
                     end
-                    if sum(this.data(index{:}, :))
+                    if all(~isnan(this.data(index{:})))
                         if shift || ~isempty(this.multi_select) % switch rectangle
                             if ~isempty(this.multi_select)
                                 indrange = {};
@@ -1729,7 +1729,7 @@ classdef SiSaMode < GenericMode
             end
             s = prod(this.sisa_data_size);
             ii = 0;
-            pointinfo = repmat( struct( 'name', 1 ), num_points, 1 );
+%             pointinfo = repmat( struct( 'name', 1 ), num_points, 1 );
             result = repmat( struct( 'ort', 1 ), num_points, 1 );
             
             g_par = find(this.use_gstart);
@@ -1738,7 +1738,7 @@ classdef SiSaMode < GenericMode
             weighting = this.h.weighting.Value;
             for n = 1:s
                 [i,j,k,l] = ind2sub(this.sisa_data_size, n);               
-                if ~this.disp_ov || this.overlays{this.current_ov}(i, j, k, l)
+                if all(~isnan(this.data(i, j, k, l))) && (~this.disp_ov || this.overlays{this.current_ov}(i, j, k, l))
                     ii = ii+1;                    
                     pointinfo(ii).ort = 'undefined';
                     pointinfo(ii).int_time = this.int_time;
@@ -1803,7 +1803,9 @@ classdef SiSaMode < GenericMode
             basepath = this.h.d_bpth.String;
             filename = [strrep(this.p.openpath, basepath, '') this.p.genericname '.h5'];
             db = db_interaction('messdaten2', this.p.dbuser, this.p.dbpw, this.p.dbserver);
-            [points_in_db,anzahl_in_db] = db.check_file_exists(basepath, filename, this.model)
+            [points_in_db,anzahl_in_db] = db.check_file_exists(basepath, filename, this.model);
+            anz = {'Points in DB', 'Points in File', 'Results';points_in_db,prod(this.sisa_data_size),anzahl_in_db};
+            disp(anz)
             db.close();
             if anzahl_in_db > 1
                 this.h.sisamode.BackgroundColor = [0.3 .8 .5];

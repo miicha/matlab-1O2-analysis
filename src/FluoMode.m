@@ -218,13 +218,16 @@ classdef FluoMode < GenericMode
         end
         
         function mittelwert = get_mean_value(this,point,wl)
+            mittelwert = nan;
             if ~iscell(point)
                 point = num2cell(point);
             end
-            y = squeeze(this.data(point{1:3},1, :));
-            data_pos1 = find(this.wavelengths >= wl-4,1,'first');
-            data_pos2 = find(this.wavelengths < wl+4,1,'last');
-            mittelwert = mean(y(data_pos1:data_pos2));
+            try
+                y = squeeze(this.data(point{1:3},1, :));
+                data_pos1 = find(this.wavelengths >= wl-4,1,'first');
+                data_pos2 = find(this.wavelengths < wl+4,1,'last');
+                mittelwert = mean(y(data_pos1:data_pos2));
+            end
         end
         
         function destroy(this, children_only)
