@@ -27,17 +27,19 @@ classdef hyper < handle
         
         shown_points;
         reader;
-        filename
+        filename;
+        dbconfig;
         
     end
     
     methods
         % create new instance with basic controls
-        function this = hyper(filename, pos, reader)
+        function this = hyper(filename, pos, reader, dbconfig)
             this.kinetik_start = pos(1);
             this.np = pos(2);
             this.h.figure = figure;
             this.h.figure.Position = [0 50 560 960];
+            this.h.figure.DeleteFcn = @this.close;
             
             cmap = colormap('lines');
             this.short_color = cmap(2,:);
@@ -66,6 +68,12 @@ classdef hyper < handle
             else
                 this.reader = reader;
             end
+            if nargin<4
+                this.dbconfig = struct();
+            else
+                this.dbconfig = dbconfig;
+            end
+            
             this.filename = filename;
             
             this.prepare_data();
@@ -77,16 +85,8 @@ classdef hyper < handle
             this.calc_points(r,g,b);
             this.show_image();
             set(this.h.map,'ButtonDownFcn', @this.aplot_click_cb);
-            
-            
-            this.show_kinetic();
-            get(this.h.figure)
-%             get(this.h.map)
 
-            this.h.figure.DeleteFcn = @this.close;
-            
-            %% Kinetik
-            
+            this.show_kinetic();
         end
         
         function close(this, varargin)
@@ -403,7 +403,8 @@ classdef hyper < handle
         end
         
         function update_points(this,varargin)
-            % ToDo
+            db = db_interaction(this.dbconfig);
+            db.close;
         end
     end
 end

@@ -1695,10 +1695,12 @@ classdef SiSaMode < GenericMode
             end
         end
         
-        function plot_hyper(this, varargin)
-            this.p
-            
-            hy = hyper([this.p.openpath this.p.genericname '.h5'],[this.sisa_fit.offset_time this.sisa_fit.t_0],this.reader);
+        function plot_hyper(this, varargin)            
+            hy = hyper([this.p.openpath this.p.genericname '.h5'],...
+                       [this.sisa_fit.offset_time this.sisa_fit.t_0],...
+                        this.reader,...
+                        this.p.db_config);
+                    
 %             this.reader.meta.pointinfo.point_time
         end
         
