@@ -1115,7 +1115,8 @@ classdef SiSaMode < GenericMode
                     end
                 end
             end
-            this.data_sum = sum(this.data(:, :, :, :, (this.t_zero+this.t_offset):end), 5);
+            this.data_sum = sum(this.data(:, :, :, :, (this.sisa_fit.t_0+this.sisa_fit.offset_time):end), 5);
+            this.sisa_fit.t_0+this.sisa_fit.offset_time
             this.fitted = false;
             
             
