@@ -32,15 +32,17 @@ classdef UI < handle
     end
     
     properties (SetAccess = protected)
-        dbuser = '';
-        dbserver = 'localhost';
-        dbpw = '';
+        db_config = struct();
     end
     
 
     methods
     % create new instance with basic controls
         function this = UI(path, name, pos, maximised)
+            this.db_config.dbuser = '';
+            this.db_config.dbserver = 'localhost';
+            this.db_config.dbpw = '';
+            this.db_config.dbname = '';
             %% initialize all UI objects:
             this.h.f = figure();
             
@@ -488,13 +490,16 @@ classdef UI < handle
                 end
                 
                 if isfield(conf, 'dbuser')
-                    this.dbuser = conf.dbuser;
+                    this.db_config.dbuser = conf.dbuser;
                 end
                 if isfield(conf, 'dbserver')
-                    this.dbserver = conf.dbserver;
+                    this.db_config.dbserver = conf.dbserver;
                 end
                 if isfield(conf, 'dbpw')
-                    this.dbpw = conf.dbpw;
+                    this.db_config.dbpw = conf.dbpw;
+                end
+                if isfield(conf, 'dbname')
+                    this.db_config.dbname = conf.dbname;
                 end
                 
                 if isfield(conf, 'savepath')
@@ -583,9 +588,10 @@ classdef UI < handle
             strct.lastopened = now();
             strct.openpath = this.openpath;
             strct.dbpath = this.dbpath;
-            strct.dbuser = this.dbuser;
-            strct.dbserver = this.dbserver;
-            strct.dbpw = this.dbpw;
+            strct.dbuser = this.db_config.dbuser;
+            strct.dbserver = this.db_config.dbserver;
+            strct.dbpw = this.db_config.dbpw;
+            strct.dbname = this.db_config.dbname;
             strct.open_nsTAS_path = this.open_nsTAS_path;
             strct.savepath = this.savepath;
             strct.read_fluo = this.h.config_read_fluo.Checked;

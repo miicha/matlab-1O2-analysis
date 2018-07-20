@@ -829,7 +829,7 @@ classdef SiSaGenericPlot < handle
                 result.lower = this.sisa_fit.lower_bounds;
                 result.upper = this.sisa_fit.upper_bounds;
 
-                db = db_interaction('messdaten2', this.smode.p.dbuser, this.smode.p.dbpw, this.smode.p.dbserver);
+                db = db_interaction(this.smode.p.db_config);
                 num_results_inserted = db.insert(fileinfo, pointinfo, result)
                 db.close();
             end

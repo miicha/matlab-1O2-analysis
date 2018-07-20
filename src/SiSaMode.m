@@ -1696,16 +1696,17 @@ classdef SiSaMode < GenericMode
         end
         
         function plot_hyper(this, varargin)
+            this.p
             
             hy = hyper([this.p.openpath this.p.genericname '.h5'],[this.sisa_fit.offset_time this.sisa_fit.t_0],this.reader);
 %             this.reader.meta.pointinfo.point_time
         end
         
         function DBinsert(this, varargin)
-            server = '141.20.44.176';
+%             server = '141.20.44.176';
 %             server = 'localhost';
 
-            db = db_interaction('messdaten2', this.p.dbuser, this.p.dbpw, this.p.dbserver);
+            db = db_interaction(this.p.db_config);
 
             db.set_progress_cb(@(x) this.p.update_infos(x));
             
@@ -1803,7 +1804,7 @@ classdef SiSaMode < GenericMode
         function DBcheck(this, varargin)
             basepath = this.h.d_bpth.String;
             filename = [strrep(this.p.openpath, basepath, '') this.p.genericname '.h5'];
-            db = db_interaction('messdaten2', this.p.dbuser, this.p.dbpw, this.p.dbserver);
+            db = db_interaction(this.p.db_config);
             [points_in_db,anzahl_in_db] = db.check_file_exists(basepath, filename, this.model);
             anz = {'Points in DB', 'Points in File', 'Results';points_in_db,prod(this.sisa_data_size),anzahl_in_db};
             disp(anz)
@@ -1829,7 +1830,7 @@ classdef SiSaMode < GenericMode
         end
         
         function DBupdatePoints(this, varargin)
-            db = db_interaction('messdaten2', this.p.dbuser, this.p.dbpw, this.p.dbserver);
+            db = db_interaction(this.p.db_config);
 
             db.set_progress_cb(@(x) this.p.update_infos(x));
             
