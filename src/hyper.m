@@ -37,19 +37,27 @@ classdef hyper < handle
             this.kinetik_start = pos(1);
             this.np = pos(2);
             this.h.figure = figure;
-            this.h.figure.Position = [5 350 560 960];
+            this.h.figure.Position = [0 50 560 960];
             
             cmap = colormap('lines');
             this.short_color = cmap(2,:);
             this.long_color = cmap(5,:);
             
-            this.h.load_data = uicontrol(this.h.figure);
+            this.h.save_figures = uicontrol(this.h.figure);
             
-            set(this.h.load_data,  'units', 'pixels',...
+            this.h.update_points = uicontrol(this.h.figure);
+            
+            set(this.h.save_figures,  'units', 'pixels',...
                            'style', 'push',...
-                           'position', [105 2 140 28],...
+                           'position', [40 2 140 28],...
                            'string', 'Bilder Speichern',...
                            'callback', @this.save_figures);
+                       
+            set(this.h.update_points,  'units', 'pixels',...
+                           'style', 'push',...
+                           'position', [200 2 140 28],...
+                           'string', 'Update PointInfo',...
+                           'callback', @this.update_points);
                        
             if nargin<3
                 this.reader = HDF5_reader(filename);
@@ -63,20 +71,30 @@ classdef hyper < handle
             this.prepare_data();
             
             this.h.map = subplot(2,1,1);
+            this.h.kinetik = subplot(2,1,2); 
+            
             [~,r,g,b] = this.calc_rgb();
             this.calc_points(r,g,b);
             this.show_image();
             set(this.h.map,'ButtonDownFcn', @this.aplot_click_cb);
             
-            this.h.kinetik = subplot(2,1,2); 
-            this.show_kinetic();
             
+            this.show_kinetic();
+            get(this.h.figure)
 %             get(this.h.map)
+
+            this.h.figure.DeleteFcn = @this.close;
             
             %% Kinetik
             
         end
         
+        function close(this, varargin)
+            close(this.h.channels);
+        end
+    end
+    
+    methods (Access = private)
         function prepare_data(this,varargin)
             this.cw = this.reader.meta.sisa.Kanalbreite;
             this.kinetik_real_start = (this.kinetik_start-this.np)*this.cw;
@@ -282,7 +300,7 @@ classdef hyper < handle
             g(:,:,3) = 0;
             b(:,:,1:2) = 0;
             
-            figure(421)
+            this.h.channels = figure(421);
             ax_r = subplot(2,2,1);
             imshow(r,'InitialMagnification',3000, 'Parent',ax_r);
             ax_g = subplot(2,2,2);
@@ -291,7 +309,6 @@ classdef hyper < handle
             imshow(b,'InitialMagnification',3000, 'Parent',ax_b);
             ax_rgb = subplot(2,2,4);
             imshow(clor,'InitialMagnification',3000, 'Parent',ax_rgb);
-            
         end
         
         function plot_click(this, varargin)
@@ -346,10 +363,8 @@ classdef hyper < handle
             set(this.h.figure, 'WindowButtonUpFcn', '');
             this.show_image();
             this.show_kinetic();
-        end        
-    end
-    
-    methods (Access = private)
+        end
+        
         function aplot_click_cb(this, varargin)
             [index, name] = this.get_current_point();
             modifiers = this.h.figure.CurrentModifier;
@@ -369,7 +384,7 @@ classdef hyper < handle
             end
             this.show_image();
             this.show_kinetic();
-        end 
+        end
         
         function [index, name] = get_current_point(this,varargin)
             if nargin == 1
@@ -385,6 +400,10 @@ classdef hyper < handle
             if length(tmp)>2
                 name(2) = squeeze(this.sisa_point_names(1,tmp(2)+1-index(2),2));
             end
+        end
+        
+        function update_points(this,varargin)
+            % ToDo
         end
     end
 end
