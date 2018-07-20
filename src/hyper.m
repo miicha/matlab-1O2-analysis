@@ -272,6 +272,26 @@ classdef hyper < handle
 %             hold off
             
             set(tmp,'ButtonDownFcn', @this.aplot_click_cb);
+            
+            
+            r = clor;
+            g = clor;
+            b = clor;
+            r(:,:,2:3) = 0;
+            g(:,:,1) = 0;
+            g(:,:,3) = 0;
+            b(:,:,1:2) = 0;
+            
+            figure(421)
+            ax_r = subplot(2,2,1);
+            imshow(r,'InitialMagnification',3000, 'Parent',ax_r);
+            ax_g = subplot(2,2,2);
+            imshow(g,'InitialMagnification',3000, 'Parent',ax_g);
+            ax_b = subplot(2,2,3);
+            imshow(b,'InitialMagnification',3000, 'Parent',ax_b);
+            ax_rgb = subplot(2,2,4);
+            imshow(clor,'InitialMagnification',3000, 'Parent',ax_rgb);
+            
         end
         
         function plot_click(this, varargin)
