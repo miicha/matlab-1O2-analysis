@@ -29,12 +29,13 @@ classdef hyper < handle
         reader;
         filename;
         dbconfig;
+        fileinfo;
         
     end
     
     methods
         % create new instance with basic controls
-        function this = hyper(filename, pos, reader, dbconfig)
+        function this = hyper(filename, pos, reader, dbconfig, fileinfo)
             this.kinetik_start = pos(1);
             this.np = pos(2);
             this.h.figure = figure;
@@ -72,6 +73,11 @@ classdef hyper < handle
                 this.dbconfig = struct();
             else
                 this.dbconfig = dbconfig;
+            end
+            if nargin<5
+                this.fileinfo = struct();
+            else
+                this.fileinfo = fileinfo;
             end
             
             this.filename = filename;
@@ -396,14 +402,18 @@ classdef hyper < handle
                 index = varargin{1};
             end
             tmp = size(this.sisa_data);
-            name(1) = squeeze(this.sisa_point_names(index(1),1,1));
             if length(tmp)>2
-                name(2) = squeeze(this.sisa_point_names(1,tmp(2)+1-index(2),2));
+                name(1) = squeeze(this.sisa_point_names(index(1),tmp(2)+1-index(2),1));
+                name(2) = squeeze(this.sisa_point_names(index(1),tmp(2)+1-index(2),2));
+            else
+                name(1) = squeeze(this.sisa_point_names(index(1),1,1));
             end
         end
         
         function update_points(this,varargin)
+            
             db = db_interaction(this.dbconfig);
+            [inserted, updated] = db.hyper(this.fileinfo)
             db.close;
         end
     end
