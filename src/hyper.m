@@ -4,6 +4,7 @@ classdef hyper < handle
         kinetik_start = 88;
         g_start = 200;
         b_start = 880;
+        b_end = 4095;
         cw = 0.02;
         np = 66;
         
@@ -93,6 +94,10 @@ classdef hyper < handle
             set(this.h.map,'ButtonDownFcn', @this.aplot_click_cb);
 
             this.show_kinetic();
+        end
+        
+        function update_infos(this,x)
+            x
         end
         
         function close(this, varargin)
@@ -223,11 +228,11 @@ classdef hyper < handle
             if length(size(this.sisa_data)) < 3
                 r = sum(this.sisa_data(:,this.kinetik_start:this.g_start-1),2);
                 g = sum(this.sisa_data(:,this.g_start:this.b_start-1),2);
-                b = sum(this.sisa_data(:,this.b_start:end),2);
+                b = sum(this.sisa_data(:,this.b_start:this.b_end),2);
             else
                 r = sum(this.sisa_data(:,:,this.kinetik_start:this.g_start-1),3);
                 g = sum(this.sisa_data(:,:,this.g_start:this.b_start-1),3);
-                b = sum(this.sisa_data(:,:,this.b_start:end),3);
+                b = sum(this.sisa_data(:,:,this.b_start:this.b_end),3);
             end
             
             clor(:,:,1) = r'/max(r(:));
@@ -410,10 +415,44 @@ classdef hyper < handle
             end
         end
         
-        function update_points(this,varargin)
-            
+        function update_points(this,varargin)  
+            t = size(this.reader.data.sisa);
+            t = t(1:4);
+            s = prod(t);            
+            ii = 0;
+            for n = 1:s
+                [i,j,k,l] = ind2sub(t, n);
+                if all(~isnan(this.sisa_data(i, j)))
+                    ii = ii+1;                    
+                    pointinfo(ii).ort = 'undefined';
+                    pointinfo(ii).int_time = this.reader.meta.sisa.int_time;
+                    pointinfo(ii).note = '';
+                    
+%                     [~,indx]=ismember(this.reader.meta.pointinfo.point_names,[i-1,j-1,k-1],'rows');                    
+%                     try
+%                         pointinfo(ii).messzeit = round(this.reader.meta.pointinfo.point_time(indx == 1));
+%                     catch
+%                         pointinfo(ii).messzeit = 0;
+%                     end
+%                     pointinfo(ii).ink = (this.reader.meta.sample.measure_time - this.reader.meta.sample.prep_time) + pointinfo(ii).messzeit; % in seconds
+                    pointinfo(ii).name = sprintf('%i/%i/%i/%i',squeeze(this.reader.data.sisa_point_name(i, j, k, l, :))-1);
+                    
+                    result(ii).t_zero = this.np;
+                    result(ii).r_start = this.kinetik_start;
+                    result(ii).r_sum = sum(this.reader.data.sisa(i,j,k,l,this.kinetik_start:this.g_start-1));
+%                     
+                    result(ii).g_start = this.g_start;
+                    result(ii).g_sum = sum(this.reader.data.sisa(i,j,k,l,this.g_start:this.b_start-1));
+%                     
+                    result(ii).b_start = this.b_start;
+                    result(ii).b_sum = sum(this.reader.data.sisa(i,j,k,l,this.b_start:this.b_end));
+                    result(ii).b_end = this.b_end;
+
+                end
+            end
             db = db_interaction(this.dbconfig);
-            [inserted, updated] = db.hyper(this.fileinfo)
+            db.set_progress_cb(@(x) this.update_infos(x));
+            inserted = db.hyper(this.fileinfo,pointinfo, result)
             db.close;
         end
     end

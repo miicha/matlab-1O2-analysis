@@ -1695,23 +1695,17 @@ classdef SiSaMode < GenericMode
             end
         end
         
-        function plot_hyper(this, varargin)            
+        function plot_hyper(this, varargin)
             hy = hyper([this.p.openpath this.p.genericname '.h5'],...
                        [this.sisa_fit.offset_time this.sisa_fit.t_0],...
                         this.reader,...
-                        this.p.db_config);
+                        this.p.db_config,...
+                        this.collect_fileinfo());
                     
 %             this.reader.meta.pointinfo.point_time
         end
         
-        function DBinsert(this, varargin)
-%             server = '141.20.44.176';
-%             server = 'localhost';
-
-            db = db_interaction(this.p.db_config);
-
-            db.set_progress_cb(@(x) this.p.update_infos(x));
-            
+        function fileinfo = collect_fileinfo(this)
             fileinfo.basepath = this.h.d_bpth.String;
             fileinfo.filename = [strrep(this.p.openpath, fileinfo.basepath, '') this.p.genericname '.h5'];
             fileinfo.ps = this.h.d_ps.String;
@@ -1725,6 +1719,17 @@ classdef SiSaMode < GenericMode
             fileinfo.sWL = str2double(this.h.d_swl.String);    % aus Textfeld und config
             fileinfo.note = 'irgendwas'; %this.h.d_note.String;    % aus Textfeld und eventuell config
             fileinfo.description = this.h.d_comm.String;  % aus Datei
+        end
+        
+        function DBinsert(this, varargin)
+%             server = '141.20.44.176';
+%             server = 'localhost';
+
+            db = db_interaction(this.p.db_config);
+
+            db.set_progress_cb(@(x) this.p.update_infos(x));
+            
+            fileinfo = this.collect_fileinfo();
             
             if this.disp_ov
                 num_points = length(find(this.overlays{this.current_ov}));
@@ -1836,9 +1841,7 @@ classdef SiSaMode < GenericMode
 
             db.set_progress_cb(@(x) this.p.update_infos(x));
             
-            fileinfo.basepath = this.h.d_bpth.String;
-            fileinfo.filename = [strrep(this.p.openpath, fileinfo.basepath, '') this.p.genericname '.h5'];
-
+            fileinfo = this.collect_fileinfo();
             
             if this.disp_ov
                 num_points = length(find(this.overlays{this.current_ov}));
