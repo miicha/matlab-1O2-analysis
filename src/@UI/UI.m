@@ -26,6 +26,7 @@ classdef UI < handle
         open_nsTAS_path; % persistent, in ini
         siox_config; % persistent, in ini
         basepath;
+        databasefunction = false;
         
 
         h = struct();        % handles
@@ -117,9 +118,12 @@ classdef UI < handle
                               'label', 'Check for new Version at startup',...
                               'callback', @this.config_check_version_cb,...
                               'checked', 'on');
+            this.h.config_database = uimenu(this.h.configmenu,...
+                              'label', 'Database functionality',...
+                              'callback', @this.config_database_cb);
             
             set(this.h.helpmenu, 'Label', '?');
-            uimenu(this.h.helpmenu, 'label', 'ï¿½ber',...
+            uimenu(this.h.helpmenu, 'label', 'über',...
                                   'Callback', @this.open_versioninfo_cb);
             
             set(this.h.bottombar, 'units', 'pixels',...
@@ -562,6 +566,12 @@ classdef UI < handle
                 if isfield(conf, 'basepath')
                     this.basepath = conf.basepath;
                 end
+                if isfield(conf, 'databasefunction')
+                    if strcmpi(conf.databasefunction, 'on')
+                        this.databasefunction = true;
+                        this.h.config_database.Checked = 'on';
+                    end
+                end
                 
                 if isfield(conf, 'load_bounds')
                     file = [p filesep() 'bounds.mat'];
@@ -606,6 +616,7 @@ classdef UI < handle
             strct.weighting = this.siox_config.weighting;
             strct.load_bounds = this.h.config_load_bounds.Checked;
             strct.basepath = this.basepath;
+            strct.databasefunction = this.h.config_database.Checked;
             
             for i = 1:length(this.modes)
                 tmp = this.modes{i}.get_fit_bounds;
@@ -687,8 +698,11 @@ classdef UI < handle
         % destroys current figure and creates a new one
         function open_file_cb(this, varargin)
             this.loadini();
+            
+            
+            
             % get path of file from user
-            [name, filepath] = uigetfile({[this.openpath '*.h5;*.diff;*.asc;*.state']}, 'Dateien auswï¿½hlen', 'MultiSelect', 'on');
+            [name, filepath] = uigetfile({[this.openpath '*.h5;*.diff;*.asc;*.state']}, 'Dateien auswählen', 'MultiSelect', 'on');
             if (~ischar(name) && ~iscell(name)) || ~ischar(filepath) % no file selected
                 return
             end
@@ -866,6 +880,17 @@ classdef UI < handle
                 this.h.config_read_all_fluo.Checked = 'off';
             else
                 this.h.config_read_all_fluo.Checked = 'on';
+            end
+            this.saveini();            
+        end
+        
+        function config_database_cb(this,varargin)
+            if strcmp(this.h.config_database.Checked,'on')
+                this.h.config_database.Checked = 'off';
+                this.databasefunction = false;
+            else
+                this.h.config_database.Checked = 'on';
+                this.databasefunction = true;
             end
             this.saveini();            
         end

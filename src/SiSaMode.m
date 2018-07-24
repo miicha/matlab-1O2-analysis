@@ -1809,6 +1809,9 @@ classdef SiSaMode < GenericMode
         end
   
         function DBcheck(this, varargin)
+            if ~this.p.databasefunction
+                return
+            end
             basepath = this.h.d_bpth.String;
             filename = [strrep(this.p.openpath, basepath, '') this.p.genericname '.h5'];
             db = db_interaction(this.p.db_config);
