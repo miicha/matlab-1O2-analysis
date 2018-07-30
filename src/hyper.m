@@ -31,16 +31,26 @@ classdef hyper < handle
         filename;
         dbconfig;
         fileinfo;
+        UI_obj;
+        window_pos = false;
         
     end
     
     methods
         % create new instance with basic controls
-        function this = hyper(filename, pos, reader, dbconfig, fileinfo)
+        function this = hyper(filename, pos, reader, dbconfig, fileinfo, ui)
             this.kinetik_start = pos(1);
             this.np = pos(2);
             this.h.figure = figure;
-            this.h.figure.Position = [0 50 560 960];
+            this.window_pos = [0 50 560 960];
+            if nargin == 6
+                this.UI_obj = ui;
+                if this.UI_obj.hyper_pos
+                    this.h.figure.Position = ui.hyper_pos;
+                    this.window_pos = ui.hyper_pos;
+                end
+            end
+            this.h.figure.Position = this.window_pos;
             this.h.figure.DeleteFcn = @this.close;
             
             cmap = colormap('lines');
@@ -96,12 +106,9 @@ classdef hyper < handle
             this.show_kinetic();
         end
         
-        function update_infos(this,x)
-            x
-        end
-        
         function close(this, varargin)
             close(this.h.channels);
+            this.UI_obj.hyper_pos = this.h.figure.Position;
         end
     end
     
@@ -319,7 +326,8 @@ classdef hyper < handle
             ax_b = subplot(2,2,3);
             imshow(b,'InitialMagnification',3000, 'Parent',ax_b);
             ax_rgb = subplot(2,2,4);
-            imshow(clor,'InitialMagnification',3000, 'Parent',ax_rgb);
+            this.show_kinetic(ax_rgb)
+%             imshow(clor,'InitialMagnification',3000, 'Parent',ax_rgb);
         end
         
         function plot_click(this, varargin)

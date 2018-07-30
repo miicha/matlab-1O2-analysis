@@ -28,6 +28,8 @@ classdef UI < handle
         basepath;
         databasefunction = false;
         
+        hyper_pos = false;
+        
 
         h = struct();        % handles
     end
@@ -699,10 +701,27 @@ classdef UI < handle
         function open_file_cb(this, varargin)
             this.loadini();
             
-            
-            
+            limit2DB = true;
             % get path of file from user
-            [name, filepath] = uigetfile({[this.openpath '*.h5;*.diff;*.asc;*.state']}, 'Dateien auswählen', 'MultiSelect', 'on');
+            if this.databasefunction && limit2DB
+                db = db_interaction(this.db_config);
+                query = 'SELECT `name` FROM `dateiinfos` ORDER BY `name` ASC;';
+                query = ['SELECT dateiinfos.name FROM dateiinfos '...
+                    'WHERE dateiinfos.ID NOT IN( '...
+                        'SELECT dateiinfos.ID FROM `dateiinfos` JOIN '...
+                        'datapointinfos ON datapointinfos.datei = dateiinfos.ID '...
+                        'JOIN hyper ON hyper.DS_ID = datapointinfos.ID GROUP BY dateiinfos.ID)']
+                data = db.get(query);
+                db.close();
+                
+                filenames = strjoin(data.name,';');
+%                 [name, filepath] = uigetfile({[this.openpath filenames ';*.diff;*.asc;*.state'];[this.openpath filenames '*.h5;*.diff;*.asc;*.state']}, 'Dateien auswählen', 'MultiSelect', 'on');
+                [name, filepath] = uigetfile({[filenames '*.diff;*.asc;*.state'], 'DB-Beschränkt'; '*.h5;*.diff;*.asc;*.state', 'alle'}, 'Dateien auswählen', this.openpath, 'MultiSelect', 'on');
+           
+            else
+                [name, filepath] = uigetfile({[this.openpath '*.h5;*.diff;*.asc;*.state']}, 'Dateien auswählen', 'MultiSelect', 'on');
+            end
+            
             if (~ischar(name) && ~iscell(name)) || ~ischar(filepath) % no file selected
                 return
             end

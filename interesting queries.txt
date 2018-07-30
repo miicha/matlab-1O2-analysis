@@ -1,0 +1,34 @@
+SELECT
+    *
+FROM
+    dateiinfos
+WHERE
+    dateiinfos.ID NOT IN(
+    SELECT
+        dateiinfos.ID
+    FROM
+        `dateiinfos`
+    JOIN
+        datapointinfos
+    ON
+        datapointinfos.datei = dateiinfos.ID
+    JOIN
+        hyper
+    ON
+        hyper.DS_ID = datapointinfos.ID
+    GROUP BY
+        dateiinfos.ID
+)
+
+
+SELECT
+    hyper.t_zero,
+    COUNT(DISTINCT datapointinfos.datei)
+FROM
+    `hyper`
+LEFT JOIN
+    datapointinfos
+ON
+    datapointinfos.ID = hyper.DS_ID
+GROUP BY
+    hyper.t_zero
