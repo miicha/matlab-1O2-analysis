@@ -711,7 +711,7 @@ classdef SiSaMode < GenericMode
             this.sisa_fit.update('t0',t_0, 'offset',t_0+25, 'end_chan', end_ch, 'weighting', this.h.weighting.Value);
 
             % UI stuff
-            % folgende 3 Zeilen wahrscheinlich unnütz...
+            % folgende 3 Zeilen wahrscheinlich unnï¿½tz...
             par_names = this.sisa_fit_info.par_names{this.model_number};
             set(this.h.param, 'visible', 'on', 'string', [par_names, 'A_korr', 'Summe']);
             set(this.h.ov_drpd, 'string', [par_names, 'Summe']);
@@ -738,11 +738,13 @@ classdef SiSaMode < GenericMode
             % initialise here, so we can check whether a point is fitted or not
             s = num2cell(size(this.est_params));
             this.fit_chisq = nan(s{1:4});
+            this.sisa_esti = nan(s{1:4});
+            this.sisa_esti_err = nan(s{1:4});
             this.fluo_val = this.fit_chisq;
             
             this.set_fit_bounds(config.vals);
             
-            %% Hintergrundfarbe abhängig von Detektionswellenlänge
+            %% Hintergrundfarbe abhï¿½ngig von Detektionswellenlï¿½nge
             if isfield(reader, 'meta') && isfield(reader.meta, 'sisa') && isfield(reader.meta.sisa, 'Optik')
                 if reader.meta.sisa.Optik == 1270
                     set(this.h.sisamode, 'background', [0.8 0.2 0.2]);
@@ -1104,7 +1106,7 @@ classdef SiSaMode < GenericMode
                 ps = sf.estimate(d,short_siox,short_third);
                 this.est_params(i, j, k, l, :) = ps;
                 if mod(curr_p, round(this.p.fileinfo.np/20)) == 0
-                    this.p.update_infos(['   |   Parameter abschätzen ' num2str(curr_p) '/' num2str(this.p.fileinfo.np) '.']);
+                    this.p.update_infos(['   |   Parameter abschï¿½tzen ' num2str(curr_p) '/' num2str(this.p.fileinfo.np) '.']);
                 end
                 for m = 1:length(ps) % find biggest and smallest params
                     if ps(m) > ub(m)
@@ -1193,6 +1195,7 @@ classdef SiSaMode < GenericMode
                     this.fit_params_err(i, j, k, l, :) = p_err;
                     this.fit_chisq(i, j, k, l) = chi;
                     this.last_fitted = n;
+                    [this.sisa_esti(i, j, k, l), this.sisa_esti_err(i, j, k, l)] = sf.get_sisa_estimate();
                     
                     lt = lt + toc(innertime);
                     
@@ -1597,7 +1600,7 @@ classdef SiSaMode < GenericMode
     methods (Access = private)       
         %% Callbacks:
         function load_ext_data_cb(this, varargin)
-            [name, filepath] = uigetfile({[this.p.openpath '*.fit']}, 'Dateien auswählen');
+            [name, filepath] = uigetfile({[this.p.openpath '*.fit']}, 'Dateien auswï¿½hlen');
             if (~ischar(name) && ~iscell(name)) || ~ischar(filepath) % no file selected
                 return
             end
