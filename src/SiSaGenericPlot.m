@@ -26,6 +26,9 @@ classdef SiSaGenericPlot < handle
         res;
         ub                  % upper bounds (different from parent due to sum)
         start
+        
+        markercolor = [.3 .45 0.9];
+        fitcolor = [0.1 0.1 0.1];
     end
     
     properties (Access = private)
@@ -319,7 +322,7 @@ classdef SiSaGenericPlot < handle
             y_after = datal(this.sisa_fit.end_channel:end);
             
             plot(this.h.axes, x_before, y_before, '.-', 'Color', [.8 .8 1]);
-            this.h.data_line = plot(this.h.axes, x_fit, y_fit, 'Marker', '.', 'Color', [.8 .8 1], 'MarkerEdgeColor', 'blue');
+            this.h.data_line = plot(this.h.axes, x_fit, y_fit, 'Marker', '.', 'Color', [.8 .8 1], 'MarkerEdgeColor', this.markercolor);
             
             plot(this.h.axes, x_after, y_after, '.-', 'Color', [.8 .8 1]);
             
@@ -396,7 +399,7 @@ classdef SiSaGenericPlot < handle
             fitdata_complete = this.sisa_fit.eval(this.fit_params, x_axis);
             fitdata = fitdata_complete(x_axis>=0);
             x_axis = x_axis(x_axis>=0);
-
+            
             set(this.h.f,'CurrentAxes',this.h.axes)
             
             % extrahierte SiSa-Daten Plotten
@@ -416,8 +419,15 @@ classdef SiSaGenericPlot < handle
                 hold off
             end
             hold on
-            this.h.fit_line = plot(this.h.axes, x_axis,  fitdata, 'r', 'LineWidth', 1.5, 'HitTest', 'off');
+            this.h.fit_line = plot(this.h.axes, x_axis,  fitdata, 'color', this.fitcolor, 'LineWidth', 1.5, 'HitTest', 'off');
             hold off
+            
+            try
+                ci = this.sisa_fit.get_predint(x_axis);
+                hold on
+                this.h.confint = plot(this.h.axes, x_axis,  ci, '--', 'LineWidth', 1.5, 'HitTest', 'off', 'color',[0.8 0.5 0.4]);
+                hold off
+            end
             
             
             % Residuen plotten
@@ -439,7 +449,7 @@ classdef SiSaGenericPlot < handle
             x_after = x_ges(this.sisa_fit.end_channel:end);
             y_after = residues(this.sisa_fit.end_channel:end);
             
-            plot(this.h.res, x_res,y_res, 'b.');
+            plot(this.h.res, x_res,y_res, '.', 'Color', this.markercolor);
             
             hold on
             % vor fitbereich
@@ -447,7 +457,7 @@ classdef SiSaGenericPlot < handle
             % nach fitbereich
             plot(this.h.res, x_after,y_after, '.', 'Color', [.8 .8 1]);
             % nulllinie
-            line([min(x_ges)-1 max(x_ges)+1], [0 0], 'Color', 'r', 'LineWidth', 1.5);
+            line([min(x_ges)-1 max(x_ges)+1], [0 0], 'color', this.fitcolor, 'LineWidth', 1.5);
             xlim([min(x_ges)-1 max(x_ges)+1]);
             m = mean(abs(y_res))*8;
             ylim([-m m]);
