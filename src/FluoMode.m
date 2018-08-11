@@ -226,7 +226,9 @@ classdef FluoMode < GenericMode
                 y = squeeze(this.data(point{1:3},1, :));
                 data_pos1 = find(this.wavelengths >= wl-4,1,'first');
                 data_pos2 = find(this.wavelengths < wl+4,1,'last');
-                mittelwert = mean(y(data_pos1:data_pos2));
+                
+                val = y(data_pos1:data_pos2);
+                mittelwert = mean(val)-mean(y(1:length(val)));
             end
         end
         
