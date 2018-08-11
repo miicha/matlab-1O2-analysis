@@ -1854,9 +1854,12 @@ classdef SiSaMode < GenericMode
             s = prod(this.sisa_data_size);
             ii = 0;
             pointinfo = repmat( struct( 'name', 1 ), num_points, 1 );
-
+            jj = 0;
             for n = 1:s
-                [i,j,k,l] = ind2sub(this.sisa_data_size, n);               
+                [i,j,k,l] = ind2sub(this.sisa_data_size, n);
+                if ~isnan(squeeze(this.sisa_esti(i,j,k,l,:)))
+                    jj = jj+1;
+                end
                 if ~this.disp_ov || this.overlays{this.current_ov}(i, j, k, l)
                     ii = ii+1;                    
                     pointinfo(ii).ort = 'undefined';
@@ -1879,10 +1882,10 @@ classdef SiSaMode < GenericMode
                     pointinfo(ii).fluo_val = squeeze(this.fluo_val(i,j,k,l,:));
                 end
             end
-            
+            jj
             num_results_updated = db.updatePointInfo(fileinfo, pointinfo);
             
-            sprintf('Es wurden %i Ergebnisse von insegsamt %i in der Datenbank aktualisiert.', num_results_updated, ii)
+            sprintf('Es wurden %i Punkte von insegsamt %i in der Tabelle datapointinfos aktualisiert.', num_results_updated, ii)
             
             db.close();
         end
