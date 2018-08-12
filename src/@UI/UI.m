@@ -7,7 +7,7 @@ classdef UI < handle
     end
     
     properties
-        version = '0.5.7';
+        version = '0.6.1';
         lastopened = 0;
         fileinfo = struct('path', '', 'size', [0 0 0 0],...
                           'name', '', 'np', 0); 
@@ -125,7 +125,7 @@ classdef UI < handle
                               'callback', @this.config_database_cb);
             
             set(this.h.helpmenu, 'Label', '?');
-            uimenu(this.h.helpmenu, 'label', 'über',...
+            uimenu(this.h.helpmenu, 'label', 'ï¿½ber',...
                                   'Callback', @this.open_versioninfo_cb);
             
             set(this.h.bottombar, 'units', 'pixels',...
@@ -291,7 +291,7 @@ classdef UI < handle
                 remove_non_sisa = false;
             end
             
-            % Daten einlesen (abhängig von Einstellungen)
+            % Daten einlesen (abhï¿½ngig von Einstellungen)
             reader = HDF5_reader(filepath,readfluo,read_all_fluo,remove_non_sisa);            
             reader.set_progress_cb(@this.update_infos);
             tic
@@ -740,11 +740,11 @@ classdef UI < handle
                 db.close();
                 
                 filenames = strjoin(data.name,';');
-%                 [name, filepath] = uigetfile({[this.openpath filenames ';*.diff;*.asc;*.state'];[this.openpath filenames '*.h5;*.diff;*.asc;*.state']}, 'Dateien auswählen', 'MultiSelect', 'on');
-                [name, filepath] = uigetfile({[filenames '*.diff;*.asc;*.state'], 'DB-Beschränkt'; '*.h5;*.diff;*.asc;*.state', 'alle'}, 'Dateien auswählen', this.openpath, 'MultiSelect', 'on');
+%                 [name, filepath] = uigetfile({[this.openpath filenames ';*.diff;*.asc;*.state'];[this.openpath filenames '*.h5;*.diff;*.asc;*.state']}, 'Dateien auswï¿½hlen', 'MultiSelect', 'on');
+                [name, filepath] = uigetfile({[filenames '*.diff;*.asc;*.state'], 'DB-Beschrï¿½nkt'; '*.h5;*.diff;*.asc;*.state', 'alle'}, 'Dateien auswï¿½hlen', this.openpath, 'MultiSelect', 'on');
            
             else
-                [name, filepath] = uigetfile({[this.openpath '*.h5;*.diff;*.asc;*.state']}, 'Dateien auswählen', 'MultiSelect', 'on');
+                [name, filepath] = uigetfile({[this.openpath '*.h5;*.diff;*.asc;*.state']}, 'Dateien auswï¿½hlen', 'MultiSelect', 'on');
             end
             
             if (~ischar(name) && ~iscell(name)) || ~ischar(filepath) % no file selected
