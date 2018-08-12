@@ -1,3 +1,5 @@
+####1####
+
 SELECT
     *
 FROM
@@ -20,6 +22,7 @@ WHERE
         dateiinfos.ID
 )
 
+####2####
 
 SELECT
     hyper.t_zero,
@@ -32,3 +35,15 @@ ON
     datapointinfos.ID = hyper.DS_ID
 GROUP BY
     hyper.t_zero
+	
+####3####
+
+SELECT
+    ergebnisse.`ID`,`A1`,`t1`,`t2`,datapointinfos.fluo_val,datapointinfos.sisa_intens, Modell
+FROM
+    `ergebnisse`
+JOIN datapointinfos ON datapointinfos.ID = ergebnisse.DS_ID
+JOIN dateiinfos ON dateiinfos.ID = datapointinfos.datei
+JOIN ps ON dateiinfos.photosensitizer = ps.ID
+WHERE
+    ps.name = "Foslip" AND dateiinfos.Probe = 1 AND datapointinfos.fluo_val > 2000  AND Modell = 6
