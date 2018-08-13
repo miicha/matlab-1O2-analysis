@@ -34,11 +34,10 @@ classdef SiSaPointPlot < SiSaGenericPlot
             end
             
             try
-                name = squeeze(this.smode.reader.data.sisa_point_name(this.cp(1), this.cp(2), this.cp(3), this.cp(4), :));
+                name = squeeze(this.smode.reader.data.sisa_point_name(this.cp(1), this.cp(2), this.cp(3), this.cp(4), :))';
             catch
                 name = point;
             end
-
             this.getdata(name);
             
             this.est_params = squeeze(this.smode.est_params(this.cp(1), this.cp(2), this.cp(3), this.cp(4), :));
@@ -49,7 +48,7 @@ classdef SiSaPointPlot < SiSaGenericPlot
             if length(smode.p.fileinfo.name) > 1
                 name = smode.p.fileinfo.name{this.cp(1)};
             else
-                name = [smode.p.fileinfo.name{1} ' - ' num2str(name')];
+                name = [smode.p.fileinfo.name{1} ' - ' num2str(name)];
             end
             
             this.set_window_name(name);
