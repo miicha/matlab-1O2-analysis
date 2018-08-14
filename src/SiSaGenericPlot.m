@@ -322,23 +322,23 @@ classdef SiSaGenericPlot < handle
             y_after = datal(this.sisa_fit.end_channel:end);
             
             plot(this.h.axes, x_before, y_before, '.-', 'Color', [.8 .8 1]);
-            this.h.data_line = plot(this.h.axes, x_fit, y_fit, 'Marker', '.', 'Color', [.8 .8 1], 'MarkerEdgeColor', this.markercolor);
+            this.h.data_line = plot(this.h.axes, x_fit, y_fit, 'Marker', '.', 'Color', [.8 .8 1], 'MarkerEdgeColor', this.markercolor,'DisplayName', 'data');
             
             plot(this.h.axes, x_after, y_after, '.-', 'Color', [.8 .8 1]);
             
             this.h.zeroline = line([0 0], [0 realmax], 'Color', [.7 0 .5],... 
                       'ButtonDownFcn', @this.plot_click, 'LineWidth', 1.2, 'LineStyle', '--',...
-                      'Tag', 'line');
+                      'Tag', 'line','DisplayName', 't0');
 
             offset_line = this.sisa_fit.offset_time-this.sisa_fit.t_0;
             this.h.offsetline = line([offset_line offset_line]*this.sisa_fit.cw,...
                 [0 realmax], 'Color', [0 .6 .5], 'ButtonDownFcn', @this.plot_click, 'LineWidth', 1.2,...
-                'LineStyle', '-.', 'Tag', 'line');
+                'LineStyle', '-.', 'Tag', 'line','DisplayName', 'start');
             
             end_line = this.sisa_fit.end_channel-this.sisa_fit.t_0;
             this.h.endline = line([end_line end_line]*this.sisa_fit.cw,...
                 [0 realmax], 'Color', [0 .8 .8], 'ButtonDownFcn', @this.plot_click, 'LineWidth', 1.2,...
-                'LineStyle', '-.', 'Tag', 'line');
+                'LineStyle', '-.', 'Tag', 'line','DisplayName', 'end');
             hold off
             
 
@@ -415,11 +415,11 @@ classdef SiSaGenericPlot < handle
                         sisadata = sisamodel.eval([p(1:3); p(8)], x_axis);
                 end
                 hold on
-                plot(this.h.axes, x_axis,  sisadata, 'color', [1 0.6 0.2], 'LineWidth', 1.5, 'HitTest', 'off');
+                this.h.sisa_line = plot(this.h.axes, x_axis,  sisadata, 'color', [1 0.6 0.2], 'LineWidth', 1.5, 'HitTest', 'off','DisplayName','estimated');
                 hold off
             end
             hold on
-            this.h.fit_line = plot(this.h.axes, x_axis,  fitdata, 'color', this.fitcolor, 'LineWidth', 1.5, 'HitTest', 'off');
+            this.h.fit_line = plot(this.h.axes, x_axis,  fitdata, 'color', this.fitcolor, 'LineWidth', 1.5, 'HitTest', 'off','DisplayName','fit');
             hold off
             
             try
@@ -952,23 +952,30 @@ classdef SiSaGenericPlot < handle
             
             tmp = gca;
             tmp = tmp.Children;
+            removeChildren = [];
+            j = 0;
             for i=1:length(tmp)
-                if i ==1
-                    tmp(i).DisplayName = 'fit';
-                elseif i ==length(tmp)-1
-                    tmp(i).DisplayName = 'data';
-                elseif (length(tmp) == 8 && i ==2)
-                    tmp(i).DisplayName = 'estimated ^1O_2-signal';
-                else
-                    tmp(i).HandleVisibility = 'off';
+                switch tmp(i).DisplayName
+                    case 'fit'
+                        tmp(i).DisplayName = 'Fit';
+                    case 'data'
+                        tmp(i).DisplayName = 'Data';
+                    case 'estimated'
+                        tmp(i).DisplayName = 'Estimated $$^1$$O$$_2$$-Signal';
+                    case {'t0','start','end'}
+                        j = j+1;
+                        removeChildren(j) = i;                        
+                    otherwise
+                        tmp(i).HandleVisibility = 'off';
                 end
             end
+            delete(tmp(removeChildren));
                
             
             if this.fitted && this.export_res
                 ax_res = copyobj(this.h.res, this.h.plot_pre);
                 xlabel(ax_res, 'Time [$$\mu$$s]', 'interpreter', 'latex');
-                ylabel(ax_res, 'norm. residues', 'interpreter', 'latex');
+                ylabel(ax_res, 'stud. res.', 'interpreter', 'latex');
                 set(ax_res, 'position', [130, 90, 1000, 120]);
                 set(ax, 'position', [130, 290, 1000, 450]);
                 ax_res.TickLabelInterpreter='latex';
@@ -987,12 +994,8 @@ classdef SiSaGenericPlot < handle
             if this.fitted && this.export_fit_info
                 this.generate_fit_info_ov(ax);
             else
-                if this.fitted
-                    h = legend('Data', 'Fit');
-                else
-                    h = legend('Data');
-                end
-                set(h, 'interpreter', 'latex');
+                l = legend('-DynamicLegend');
+                l.Interpreter = 'latex';
             end
         end
         
