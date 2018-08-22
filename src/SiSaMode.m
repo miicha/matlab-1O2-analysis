@@ -1926,7 +1926,7 @@ classdef SiSaMode < GenericMode
                 n = dimensionen(end);
                 anzahl = sum(this.overlays{this.current_ov}(:));
                 auswahl = repmat(this.overlays{this.current_ov},[1 1 1 1 n]);
-                data = reshape(data(auswahl),anzahl,n);
+                data = reshape(data(logical(auswahl)),anzahl,n);
             else
                 data = reshape(data,[],size(data,5));
             end
