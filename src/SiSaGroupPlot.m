@@ -32,9 +32,7 @@ classdef SiSaGroupPlot < handle
             this.ind = p.get_current_slice();
             this.data = squeeze(p.data(this.ind{:}, :));
             this.params = squeeze(p.fit_params(this.ind{:}, :));
-            tmp = this.p.models(this.p.model);
-            this.model_fun =  tmp{1};
-            
+            this.model_fun = this.p.sisa_fit.func;
             
             this.h.f = figure(); 
             this.h.s = {};
