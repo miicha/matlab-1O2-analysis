@@ -27,11 +27,12 @@ if build
     startpath = [path_to_prjct '/startUI.m'];
     mcc('-e', '-o', 'SiSaScanAuswertung', '-d', binpath, startpath)
     fprintf('...Done.\n\n')
-    if ~newver
-        warning('Will not push the new version and will not update the version number.');
-    else
-        ver_msg = input('Version message: ', 's');
-    end
+end
+
+if ~newver
+    warning('Will not push the new version and will not update the version number.');
+else
+    ver_msg = input('Version message: ', 's');
 end
 
 %% push the binaries to your online repo
