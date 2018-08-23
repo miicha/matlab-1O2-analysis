@@ -7,7 +7,7 @@ classdef UI < handle
     end
     
     properties
-        version = '0.6.1';
+        version = '0.0.0';
         lastopened = 0;
         fileinfo = struct('path', '', 'size', [0 0 0 0],...
                           'name', '', 'np', 0); 
@@ -42,6 +42,10 @@ classdef UI < handle
     methods
     % create new instance with basic controls
         function this = UI(path, name, pos, maximised)
+            p = get_executable_dir();
+            try
+                this.version = fileread([p filesep '..' filesep 'version.txt']);
+            end
             this.db_config.dbuser = '';
             this.db_config.dbserver = 'localhost';
             this.db_config.dbpw = '';
@@ -125,7 +129,7 @@ classdef UI < handle
                               'callback', @this.config_database_cb);
             
             set(this.h.helpmenu, 'Label', '?');
-            uimenu(this.h.helpmenu, 'label', 'ï¿½ber',...
+            uimenu(this.h.helpmenu, 'label', 'über',...
                                   'Callback', @this.open_versioninfo_cb);
             
             set(this.h.bottombar, 'units', 'pixels',...
@@ -150,7 +154,10 @@ classdef UI < handle
             this.loadini();
             % check at most once per hour
             if strcmp(this.h.config_check_version.Checked,'on') && (now() - this.lastopened > 1/24)
-                this.check_version();
+                if this.check_version()
+                    this.restart();
+                    return
+                end
             end
                                  
             %% limit size with java
@@ -291,7 +298,7 @@ classdef UI < handle
                 remove_non_sisa = false;
             end
             
-            % Daten einlesen (abhï¿½ngig von Einstellungen)
+            % Daten einlesen (abhängig von Einstellungen)
             reader = HDF5_reader(filepath,readfluo,read_all_fluo,remove_non_sisa);            
             reader.set_progress_cb(@this.update_infos);
             tic
@@ -345,7 +352,7 @@ classdef UI < handle
                                                          reader.data.sisa_1270.verlauf,...
                                                          reader.meta.sisa.int_time, reader, i);
                             otherwise
-                                warndlg(['Kann das Dateiformat ' FileType ' nicht ï¿½ffnen!']);
+                                warndlg(['Kann das Dateiformat ' FileType ' nicht öffnen!']);
                         end
                         i = i + 1;
                     case {'fluo', 'spec'}
@@ -424,9 +431,9 @@ classdef UI < handle
                 wh = warndlg({['Version des geladenen Files (' num2str(this_new.version)...
                               ') entspricht nicht der Version des aktuellen Programms'...
                               ' (' this.version '). Dies wird zu unerwartetem '...
-                              'Verhalten (bspw. fehlender Funktionalitï¿½t) fï¿½hren!'], ...
+                              'Verhalten (bspw. fehlender Funktionalität) führen!'], ...
                               ['Zum Umgehen dieses Problems sollten die zugrundeliegenden '...
-                              'Daten erneut geï¿½ffnet und gefittet werden']}, 'Warnung', 'modal');
+                              'Daten erneut geöffnet und gefittet werden']}, 'Warnung', 'modal');
                 pos = wh.Position;
                 wh.Position = [pos(1) pos(2) pos(3)+20 pos(4)];
                 wh.Children(3).Children.FontSize = 9;
@@ -461,22 +468,40 @@ classdef UI < handle
             end
         end
 
-        function check_version(this)
+        function updated = check_version(this)
+            updated = false;
             try
-                nv_str = urlread(this.online_ver);
+                nv_str = webread(this.online_ver);
+                newversion = num2str(nv_str);
                 
                 if UI.compare_versions(this.version, nv_str)
-                    wh = warndlg({['Es ist eine neue Version der Software verfï¿½gbar ('...
-                                   num2str(nv_str) ').'], ['Aktuelle Version: '...
-                                   num2str(this.version) '.'],... 
-                                   'Download unter: https://www.git.daten.tk/ oder auf dem Share.'}, 'Warnung', 'modal');
-                    pos = wh.Position;
-                    wh.Position = [pos(1) pos(2) pos(3)+20 pos(4)];
-                    wh.Children(3).Children.FontSize = 9;
+                    answer = questdlg(['Soll ein Update auf Version ' newversion ' versucht werden?'],...
+                                   'Update verfügbar', ...
+                                   'Ja', ...
+                                   'Nein', 'Nein');
+%                     pos = wh.Position;
+%                     wh.Position = [pos(1) pos(2) pos(3)+20 pos(4)];
+%                     wh.Children(3).Children.FontSize = 9;
+                    
+                    if strcmp(answer, 'Ja')
+                        'updating ...'
+                        local_path = [mfilename('fullpath') filesep '..' filesep '..' filesep '..' filesep];
+                        alternative_path = [filesep filesep 'pbpsa' filesep 'PBP_SHARE' filesep 'Software' filesep 'Deployment' filesep 'sisa-scan-auswertung'];
+                        if update_software(local_path, alternative_path, newversion)
+                            ['alles auf version ' newversion]
+                            updated = true;
+                        end
+                    end
                 end
             catch
                  % no internet connection.
             end
+        end
+        
+        function restart(this)
+            close(this.h.f);
+            delete(this);
+            UI();
         end
         
         function loadini(this)
@@ -740,11 +765,11 @@ classdef UI < handle
                 db.close();
                 
                 filenames = strjoin(data.name,';');
-%                 [name, filepath] = uigetfile({[this.openpath filenames ';*.diff;*.asc;*.state'];[this.openpath filenames '*.h5;*.diff;*.asc;*.state']}, 'Dateien auswï¿½hlen', 'MultiSelect', 'on');
-                [name, filepath] = uigetfile({[filenames '*.diff;*.asc;*.state'], 'DB-Beschrï¿½nkt'; '*.h5;*.diff;*.asc;*.state', 'alle'}, 'Dateien auswï¿½hlen', this.openpath, 'MultiSelect', 'on');
+%                 [name, filepath] = uigetfile({[this.openpath filenames ';*.diff;*.asc;*.state'];[this.openpath filenames '*.h5;*.diff;*.asc;*.state']}, 'Dateien auswählen', 'MultiSelect', 'on');
+                [name, filepath] = uigetfile({[filenames '*.diff;*.asc;*.state'], 'DB-Beschränkt'; '*.h5;*.diff;*.asc;*.state', 'alle'}, 'Dateien auswählen', this.openpath, 'MultiSelect', 'on');
            
             else
-                [name, filepath] = uigetfile({[this.openpath '*.h5;*.diff;*.asc;*.state']}, 'Dateien auswï¿½hlen', 'MultiSelect', 'on');
+                [name, filepath] = uigetfile({[this.openpath '*.h5;*.diff;*.asc;*.state']}, 'Dateien auswählen', 'MultiSelect', 'on');
             end
             
             if (~ischar(name) && ~iscell(name)) || ~ischar(filepath) % no file selected
@@ -790,7 +815,7 @@ classdef UI < handle
         function open_db_cb(this, varargin)
             this.loadini();
             % get path of file from user
-            [name, filepath] = uigetfile({[this.dbpath '*.db']}, 'Dateien auswï¿½hlen', 'MultiSelect', 'on');
+            [name, filepath] = uigetfile({[this.dbpath '*.db']}, 'Dateien auswählen', 'MultiSelect', 'on');
             if (~ischar(name) && ~iscell(name)) || ~ischar(filepath) % no file selected
                 return
             end
@@ -810,7 +835,7 @@ classdef UI < handle
                     if i > 1
                         if length(d) > size(data, 5)
                             d = d(1:size(data, 5));
-                            this.update_infos(['    |    Lï¿½nge der Daten ungleich in ' name{i}]);
+                            this.update_infos(['    |    Länge der Daten ungleich in ' name{i}]);
                         elseif length(d) < size(data, 5)
                             d = [d; zeros(size(data, 5) - length(d),1)];
                         end
@@ -852,7 +877,7 @@ classdef UI < handle
         
         function open_nsTAS_cb(this,varargin)
             this.loadini();
-            [name, filepath] = uigetfile({[this.open_nsTAS_path '*.txt;*.diff']}, 'Dateien auswï¿½hlen', 'MultiSelect', 'on');
+            [name, filepath] = uigetfile({[this.open_nsTAS_path '*.txt;*.diff']}, 'Dateien auswählen', 'MultiSelect', 'on');
             if (~ischar(name) && ~iscell(name)) || ~ischar(filepath) % no file selected
                 return
             end
@@ -872,7 +897,7 @@ classdef UI < handle
                 if i > 1
                     if length(d) > size(data, 5)
                         d = d(1:size(data, 5));
-                        this.update_infos(['    |    Lï¿½nge der Daten ungleich in ' name{i}]);
+                        this.update_infos(['    |    Länge der Daten ungleich in ' name{i}]);
                     elseif length(d) < size(data, 5)
                         d = [d; zeros(size(data, 5) - length(d),1)];
                     end
