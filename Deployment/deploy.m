@@ -1,7 +1,7 @@
 %% config
 % change these four rows to suit your application
 prjct = 'sisa-scan-auswertung';
-path_to_prjct = [pwd '/../src'];
+path_to_prjct = [pwd filesep '..' filesep 'src'];
 local_version = get_local_version(path_to_prjct)
 version_url = 'http://www.daten.tk/webhook/tags.php?owner=sebastian.pfitzner&project=sisa-scan-auswertung';
 
@@ -37,13 +37,19 @@ end
 
 %% push the binaries to your online repo
 if newver
-    str = ['cd ' path_to_prjct ' && git pull origin master && git add -u :/'... 
+    if ispc
+        chngfldr = 'pushd ';
+    else
+        chngfldr = 'cd ';
+    end
+    str = [chngfldr path_to_prjct ' && git pull origin master && git add -u :/'... 
                ' && git commit -m "tagged version ' local_version ' of ' prjct '"'];
     if ~isempty(ver_msg)
          str = [str '&& git tag -a ' local_version ' -m "' ver_msg '" && git push origin master --tags'];
     else
         str = [str '&& git tag ' local_version ' && git push origin master --tags'];
     end
+    str
     done = system(str);
     if done == 0
         fprintf('\n\n ----- \n\n');
