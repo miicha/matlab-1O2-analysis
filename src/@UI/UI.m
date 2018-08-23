@@ -7,7 +7,7 @@ classdef UI < handle
     end
     
     properties
-        version = '0.7.0';
+        version = '0.7.1';
         lastopened = 0;
         fileinfo = struct('path', '', 'size', [0 0 0 0],...
                           'name', '', 'np', 0); 
@@ -477,7 +477,7 @@ classdef UI < handle
                     
                     if strcmp(answer, 'Ja')
                         '... updating ...'
-                        local_path = [mfilename('fullpath') pathsep '..' pathsep '..' pathsep '..' pathsep];
+                        local_path = [mfilename('fullpath') filesep '..' filesep '..' filesep '..' filesep];
                         alternative_path = '';
                         if update_software(local_path, alternative_path, newversion)
                             ['alles auf version ' newversion]

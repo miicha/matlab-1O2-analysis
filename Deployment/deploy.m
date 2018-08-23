@@ -8,8 +8,9 @@ version_url = 'http://www.daten.tk/webhook/tags.php?owner=sebastian.pfitzner&pro
 %% read new version from source file and check against latest online version
 addpath(path_to_prjct);
 build = false;
+upload_binary = false;
 newver = true;
-ov = urlread(version_url);
+ov = webread(version_url);
 
 %%
 if UI.compare_versions(local_version, ov)
@@ -49,27 +50,29 @@ if newver
         fprintf('\n ----- \n\n');
     end
     
-    % upload binary
-    fid = fopen('./bin/SiSaScanAuswertung.exe', 'r');
-    data = char(fread(fid)');
-    fclose(fid);
-    headerFields = [{'project', 'sisa-scan-auswertung'}; {'name', ['SiSaScanAuswertung-' local_version '.exe']}];
-    headerFields = string(headerFields);
-    opt = weboptions;
-    opt.MediaType = 'application/octet-stream';
-    opt.CharacterEncoding = 'ISO-8859-1';
-    opt.RequestMethod = 'post';
-    opt.HeaderFields = headerFields;
-    opt.Timeout = Inf;
-
-    response = webwrite('http://www.daten.tk/webhook/upl.php', data, opt);
-    if contains(response, '...file written')
-        fprintf('\n\n ----- \n\n');
-        disp('Successfully pushed the new version''s binaries to the share!');
-        fprintf('\n ----- \n\n');
-    else
-        disp('Failed to push binaries to share:');
-        disp(response);
+    if upload_binary
+        % upload binary
+        fid = fopen('./bin/SiSaScanAuswertung.exe', 'r');
+        data = char(fread(fid)');
+        fclose(fid);
+        headerFields = [{'project', 'sisa-scan-auswertung'}; {'name', ['SiSaScanAuswertung-' local_version '.exe']}];
+        headerFields = string(headerFields);
+        opt = weboptions;
+        opt.MediaType = 'application/octet-stream';
+        opt.CharacterEncoding = 'ISO-8859-1';
+        opt.RequestMethod = 'post';
+        opt.HeaderFields = headerFields;
+        opt.Timeout = Inf;
+        
+        response = webwrite('http://www.daten.tk/webhook/upl.php', data, opt);
+        if contains(response, '...file written')
+            fprintf('\n\n ----- \n\n');
+            disp('Successfully pushed the new version''s binaries to the share!');
+            fprintf('\n ----- \n\n');
+        else
+            disp('Failed to push binaries to share:');
+            disp(response);
+        end
     end
 end
 rmpath(path_to_prjct);
