@@ -10,13 +10,13 @@ addpath(path_to_prjct);
 build = false;
 upload_binary = false;
 newver = true;
-ov = webread(version_url);
+webversion = webread(version_url)
 
 %%
-if UI.compare_versions(local_version, ov)
+if ~UI.compare_versions(local_version, webversion)
     newver = false;
     warning(['Local version (' local_version ') is NOT greater than '...
-             'online version (' ov ').']);
+             'online version (' webversion ').']);
     build = input('Build anyway? (0|1) ');
 end
 
@@ -42,13 +42,13 @@ if newver
     else
         chngfldr = 'cd ';
     end
-    % pull first
+    % pull, commit
     str = [chngfldr path_to_prjct ' && git pull origin master && git add -u :/'...
         ' && git commit -m "tagged version ' local_version ' of ' prjct '"']
            
-    done = system(str)
+    done = system(str);
     
-    % commit , tag, push
+    % tag, push
     str = [chngfldr path_to_prjct ' '];
     
     if ~isempty(ver_msg)
