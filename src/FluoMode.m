@@ -10,7 +10,7 @@ classdef FluoMode < GenericMode
     end
     
     methods
-        function this = FluoMode(parent, data, wavelengths, int_time,background, tag)
+        function this = FluoMode(parent, data, wavelengths, int_time,background, tag, config)
             data = double(data);
             this.background = background;
             if isnan(data)
@@ -96,12 +96,23 @@ classdef FluoMode < GenericMode
                                     'BackgroundColor', [.85 .85 .85]);
 
                 this.plotpanel = FluoPanel(this, size(data), this.h.plotpanel);
-                this.plotpanel.set_nth_val_cb(this.plotpanel.h.d5_edit);
+                
+                %% set start wavelength
+                
+                this.plotpanel.use_user_legend.a = 0;   % kruder workaround damit farbskala automatisch berechnet wird --> ToDo: hübsch implementieren
+
+                this.plotpanel.h.d5_edit.String = sprintf('%.1f', config.fluo_show_wl);
+                this.plotpanel.set_nth_val_cb(this.plotpanel.h.d5_edit);                
+                
                 this.resize();
                 this.plot_array();
             end
         end
         
+        function wl = get_current_wl(this)
+            wl = str2double(this.plotpanel.h.d5_edit.String);
+        end
+
         function save_fig(this, varargin)
             np = this.plotpanel.save_fig([this.p.savepath filesep() this.p.genericname...
                                           '_Fluo_lambda=' num2str(this.current_spec_point) '.pdf']);

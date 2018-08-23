@@ -4,9 +4,6 @@ classdef FluoPanel < PlotPanel
         function this = FluoPanel(parent, dims, gui_parent)
             dimnames = {'x', 'y', 'z', 's', 'l'};
             this@PlotPanel(parent, dims, dimnames, gui_parent, dimnames ,{[], [], [], [], []});
-            
-            value = 1020;
-            this.h.d5_edit.String = sprintf('%.1f', this.p.wavelengths(value));
         end
         
         function set_nth_val_cb(this, caller, varargin)

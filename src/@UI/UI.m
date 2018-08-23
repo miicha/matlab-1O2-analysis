@@ -25,6 +25,7 @@ classdef UI < handle
         dbpath; % persistent, in ini
         open_nsTAS_path; % persistent, in ini
         siox_config; % persistent, in ini
+        fluo_config; % persistent, in ini
         basepath;
         databasefunction = false;
         
@@ -359,7 +360,7 @@ classdef UI < handle
                         if reader.readfluo % open a fluorescence tab
                             this.modes{i} = FluoMode(this, reader.get_fluo_data(),...
                                 reader.get_fluo_x_achse(),...
-                                reader.get_fluo_int_time(), reader.get_fluo_background(), i);
+                                reader.get_fluo_int_time(), reader.get_fluo_background(), i, this.fluo_config);
                             i = i + 1;
                         end
                     case 'temp'
@@ -600,6 +601,12 @@ classdef UI < handle
                     end
                 end
                 
+                if isfield(conf, 'fluo_show_wl')
+                    this.fluo_config.fluo_show_wl = str2double(conf.fluo_show_wl);
+                else
+                    this.fluo_config.fluo_show_wl = 720;
+                end
+                
                 if isfield(conf, 'load_bounds')
                     file = [p filesep() 'bounds.mat'];
                     this.h.config_load_bounds.Checked = conf.load_bounds;
@@ -616,6 +623,7 @@ classdef UI < handle
                 this.siox_config.short_siox = 0;
                 this.siox_config.short_third = 0;
                 this.siox_config.weighting = 1;
+                this.fluo_config.fluo_show_wl = 720;
             end
         end
         
@@ -645,6 +653,12 @@ classdef UI < handle
             strct.basepath = this.basepath;
             strct.databasefunction = this.h.config_database.Checked;
             
+            for m = 1:length(this.modes)
+                if isa(this.modes{m},'FluoMode')
+                    strct.fluo_show_wl = this.modes{m}.get_current_wl();
+                end
+            end
+
             for i = 1:length(this.modes)
                 tmp = this.modes{i}.get_fit_bounds;
                 if isempty(tmp)
