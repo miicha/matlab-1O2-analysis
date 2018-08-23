@@ -13,7 +13,7 @@ newver = true;
 webversion = webread(version_url)
 
 %%
-if ~UI.compare_versions(local_version, webversion)
+if ~UI.compare_versions(webversion, local_version)
     newver = false;
     warning(['Local version (' local_version ') is NOT greater than '...
              'online version (' webversion ').']);
