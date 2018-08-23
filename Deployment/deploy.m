@@ -56,7 +56,7 @@ if newver
         str = [str '&& git tag ' local_version ' && git push origin master --tags'];
     end
     str
-    done = system(str);
+    done = system(str)
     if done == 0
         fprintf('\n\n ----- \n\n');
         disp('Successfully pushed the new version''s tag to GitLab!');
