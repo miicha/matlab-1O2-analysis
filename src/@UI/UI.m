@@ -7,7 +7,7 @@ classdef UI < handle
     end
     
     properties
-        version = '0.7.7';
+        version = '0.0.0';
         lastopened = 0;
         fileinfo = struct('path', '', 'size', [0 0 0 0],...
                           'name', '', 'np', 0); 
@@ -42,6 +42,10 @@ classdef UI < handle
     methods
     % create new instance with basic controls
         function this = UI(path, name, pos, maximised)
+            p = get_executable_dir();
+            try
+                this.version = fileread([p filesep '..' filesep 'version.txt']);
+            end
             this.db_config.dbuser = '';
             this.db_config.dbserver = 'localhost';
             this.db_config.dbpw = '';
