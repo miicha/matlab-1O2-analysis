@@ -20,6 +20,12 @@ if ~UI.compare_versions(webversion, local_version)
     build = input('Build anyway? (0|1) ');
 end
 
+if ~newver
+    warning('Will not push the new version and will not update the version number.');
+else
+    ver_msg = input('Version message: ', 's');
+end
+
 %% compile the binary
 if build
     fprintf('\nBuilding the binary...\n')
@@ -27,12 +33,6 @@ if build
     startpath = [path_to_prjct '/startUI.m'];
     mcc('-e', '-o', 'SiSaScanAuswertung', '-d', binpath, startpath)
     fprintf('...Done.\n\n')
-end
-
-if ~newver
-    warning('Will not push the new version and will not update the version number.');
-else
-    ver_msg = input('Version message: ', 's');
 end
 
 %% push the binaries to your online repo
