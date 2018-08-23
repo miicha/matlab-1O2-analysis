@@ -484,6 +484,21 @@ classdef PlotPanel < handle
             this.update_plot();
         end
         
+        % n-th dimension slider or editfield
+        function set_nth_val_cb(this, caller, ~, dim)
+            switch caller.Style
+                case 'slider'
+                    value = round(caller.Value);
+                case 'edit' 
+                    value = round(str2double(caller.String));
+            end
+            
+            value = this.set_nth_val(dim, value);
+            
+            this.h.(sprintf('d%d_edit', dim)).String = num2str(value);
+            this.h.(sprintf('d%d_slider', dim)).Value = value;
+        end
+        
     end
     
     methods (Access = protected)       
@@ -593,24 +608,7 @@ classdef PlotPanel < handle
             this.ind{this.curr_dims(dim)} = value;
             
             this.update_plot();
-        end
-
-        % n-th dimension slider or editfield
-        function set_nth_val_cb(this, caller, ~, dim)
-            switch caller.Style
-                case 'slider'
-                    value = round(caller.Value);
-                case 'edit' 
-                    value = round(str2double(caller.String));
-            end
-            
-            value = this.set_nth_val(dim, value);
-            
-            this.h.(sprintf('d%d_edit', dim)).String = num2str(value);
-            this.h.(sprintf('d%d_slider', dim)).Value = value;
-        end
-
-       
+        end       
 
         function resize(this, varargin)
             mP = get(this.h.parent, 'Position');

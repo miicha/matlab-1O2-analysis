@@ -352,7 +352,7 @@ classdef UI < handle
                         if reader.readfluo % open a fluorescence tab
                             this.modes{i} = FluoMode(this, reader.get_fluo_data(),...
                                 reader.get_fluo_x_achse(),...
-                                reader.get_fluo_int_time(), i);
+                                reader.get_fluo_int_time(), reader.get_fluo_background(), i);
                             i = i + 1;
                         end
                     case 'temp'

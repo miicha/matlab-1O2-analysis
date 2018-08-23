@@ -6,12 +6,13 @@ classdef FluoMode < GenericMode
         num_spec_points;
         current_spec_point = 1;
         wavelengths;
+        background;
     end
     
     methods
-        function this = FluoMode(parent, data, wavelengths, int_time, tag)
+        function this = FluoMode(parent, data, wavelengths, int_time,background, tag)
             data = double(data);
-            
+            this.background = background;
             if isnan(data)
                 warning('Keine Fluodaten vorhanden')
             else
@@ -95,6 +96,7 @@ classdef FluoMode < GenericMode
                                     'BackgroundColor', [.85 .85 .85]);
 
                 this.plotpanel = FluoPanel(this, size(data), this.h.plotpanel);
+                this.plotpanel.set_nth_val_cb(this.plotpanel.h.d5_edit);
                 this.resize();
                 this.plot_array();
             end
@@ -114,7 +116,7 @@ classdef FluoMode < GenericMode
             tmp = squeeze(this.data(point{1:3},:, :));
             if strcmp(this.p.h.config_3d.Checked,'on') && length(tmp(~isnan(tmp))) > 3000   %ToDo find decent implementation
                 if sum(squeeze(this.data(point{1:4}, :))) > 0 && button == 1 % left click
-                    SinglePlot(this.wavelengths, tmp, [],...
+                    SinglePlot(this.wavelengths, tmp-this.background, [],...
                         fullfile(this.p.savepath, this.p.genericname),...
                         'title', num2str(cell2mat(point)), 'timescale', this.scale(4),...
                         'xlabel','Wavelength [nm]', 'ylabel', 't [s]');
@@ -122,7 +124,7 @@ classdef FluoMode < GenericMode
                 this.units{5}
             else
                 if sum(squeeze(this.data(point{1:4}, :))) > 0 && button == 1 % left click
-                    SinglePlot(this.wavelengths, squeeze(this.data(point{1:4}, :)), [],...
+                    SinglePlot(this.wavelengths, squeeze(this.data(point{1:4}, :))-this.background, [],...
                         fullfile(this.p.savepath, this.p.genericname),...
                         'title', num2str(cell2mat(point)));
                 end
