@@ -7,7 +7,7 @@ classdef UI < handle
     end
     
     properties
-        version = '0.7.3';
+        version = '0.7.4';
         lastopened = 0;
         fileinfo = struct('path', '', 'size', [0 0 0 0],...
                           'name', '', 'np', 0); 
@@ -481,6 +481,8 @@ classdef UI < handle
                         alternative_path = [filesep filesep 'pbpsa' filesep 'PBP_SHARE' filesep 'Software' filesep 'Deployment' filesep 'sisa-scan-auswertung'];
                         if update_software(local_path, alternative_path, newversion)
                             ['alles auf version ' newversion]
+                            this.destroy
+                            UI()
                         end
                     end
                 end
