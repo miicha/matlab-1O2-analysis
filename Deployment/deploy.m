@@ -42,7 +42,13 @@ if newver
     else
         chngfldr = 'cd ';
     end
-    str = [chngfldr path_to_prjct ' && git pull origin master && git add -u :/'... 
+    % pull first
+    str = [chngfldr path_to_prjct ' && git pull origin master'];
+           
+    done = system(str)
+    
+    % commit , tag, push
+    str = [chngfldr path_to_prjct ' && git add -u :/'... 
                ' && git commit -m "tagged version ' local_version ' of ' prjct '"'];
     if ~isempty(ver_msg)
          str = [str '&& git tag -a ' local_version ' -m "' ver_msg '" && git push origin master --tags'];
