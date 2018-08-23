@@ -7,7 +7,7 @@ version_url = 'http://www.daten.tk/webhook/tags.php?owner=sebastian.pfitzner&pro
 
 %% read new version from source file and check against latest online version
 addpath(path_to_prjct);
-build = true;
+build = false;
 newver = true;
 ov = urlread(version_url);
 
