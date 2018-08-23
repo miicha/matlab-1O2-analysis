@@ -154,7 +154,10 @@ classdef UI < handle
             this.loadini();
             % check at most once per hour
             if strcmp(this.h.config_check_version.Checked,'on') && (now() - this.lastopened > 1/24)
-                this.check_version();
+                if this.check_version()
+                    this.restart();
+                    return
+                end
             end
                                  
             %% limit size with java
@@ -465,9 +468,10 @@ classdef UI < handle
             end
         end
 
-        function check_version(this)
+        function updated = check_version(this)
+            updated = false;
             try
-                nv_str = urlread(this.online_ver);
+                nv_str = webread(this.online_ver);
                 newversion = num2str(nv_str);
                 
                 if UI.compare_versions(this.version, nv_str)
@@ -480,21 +484,24 @@ classdef UI < handle
 %                     wh.Children(3).Children.FontSize = 9;
                     
                     if strcmp(answer, 'Ja')
-                        '... updating ...'
+                        'updating ...'
                         local_path = [mfilename('fullpath') filesep '..' filesep '..' filesep '..' filesep];
                         alternative_path = [filesep filesep 'pbpsa' filesep 'PBP_SHARE' filesep 'Software' filesep 'Deployment' filesep 'sisa-scan-auswertung'];
                         if update_software(local_path, alternative_path, newversion)
                             ['alles auf version ' newversion]
-                            
-                            UI()
-                            close(this.h.f);
-                            delete(this);
+                            updated = true;
                         end
                     end
                 end
             catch
                  % no internet connection.
             end
+        end
+        
+        function restart(this)
+            close(this.h.f);
+            delete(this);
+            UI();
         end
         
         function loadini(this)
