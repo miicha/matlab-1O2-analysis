@@ -124,11 +124,17 @@ classdef hyper < handle
         end
         
         function show_kinetic(this,varargin)
-            if nargin == 2
+            if nargin > 1
                 ax = varargin{1};
             else
                 ax = this.h.kinetik;
             end
+            if nargin == 3 && strcmp(varargin{2}, 'export')
+                showlegend = false;
+            else
+                showlegend = true;
+            end
+            
             axes(ax);
             if length(size(this.sisa_data)) == 3
                 tmp = flipud(permute(this.sisa_data,[2,1,3]));
@@ -159,7 +165,10 @@ classdef hyper < handle
             this.h.red_area = area(ax,x,y,'FaceColor','red');
             this.h.red_area.FaceAlpha = alpha;
             this.h.red_area.EdgeColor = 'none';
-            legend();
+            
+            if showlegend
+                legend();
+            end
             
             hold on
             
@@ -204,31 +213,29 @@ classdef hyper < handle
             
             ax.FontSize = this.fsize;
             
-            legend([short_line long_line],{num2str(this.short_name),num2str(this.long_name)})
+            if showlegend
+                legend([short_line long_line],{num2str(this.short_name),num2str(this.long_name)})
+            end
 
 %             legend({num2str(this.short_name),num2str(this.long_name)})
             
         end
         
         function save_figures(this,varargin)
-            
-            aspect = 1;
             fsize = 6.5;
-            width = 0.35;
+            width = 0.4;
             
             f1 = figure; % Open a new figure with handle f1
-            ax1 = subplot(2,1,1);
-            this.show_image(ax1);
-
-            ax2 = subplot(2,1,2);
-            this.show_kinetic(ax2);
-            
-            wh = [560 1120];
-            f1.Position(3:4) = wh;
-            print(f1,strrep(this.filename,'.h5','.pdf'),'-dpdf', '-r0','-fillpage')
-%             save2pdf('kinetik', 'width', width, 'texi', false, 'fontsize',fsize, 'aspectratio', 2/4)
-            
+            ax1 = axes; % subplot(2,1,1);
+            this.show_image(ax1, 'export');
+            save2pdf(strrep(this.filename,'.h5','-map.pdf'),'figure',f1,'keepAscpect', true, 'width', width, 'texi', true, 'fontsize',fsize, 'aspectratio', 2/2)
             f1.delete()
+
+            f2 = figure;
+            ax2 = axes; % subplot(2,1,2);
+            this.show_kinetic(ax2, 'export');            
+            save2pdf(strrep(this.filename,'.h5','-kin.pdf'),'figure',f2, 'width', width, 'texi', true, 'fontsize',fsize, 'aspectratio', 4/3)
+            f2.delete()
         end
         
         function [clor,r,g,b] = calc_rgb(this,varargin)
@@ -268,10 +275,17 @@ classdef hyper < handle
         end
         
         function show_image(this, varargin)
-            if nargin == 2
+            if nargin > 1
                 ax = varargin{1};
             else
                 ax = this.h.map;
+            end
+            if nargin == 3 && strcmp(varargin{2}, 'export')
+                showscale = true;
+                showother = false;
+            else
+                showscale = false;
+                showother = true;
             end
             
             clor = this.calc_rgb();
@@ -281,53 +295,92 @@ classdef hyper < handle
             
             
             tmp = imshow(clor,'InitialMagnification',3000, 'Parent', ax);
-%             title('Summe')
             
-            p1 = patch(ax,[this.max_short(1)-0.5, this.max_short(1)-0.5, this.max_short(1)+0.5, this.max_short(1)+0.5], [this.max_short(2)-0.5, this.max_short(2)+0.5, this.max_short(2)+0.5, this.max_short(2)-0.5], this.short_color);
+            
+%             title('Summe')
+            patch1points = [this.max_short(1)-0.5, this.max_short(1)-0.5, this.max_short(1)+0.5, this.max_short(1)+0.5];
+            patch2points = [this.max_short(2)-0.5, this.max_short(2)+0.5, this.max_short(2)+0.5, this.max_short(2)-0.5];
+            patch3points = [this.max_long(1)-0.5, this.max_long(1)-0.5, this.max_long(1)+0.5, this.max_long(1)+0.5];
+            patch4points = [this.max_long(2)-0.5, this.max_long(2)+0.5, this.max_long(2)+0.5, this.max_long(2)-0.5];
+            
+            posA1 = this.max_short(1)+0.8;
+            posA2 = this.max_short(2)-1.1;
+            posB1 = this.max_long(1)+0.8;
+            posB2 = this.max_long(2)-1.1;
+            
+            if showscale
+                scale = this.reader.meta.sisaScale(1:2); 
+                patch1points = patch1points*scale(1);
+                patch2points = patch2points*scale(1);
+                posA1 = posA1 * scale(1);
+                posA2 = posA2 * scale(2);
+                patch3points = patch3points*scale(1);
+                patch4points = patch4points*scale(1);
+                posB1 = posB1 * scale(1);
+                posB2 = posB2 * scale(2);
+            end
+            
+            p1 = patch(ax,patch1points,patch2points, this.short_color);
             p1.EdgeColor = this.short_color;
-            p1.LineWidth = 2.5;
+            p1.LineWidth = 1.5;
             p1.FaceColor = 'none';
             
-            t1 = text(ax,this.max_short(1)+0.8, this.max_short(2)-1.1, 'A');
+            t1 = text(ax,posA1,posA2, 'A');
             t1.Color = this.short_color;
             t1.FontSize = this.fsize;
             
-            p2 = patch(ax,[this.max_long(1)-0.5, this.max_long(1)-0.5, this.max_long(1)+0.5, this.max_long(1)+0.5], [this.max_long(2)-0.5, this.max_long(2)+0.5, this.max_long(2)+0.5, this.max_long(2)-0.5], this.long_color);
+            
+            
+            p2 = patch(ax,patch3points,patch4points, this.long_color);
             p2.EdgeColor = this.long_color;
             p2.LineWidth = p1.LineWidth;
             p2.FaceColor = 'none';
             
-            t2 = text(ax,this.max_long(1)+0.8, this.max_long(2)-1.1, 'B');
+            t2 = text(ax,posB1,posB2, 'B');
             t2.Color = this.long_color;
             t2.FontSize = this.fsize;
+            
+            if showscale
+                axis on
+                XDataInMM = get(tmp,'XData')*scale(1);
+                YDataInMM = get(tmp,'YData')*scale(2);
+
+                set(tmp,'XData',XDataInMM,'YData',YDataInMM);    
+                set(gca,'XLim',[XDataInMM(1)-scale(1)/2 XDataInMM(2)+scale(1)/2],'YLim',[YDataInMM(1)-scale(2)/2 YDataInMM(2)+scale(2)/2]);
+                set(gca,'ytick',[])
+                box off
+                set(gca,'YColor','none','TickDir','out')
+                xlabel('distance [mm]')
+%                 ylabel('distance [mm]')
+            end
 
 %             subplot(2,2,2)
 %             imshow(clor2,'InitialMagnification',3000)
 %             title('Mittelwert')
             
 %             hold off
-            
             set(tmp,'ButtonDownFcn', @this.aplot_click_cb);
             
-            
-            r = clor;
-            g = clor;
-            b = clor;
-            r(:,:,2:3) = 0;
-            g(:,:,1) = 0;
-            g(:,:,3) = 0;
-            b(:,:,1:2) = 0;
-            
-            this.h.channels = figure(421);
-            ax_r = subplot(2,2,1);
-            imshow(r,'InitialMagnification',3000, 'Parent',ax_r);
-            ax_g = subplot(2,2,2);
-            imshow(g,'InitialMagnification',3000, 'Parent',ax_g);
-            ax_b = subplot(2,2,3);
-            imshow(b,'InitialMagnification',3000, 'Parent',ax_b);
-            ax_rgb = subplot(2,2,4);
-            this.show_kinetic(ax_rgb)
-%             imshow(clor,'InitialMagnification',3000, 'Parent',ax_rgb);
+            if showother
+                r = clor;
+                g = clor;
+                b = clor;
+                r(:,:,2:3) = 0;
+                g(:,:,1) = 0;
+                g(:,:,3) = 0;
+                b(:,:,1:2) = 0;
+
+                this.h.channels = figure(421);
+                ax_r = subplot(2,2,1);
+                imshow(r,'InitialMagnification',3000, 'Parent',ax_r);
+                ax_g = subplot(2,2,2);
+                imshow(g,'InitialMagnification',3000, 'Parent',ax_g);
+                ax_b = subplot(2,2,3);
+                imshow(b,'InitialMagnification',3000, 'Parent',ax_b);
+                ax_rgb = subplot(2,2,4);
+                this.show_kinetic(ax_rgb)
+    %             imshow(clor,'InitialMagnification',3000, 'Parent',ax_rgb);
+            end
         end
         
         function plot_click(this, varargin)
