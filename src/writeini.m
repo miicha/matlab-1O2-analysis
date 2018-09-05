@@ -1,4 +1,4 @@
-function writeini(file, content, append)
+function writeini(file, content, append, change)
     %WRITEINI Writes dict to ini-file.
     %   Not a standard-conforming implementation.
     %   
@@ -11,11 +11,23 @@ function writeini(file, content, append)
     if nargin < 3
         append = false;
     end
+    if nargin < 4
+        change = false;
+    end
     exists = exist(file, 'file');
     if exists
         old_content = readini(file);
     elseif append
         error('File does not exist! Aborting.')
+    end
+    
+    if change
+        new_content = old_content;
+        f = fieldnames(content);
+        for i = 1:length(f)
+            new_content.(f{i}) = content.(f{i});
+        end
+        content = new_content;
     end
     
     if ~append
