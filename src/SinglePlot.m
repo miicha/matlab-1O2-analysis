@@ -163,6 +163,15 @@ classdef SinglePlot < handle
                              'OuterPosition', [10 30 1000 500])
             this.plot();
             this.resize();
+            
+            try
+                p = str2double(strsplit(this.h.axes.Title.String,' '));
+                point = sprintf('%i-%i-%i', p(1:3));
+            catch
+                point = this.h.axes.Title.String;
+                point = strrep(point, ' ','_');
+            end
+            this.defname = [this.defname '_' point];
         end
         
         function plot(this)
@@ -357,7 +366,6 @@ classdef SinglePlot < handle
         end
         
         function save_fig_cb(this, varargin)
-            this.savepath
             [name, path] = uiputfile('*.pdf', 'Plot als PDF speichern', fullfile(this.savepath, this.defname));
             if name == 0
                 return
