@@ -1,14 +1,14 @@
 classdef SinglePlot < handle
     %SINGLEPLOT 1-D plot that can be saved to .pdf and .txt.
     %
-    %   handle = SinglePlot(xdata, ydata, defpath, varargin)
+    %   handle = SinglePlot(xdata, ydata, defname, varargin)
     %   
     %   xdata and ydata can either be vectors or matrices. If xdata is a
     %   vector, all columns in ydata will be plotted against xdata; if
     %   xdata is a matrix, each column in ydata will be plotted against the
     %   correspondung column in xdata.
     %   
-    %   defpath is the default path (and filename) where the plot or the 
+    %   defname is the default path (and filename) where the plot or the 
     %   data should be saved. If undefined the current working dir is the 
     %   default path. Set to '' if you do not want to specify it but need
     %   the varargin.
@@ -27,20 +27,33 @@ classdef SinglePlot < handle
         ydata;
         ydata_err;
         plot_args;
-        defpath;
+        defname;
         h;
         plot_3d;
         l_max;
         l_min;
         use_user_legend;
+        read_ini = false;
+        inipath = '';
+        savepath = '';
     end
     
     methods
-        function this = SinglePlot(xdata, ydata, ydata_err, defpath, varargin)
+        function this = SinglePlot(xdata, ydata, ydata_err, defname, inipath, varargin)
+            
             if nargin < 4
-                defpath = '';
+                defname = '';
                 if nargin < 3
                     ydata_err = [];
+                end
+            end
+            if nargin > 4 && ~isempty(inipath)
+                this.read_ini = true;
+                this.inipath = inipath;
+                
+                conf = readini(this.inipath);
+                if isfield(conf, 'fluo_savepath')
+                    this.savepath = conf.fluo_savepath;
                 end
             end
             
@@ -59,7 +72,7 @@ classdef SinglePlot < handle
             this.ydata = ydata;
 
             this.ydata_err = ydata_err;
-            this.defpath = defpath;
+            this.defname = defname;
             
             this.plot_args = varargin;
             
@@ -68,6 +81,12 @@ classdef SinglePlot < handle
             
             this.h.save_plot = uicontrol(this.h.f);
             this.h.save_data = uicontrol(this.h.f);
+            
+            this.h.fAspect = uicontrol(this.h.f);
+            this.h.fTextWidth = uicontrol(this.h.f);
+            this.h.fWidth = uicontrol(this.h.f);
+            this.h.fTexify = uicontrol(this.h.f);
+            
             this.h.tick_min = uicontrol(this.h.f);
             this.h.tick_max = uicontrol(this.h.f);
             
@@ -78,15 +97,50 @@ classdef SinglePlot < handle
                 tick_max = 900;
             end
             
-            set(this.h.f, 'resizefcn', @this.resize);
+            set(this.h.f, 'resizefcn', @this.resize,...
+                          'DeleteFcn', @this.destroy_cb);
             set(this.h.save_plot, 'units', 'pixels',...
-                                  'position', [10 10 100 22],...
+                                  'position', [10 10 90 22],...
                                   'string', 'Plot speichern',...
                                   'callback', @this.save_fig_cb);
             set(this.h.save_data, 'units', 'pixels',...
-                                  'position', [120 10 100 22],...
+                                  'position', [110 10 90 22],...
                                   'string', 'Daten speichern',...
                                   'callback', @this.save_data_cb);
+            
+            %% export options
+            set(this.h.fAspect,  'units', 'pixels',...
+                               'style', 'edit',...
+                               'FontSize', 9,...
+                               'string', '1.33',...
+                               'horizontalAlignment', 'left',...
+                               'TooltipString', 'AspectRatio (width/height)',...
+                               'position', [215 10 40 17]);
+
+            set(this.h.fWidth,  'units', 'pixels',...
+                               'style', 'edit',...
+                               'FontSize', 9,...
+                               'string', '0.8',...
+                               'horizontalAlignment', 'left',...
+                               'TooltipString', 'Figure width: fraction of Textwidth',...
+                               'position', [305 10 40 17]);
+
+            set(this.h.fTextWidth,  'units', 'pixels',...
+                               'style', 'edit',...
+                               'FontSize', 9,...
+                               'string', '17',...
+                               'horizontalAlignment', 'left',...
+                               'TooltipString', 'Figure TextWidth (cm)',...
+                               'position', [260 10 40 17]);
+
+            set(this.h.fTexify,  'units', 'pixels',...
+                               'style', 'checkbox',...
+                               'FontSize', 9,...
+                               'Value', 1,...
+                               'horizontalAlignment', 'left',...
+                               'TooltipString', 'Texify?',...
+                               'position', [350 10 40 17]);
+                                  
             %% x-axis               
             set(this.h.tick_min,  'units', 'pixels',...
                                'style', 'edit',...
@@ -94,14 +148,16 @@ classdef SinglePlot < handle
                                'string', num2str(tick_min),...
                                'horizontalAlignment', 'left',...
                                'callback', @this.set_tick_cb,...
-                               'position', [250 10 65 17]);
+                               'TooltipString', 'x-min',...
+                               'position', [400 10 65 17]);
             set(this.h.tick_max,  'units', 'pixels',...
                                'style', 'edit',...
                                'FontSize', 9,...
                                'string', num2str(tick_max),...
                                'horizontalAlignment', 'left',...
                                'callback', @this.set_tick_cb,...
-                               'position', [320 10 65 17]);
+                               'TooltipString', 'x-max',...
+                               'position', [470 10 65 17]);
             %% general                  
             set(this.h.axes, 'units', 'pixels',...
                              'OuterPosition', [10 30 1000 500])
@@ -131,6 +187,7 @@ classdef SinglePlot < handle
                     this.set_limits('upper');
 %                     this.h.axes.View = [80,20];
                     this.h.axes.View = [9,4];
+                    this.h.axes.View = [-39,50];
                 else
                     this.h.p = plot(this.h.axes, this.xdata, this.ydata');
                 end
@@ -220,11 +277,19 @@ classdef SinglePlot < handle
             x_pix = tmp(3);
             y_pix = tmp(4);
             
+            fsize = 6.5;
+            width = str2double(this.h.fWidth.String);
+            textWidth = str2double(this.h.fTextWidth.String);
+            texi = this.h.fTexify.Value;
+            aspect = str2double(this.h.fAspect.String);
+            
             % save the plot and close the figure
             set(this.h.plot_pre, 'PaperUnits', 'points');
             set(this.h.plot_pre, 'PaperSize', [x_pix y_pix]/2);
             set(this.h.plot_pre, 'PaperPosition', [0 0 x_pix y_pix]/2);
-            print(this.h.plot_pre, '-dpdf', '-r600', path);
+            save2pdf(path,'figure',this.h.plot_pre,'textwidth',textWidth,...
+                          'width', width, 'texi', texi, 'fontsize',fsize, 'aspectratio', aspect)
+%             print(this.h.plot_pre, '-dpdf', '-r600', path);
             close(this.h.plot_pre)
         end
         
@@ -292,20 +357,23 @@ classdef SinglePlot < handle
         end
         
         function save_fig_cb(this, varargin)
-            [name, path] = uiputfile('*.pdf', 'Plot als PDF speichern', this.defpath);
+            this.savepath
+            [name, path] = uiputfile('*.pdf', 'Plot als PDF speichern', fullfile(this.savepath, this.defname));
             if name == 0
                 return
             end
+            this.savepath = path;
             this.generate_export_fig('off');
             this.save_fig([path name]);
 %             this.smode.p.set_savepath(path);
         end
         
         function save_data_cb(this, varargin)
-            [name, path] = uiputfile('*.txt', 'Plot als PDF speichern', this.defpath);
+            [name, path] = uiputfile('*.txt', 'Daten als TXT speichern', fullfile(this.savepath, this.defname));
             if name == 0
                 return
             end
+            this.savepath = path;
             this.save_data([path name]);
 %             this.smode.p.set_savepath(path);
         end
@@ -332,5 +400,32 @@ classdef SinglePlot < handle
             end
             
         end
+        
+        function saveini(this)
+            strct.fluo_savepath = this.savepath;
+            writeini(this.inipath, strct, false, true);
+        end
+        
+        function destroy_cb(this, varargin)
+            this.destroy();
+        end
+        
+        function destroy(this)
+            for i = 1:10
+                try
+                    this.saveini();
+                catch
+                    % some problem with the file system?!
+                    % doesn't matter all that much, actually; just try
+                    % again.
+                    continue
+                end
+                break
+            end
+
+                delete(this.h.f);
+                delete(this);
+        end
+        
     end
 end

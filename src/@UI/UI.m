@@ -30,6 +30,7 @@ classdef UI < handle
         databasefunction = false;
         
         hyper_pos = false;
+        inipath;
         
 
         h = struct();        % handles
@@ -44,6 +45,7 @@ classdef UI < handle
     % create new instance with basic controls
         function this = UI(path, name, pos, maximised)
             p = get_executable_dir();
+            this.inipath = fullfile(p, 'config.ini');
             try
                 this.version = fileread([p filesep '..' filesep 'version.txt']);
             end
@@ -506,9 +508,8 @@ classdef UI < handle
         end
         
         function loadini(this)
-            p = get_executable_dir();
-            if exist(fullfile(p, 'config.ini'), 'file')
-                conf = readini('config.ini');
+            if exist(this.inipath, 'file')
+                conf = readini(this.inipath);
                 if isfield(conf, 'openpath')
                     this.openpath = conf.openpath;
                 else
@@ -608,7 +609,7 @@ classdef UI < handle
                 end
                 
                 if isfield(conf, 'load_bounds')
-                    file = [p filesep() 'bounds.mat'];
+                    file = fullfile(fileparts(this.inipath), 'bounds.mat');
                     this.h.config_load_bounds.Checked = conf.load_bounds;
                     this.siox_config.vals = [];
                     if strcmp(conf.load_bounds, 'on') && exist(file, 'file')
@@ -617,6 +618,7 @@ classdef UI < handle
                     end
                 end
             else
+                p = get_executable_dir();
                 this.openpath = [p filesep()];
                 this.savepath = [p filesep()];
                 this.siox_config.last_model = 1;
@@ -628,7 +630,6 @@ classdef UI < handle
         end
         
         function saveini(this)
-            p = get_executable_dir();
             strct.version = this.version;
             strct.lastopened = now();
             strct.openpath = this.openpath;
@@ -665,11 +666,11 @@ classdef UI < handle
                     continue
                 end
                 vals = tmp;
-                save([p filesep() 'bounds.mat'],'vals');
+                save(fullfile(fileparts(this.inipath), 'bounds.mat'),'vals');
             end
             
             
-            writeini([p filesep() 'config.ini'], strct);
+            writeini(this.inipath, strct, false, true);
         end
         
         function destroy(this, children_only)
