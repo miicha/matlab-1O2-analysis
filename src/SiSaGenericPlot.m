@@ -767,7 +767,7 @@ classdef SiSaGenericPlot < handle
         end
         
         function save_data_cb(this, varargin)
-            [name, path] = uiputfile('*.txt', 'Plot als PDF speichern', this.generate_filepath());
+            [name, path] = uiputfile('*.txt', 'Daten als TXT speichern', this.generate_filepath());
             if name == 0
                 return
             end
@@ -916,16 +916,17 @@ classdef SiSaGenericPlot < handle
         function save_fig(this, path)
             [~, ~, ext] = fileparts(path);
             ext = ext(2:end);
-            already_open = false;
+            already_open = true;
             if ~isfield(this.h, 'plot_pre') || (isfield(this.h, 'plot_pre') && ~ishandle(this.h.plot_pre))
                 this.generate_export_fig('off');
-                already_open = true;
+                already_open = false;
             end
             
             save2pdf(path, 'format', ext, 'tick', 9, 'figure', this.h.plot_pre, 'width', .8)
-            
+
             if ~already_open
                 close(this.h.plot_pre)
+                this.h = rmfield(this.h,'plot_pre');
             end
         end
 
@@ -1010,7 +1011,9 @@ classdef SiSaGenericPlot < handle
         end
         
         function generate_fit_info_ov(this, ax)
+            vis = ax.Parent.Visible;
             axes(ax);
+            ax.Parent.Visible = vis;
             m_names = this.sisa_fit.tex_parnames;
             m_units = this.sisa_fit.tex_units;  
             func = this.sisa_fit.tex_func;
