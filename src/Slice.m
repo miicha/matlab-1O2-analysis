@@ -106,9 +106,8 @@ classdef Slice < handle
         end
 
         function open_slice_plot(this)
-            
             [x_vec, plot_vec, plot_vec_err, x_label] = this.get_slice_data();
-            SinglePlot(x_vec, plot_vec, plot_vec_err, fullfile(this.p.p.p.savepath, this.p.p.p.genericname),...
+            SinglePlot(x_vec, plot_vec, plot_vec_err, 'savepath', fullfile(this.p.p.p.savepath, this.p.p.p.genericname),...
                        'xlabel', x_label);
         end
         

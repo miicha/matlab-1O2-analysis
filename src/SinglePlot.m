@@ -27,7 +27,7 @@ classdef SinglePlot < handle
         ydata;
         ydata_err;
         plot_args;
-        defname;
+        defname = '';
         h;
         plot_3d;
         l_max;
@@ -39,27 +39,15 @@ classdef SinglePlot < handle
     end
     
     methods
-        function this = SinglePlot(xdata, ydata, ydata_err, defname, inipath, varargin)
+        function this = SinglePlot(xdata, ydata, ydata_err, varargin)
             
             if nargin < 4
-                defname = '';
+                
                 if nargin < 3
                     ydata_err = [];
                 end
             end
             cmapvalue = 1;
-            if nargin > 4 && ~isempty(inipath)
-                this.read_ini = true;
-                this.inipath = inipath;
-                
-                conf = readini(this.inipath);
-                if isfield(conf, 'fluo_savepath')
-                    this.savepath = conf.fluo_savepath;
-                end
-                if isfield(conf, 'fluo_colormap')
-                    cmapvalue = str2double(conf.fluo_colormap);
-                end
-            end
             
             this.xdata = xdata;
             if length(ydata)>length(xdata)
@@ -76,7 +64,6 @@ classdef SinglePlot < handle
             this.ydata = ydata;
 
             this.ydata_err = ydata_err;
-            this.defname = defname;
             
             this.plot_args = varargin;
             
@@ -168,7 +155,6 @@ classdef SinglePlot < handle
                                'style', 'popupmenu',...
                                'FontSize', 9,...
                                'string', {'parula','jet','hsv','hot','cool','spring','summer','autumn','winter','gray','bone','copper','pink'},...
-                               'Value',cmapvalue,...
                                'horizontalAlignment', 'left',...
                                'callback', @this.set_tick_cb,...
                                'TooltipString', 'x-max',...
@@ -187,8 +173,23 @@ classdef SinglePlot < handle
                 point = this.h.axes.Title.String;
                 point = strrep(point, ' ','_');
             end
+            
+            this.props_handler(varargin);
+            
             this.defname = [this.defname '_' point];
-            this.change_colormap;
+            
+            if this.read_ini
+                conf = readini(this.inipath);
+                if isfield(conf, 'fluo_savepath')
+                    this.savepath = conf.fluo_savepath;
+                end
+                if isfield(conf, 'fluo_colormap')
+                    cmapvalue = str2double(conf.fluo_colormap);
+                end
+            end
+            
+            this.h.color.Value = cmapvalue;
+            this.change_colormap();
         end
         
         function plot(this)
@@ -223,7 +224,7 @@ classdef SinglePlot < handle
                 end
                 this.h.p = errorbar(this.h.axes, this.xdata, this.ydata, this.ydata_err);
             end
-            
+
             for i = 1:2:length(this.plot_args)
                 this.plt_props_handler(this.h.axes, this.plot_args{i}, this.plot_args{i+1});
             end
@@ -237,6 +238,7 @@ classdef SinglePlot < handle
             end
             this.set_limits('lower');
             this.set_limits('upper');
+            this.change_colormap();
         end
         
          % upper and lower bound of legend
@@ -296,6 +298,7 @@ classdef SinglePlot < handle
             this.h.plot_pre.Position = [100 100 460 310];
             ax.OuterPosition = [10 10 450 300];
             ax.Title.Visible = 'off';
+            this.change_colormap();
         end
         
         function save_fig(this, path)
@@ -421,9 +424,28 @@ classdef SinglePlot < handle
             elseif strcmpi(prop, 'timescale')
                 this.h.p.YData = this.h.p.YData * val;
             else
-                warning(['Unknown property-value-pair: "' prop '" - "' val '".' ]);
+%                 warning(['Unknown property-value-pair: "' prop '" - "' val '".' ]);
             end
             
+        end
+        
+        function props_handler(this, input)
+            if mod(length(input),2) ==1
+                warning('not exact name value pairs...');
+            end
+            for i = 1:2:length(input)
+                switch input{i}
+                    case 'defname'
+                        this.defname = input{i+1};
+                    case 'inipath'
+                        this.read_ini = true;
+                        this.inipath = input{i+1};
+                    case 'savepath'
+                        this.defname = input{i+1};
+                    otherwise
+%                         warning(['Unknown property-value-pair: "' input{i} '" - "' input{i+1} '".' ]);
+                end
+            end
         end
         
         function change_colormap(this, varargin)
@@ -431,9 +453,13 @@ classdef SinglePlot < handle
         end
         
         function saveini(this)
-            strct.fluo_savepath = this.savepath;
-            strct.fluo_colormap = this.h.color.Value;
-            writeini(this.inipath, strct, false, true);
+            if this.read_ini
+                strct.fluo_savepath = this.savepath;
+                strct.fluo_colormap = this.h.color.Value;
+                writeini(this.inipath, strct, false, true);
+            else
+                'config.ini not changed'
+            end
         end
         
         function destroy_cb(this, varargin)
