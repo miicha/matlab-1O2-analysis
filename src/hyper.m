@@ -222,19 +222,21 @@ classdef hyper < handle
         end
         
         function save_figures(this,varargin)
-            fsize = 6.5;
-            width = 0.4;
+            fsize = 10;
+            width = 0.40;
             
             f1 = figure; % Open a new figure with handle f1
             ax1 = axes; % subplot(2,1,1);
             this.show_image(ax1, 'export');
-            save2pdf(strrep(this.filename,'.h5','-map.pdf'),'figure',f1,'keepAscpect', true, 'width', width, 'texi', true, 'fontsize',fsize, 'aspectratio', 2/2)
+            figdim = save2pdf(strrep(this.filename,'.h5','-map.pdf'),'figure',f1,'tight', true, 'keepAscpect', true, 'width', width, 'texi', true, 'fontsize',fsize, 'aspectratio', 2/2, 'removeClipping', true);
             f1.delete()
 
             f2 = figure;
             ax2 = axes; % subplot(2,1,2);
-            this.show_kinetic(ax2, 'export');            
-            save2pdf(strrep(this.filename,'.h5','-kin.pdf'),'figure',f2, 'width', width, 'texi', true, 'fontsize',fsize, 'aspectratio', 4/3)
+            this.show_kinetic(ax2, 'export');  
+            ax2.Box = 'off';
+            ax2.TickDir = 'out';
+            save2pdf(strrep(this.filename,'.h5','-kin.pdf'),'figure',f2,'tight', true, 'fixsize', figdim, 'texi', true, 'fontsize',fsize);
             f2.delete()
         end
         
