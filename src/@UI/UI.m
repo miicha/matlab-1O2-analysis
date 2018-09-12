@@ -155,12 +155,9 @@ classdef UI < handle
             %% check version (only if called as a binary)
             
             this.loadini();
-            % check at most once per hour
-            if strcmp(this.h.config_check_version.Checked,'on') && (now() - this.lastopened > 1/24)
-                if this.check_version()
-                    this.restart();
-                    return
-                end
+            if this.check_version()
+                this.restart();
+                return
             end
                                  
             %% limit size with java
@@ -473,31 +470,37 @@ classdef UI < handle
 
         function updated = check_version(this)
             updated = false;
-            try
-                nv_str = webread(this.online_ver);
-                newversion = num2str(nv_str);
-                
-                if UI.compare_versions(this.version, nv_str)
-                    answer = questdlg(['Soll ein Update auf Version ' newversion ' versucht werden?'],...
-                                   'Update verfügbar', ...
-                                   'Ja', ...
-                                   'Nein', 'Nein');
-%                     pos = wh.Position;
-%                     wh.Position = [pos(1) pos(2) pos(3)+20 pos(4)];
-%                     wh.Children(3).Children.FontSize = 9;
+            
+            % check at most once per hour
+            if strcmp(this.h.config_check_version.Checked,'on') && (now() - this.lastopened > 1/24)
+                strct.lastopened = now();
+                writeini(this.inipath, strct, false, true);
+                try
+                    nv_str = webread(this.online_ver);
+                    newversion = num2str(nv_str);
                     
-                    if strcmp(answer, 'Ja')
-                        'updating ...'
-                        local_path = [mfilename('fullpath') filesep '..' filesep '..' filesep '..' filesep];
-                        alternative_path = [filesep filesep 'pbpsa' filesep 'PBP_SHARE' filesep 'Software' filesep 'Deployment' filesep 'sisa-scan-auswertung'];
-                        if update_software(local_path, alternative_path, newversion)
-                            ['alles auf version ' newversion]
-                            updated = true;
+                    if UI.compare_versions(this.version, nv_str)
+                        answer = questdlg(['Soll ein Update auf Version ' newversion ' versucht werden?'],...
+                            'Update verfügbar', ...
+                            'Ja', ...
+                            'Nein', 'Nein');
+                        %                     pos = wh.Position;
+                        %                     wh.Position = [pos(1) pos(2) pos(3)+20 pos(4)];
+                        %                     wh.Children(3).Children.FontSize = 9;
+                        
+                        if strcmp(answer, 'Ja')
+                            'updating ...'
+                            local_path = [mfilename('fullpath') filesep '..' filesep '..' filesep '..' filesep];
+                            alternative_path = [filesep filesep 'pbpsa' filesep 'PBP_SHARE' filesep 'Software' filesep 'Deployment' filesep 'sisa-scan-auswertung'];
+                            if update_software(local_path, alternative_path, newversion)
+                                ['alles auf version ' newversion]
+                                updated = true;
+                            end
                         end
                     end
+                catch
+                    % no internet connection.
                 end
-            catch
-                 % no internet connection.
             end
         end
         
@@ -551,7 +554,7 @@ classdef UI < handle
                     this.savepath = [p filesep()];
                 end
                 if isfield(conf, 'lastopened')
-                    this.lastopened = str2num(conf.lastopened);
+                    this.lastopened = str2double(conf.lastopened);
                 end
                 if isfield(conf, 'read_fluo')
                     this.h.config_read_fluo.Checked = conf.read_fluo;
@@ -631,7 +634,6 @@ classdef UI < handle
         
         function saveini(this)
             strct.version = this.version;
-            strct.lastopened = now();
             strct.openpath = this.openpath;
             strct.dbpath = this.dbpath;
             strct.dbuser = this.db_config.dbuser;
