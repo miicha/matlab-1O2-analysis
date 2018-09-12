@@ -10,7 +10,7 @@ classdef UI < handle
         version = '0.0.0';
         lastopened = 0;
         fileinfo = struct('path', '', 'size', [0 0 0 0],...
-                          'name', '', 'np', 0); 
+                          'name', '', 'np', 0, 'folderstruct', struct); 
                       
         scale = [5 5 5 3];          % distance between the centers of two pixels in units
         units = {'mm', 'mm', 'mm', 's'};
@@ -28,6 +28,8 @@ classdef UI < handle
         fluo_config; % persistent, in ini
         basepath;
         databasefunction = false;
+        
+        FileType;
         
         hyper_pos = false;
         inipath;
@@ -212,8 +214,8 @@ classdef UI < handle
                 end
             elseif isstruct(name)
                 % multiple selection (including multiple folders)
-                
-                this.fileinfo.name = name;
+                this.fileinfo.folderstruct = name;
+                this.fileinfo.name = '';
                 this.openDIFF();
 
                 [~, n] = fileparts(name(1).name);
@@ -321,7 +323,7 @@ classdef UI < handle
                     this.units = reader.meta.units;
                 end
             end
-            FileType = reader.fileType;
+            this.FileType = reader.fileType;
             
             i = 1;
             this.modes = {};
@@ -331,8 +333,10 @@ classdef UI < handle
                 switch mode
                     case {'sisa','NIR'}
                         % open a SiSa tab
-                        switch FileType
+                        switch this.FileType
                             case 'oneFolderDiff'
+                                this.modes{i} = SiSaMode(this, reader.get_sisa_data(), reader, i, this.siox_config);
+                            case 'multiFolderDiff'
                                 this.modes{i} = SiSaMode(this, reader.get_sisa_data(), reader, i, this.siox_config);
                             case {'scanning', 'bakterien'}
                                 this.modes{i} = SiSaMode(this, reader.get_sisa_data(), reader, i, this.siox_config);
@@ -352,7 +356,7 @@ classdef UI < handle
                                                          reader.data.sisa_1270.verlauf,...
                                                          reader.meta.sisa.int_time, reader, i);
                             otherwise
-                                warndlg(['Kann das Dateiformat ' FileType ' nicht öffnen!']);
+                                warndlg(['Kann das Dateiformat ' this.FileType ' nicht öffnen!']);
                         end
                         i = i + 1;
                     case {'fluo', 'spec'}
@@ -377,7 +381,7 @@ classdef UI < handle
                         this.modes{i} = CameraMode(this, reader.data.camera,intTime, i);
                 end
             end
-            switch FileType
+            switch this.FileType
                 case {'in-vivo', 'in-vivo-dual'}
                     % open a meta tab
                     if isfield(reader.data, 'temp') && isfield(reader.data, 'int')
@@ -402,7 +406,8 @@ classdef UI < handle
         end
         
         function openDIFF(this)
-            reader = file_reader(this.fileinfo.path, this.fileinfo.name);
+            reader = file_reader(this.fileinfo.path, this.fileinfo.name, this.fileinfo.folderstruct);
+            this.fileinfo.name = reader.fileinfo.name;
             this.open_modes(reader);
         end
         
