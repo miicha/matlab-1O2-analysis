@@ -513,10 +513,13 @@ classdef UI < handle
         function loadini(this)
             if exist(this.inipath, 'file')
                 conf = readini(this.inipath);
+                if isfield(conf, 'UI_position')
+                    this.h.f.Position = conf.UI_position;
+                end
                 if isfield(conf, 'openpath')
                     this.openpath = conf.openpath;
                 else
-                    this.openpath = [p filesep()];
+                    this.openpath = '';
                 end
                 
                 if isfield(conf, 'dbpath')
@@ -554,7 +557,7 @@ classdef UI < handle
                     this.savepath = [p filesep()];
                 end
                 if isfield(conf, 'lastopened')
-                    this.lastopened = str2double(conf.lastopened);
+                    this.lastopened = conf.lastopened;
                 end
                 if isfield(conf, 'read_fluo')
                     this.h.config_read_fluo.Checked = conf.read_fluo;
@@ -576,22 +579,22 @@ classdef UI < handle
                     this.h.config_keep_AR.Checked = conf.keep_aspect;
                 end
                 if isfield(conf, 'weighting')
-                    this.siox_config.weighting = str2double(conf.weighting);
+                    this.siox_config.weighting = conf.weighting;
                 else
                     this.siox_config.weighting = 1;
                 end
                 if isfield(conf, 'short_siox')
-                    this.siox_config.short_siox = str2double(conf.short_siox);
+                    this.siox_config.short_siox = conf.short_siox;
                 else
                     this.siox_config.short_siox = 0;
                 end
                 if isfield(conf, 'short_third')
-                    this.siox_config.short_third = str2double(conf.short_third);
+                    this.siox_config.short_third = conf.short_third;
                 else
                     this.siox_config.short_third = 0;
                 end
                 if isfield(conf, 'last_model')
-                    this.siox_config.last_model = str2double(conf.last_model);
+                    this.siox_config.last_model = conf.last_model;
                 else
                     this.siox_config.last_model = 1;
                 end
@@ -606,7 +609,7 @@ classdef UI < handle
                 end
                 
                 if isfield(conf, 'fluo_show_wl')
-                    this.fluo_config.fluo_show_wl = str2double(conf.fluo_show_wl);
+                    this.fluo_config.fluo_show_wl = conf.fluo_show_wl;
                 else
                     this.fluo_config.fluo_show_wl = 720;
                 end
@@ -655,6 +658,7 @@ classdef UI < handle
             strct.load_bounds = this.h.config_load_bounds.Checked;
             strct.basepath = this.basepath;
             strct.databasefunction = this.h.config_database.Checked;
+            strct.UI_position = this.h.f.Position;
             
             for m = 1:length(this.modes)
                 if isa(this.modes{m},'FluoMode')
@@ -938,7 +942,7 @@ classdef UI < handle
         end
         
         function mode_change_cb(this, varargin)
-            this.current_mode = str2double(varargin{2}.NewValue.Tag);
+            this.current_mode = varargin{2}.NewValue.Tag;
         end
                     
         function save_global_state_cb(this, varargin)

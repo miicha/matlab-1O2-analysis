@@ -17,6 +17,8 @@ function writeini(file, content, append, change)
     exists = exist(file, 'file');
     if exists
         old_content = readini(file);
+    elseif change
+        change = false;
     elseif append
         error('File does not exist! Aborting.')
     end
@@ -63,7 +65,8 @@ end
 function append_line(f, name, val)
     if ischar(val)
         fprintf(f, '%s = %s\n', name, val);
-    elseif isnumeric(val) && numel(val) == 1
-        fprintf(f, '%s = %f\n', name, val);
+    elseif isnumeric(val) && numel(val) >= 1
+        x = repmat(' %f',1,length(val));
+        fprintf(f, ['%s =' x '\n'], name, val);
     end
 end
