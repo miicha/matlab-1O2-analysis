@@ -33,6 +33,7 @@ classdef hyper < handle
         fileinfo;
         UI_obj;
         window_pos = false;
+        single_channels = false;
         
     end
     
@@ -61,6 +62,8 @@ classdef hyper < handle
             
             this.h.update_points = uicontrol(this.h.figure);
             
+            this.h.show_channels = uicontrol(this.h.figure);
+            
             set(this.h.save_figures,  'units', 'pixels',...
                            'style', 'push',...
                            'position', [40 2 140 28],...
@@ -72,6 +75,12 @@ classdef hyper < handle
                            'position', [200 2 140 28],...
                            'string', 'Update PointInfo',...
                            'callback', @this.update_points);
+                       
+            set(this.h.show_channels,  'units', 'pixels',...
+                           'style', 'push',...
+                           'position', [360 2 140 28],...
+                           'string', 'Show Channels',...
+                           'callback', @this.show_channels_cb);
                        
             if nargin<3
                 this.reader = HDF5_reader(filename);
@@ -107,7 +116,9 @@ classdef hyper < handle
         end
         
         function close(this, varargin)
-            close(this.h.channels);
+            if isvalid(this.h.channels)
+                close(this.h.channels);
+            end
             this.UI_obj.hyper_pos = this.h.figure.Position;
         end
     end
@@ -289,6 +300,9 @@ classdef hyper < handle
                 showscale = false;
                 showother = true;
             end
+            if ~this.single_channels
+                showother = false;
+            end
             
             clor = this.calc_rgb();
             
@@ -458,6 +472,11 @@ classdef hyper < handle
             end
             this.show_image();
             this.show_kinetic();
+        end
+        
+        function show_channels_cb(this,varargin)
+            this.single_channels = true;
+            this.show_image();
         end
         
         function [index, name] = get_current_point(this,varargin)
