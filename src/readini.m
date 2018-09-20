@@ -11,7 +11,9 @@ function [ res ] = readini( file )
         val = strtrim(current_line(o+1:end));
         tmp = str2double(strsplit(val, ' '));
         if isnan(tmp)
-            res.(name) = val;
+            if ~strcmpi(val, 'nan')
+                res.(name) = val;
+            end
         else
             res.(name) = tmp;
         end
