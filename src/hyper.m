@@ -116,7 +116,7 @@ classdef hyper < handle
         end
         
         function close(this, varargin)
-            if isvalid(this.h.channels)
+            if isfield(this.h, 'channels') && isvalid(this.h.channels)
                 close(this.h.channels);
             end
             this.UI_obj.hyper_pos = this.h.figure.Position;
