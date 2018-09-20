@@ -275,6 +275,15 @@ classdef SinglePlot < handle
                     end
             end
             this.h.axes.XLim = [this.l_min this.l_max];
+            if this.plot_3d
+                min_pos = find(this.xdata>=this.l_min, 1,'first');
+                max_pos = find(this.xdata<=this.l_max, 1,'last');
+                z_max = max(max(this.ydata(:,min_pos:max_pos)));
+                z_min = min(min(this.ydata(:,min_pos:max_pos)));
+                zlim([z_min*0.95 z_max*1.05])
+                caxis([z_min z_max])
+            end
+%             get(this.h.axes)
         end
         
         function generate_export_fig(this, vis)
