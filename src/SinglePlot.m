@@ -184,7 +184,7 @@ classdef SinglePlot < handle
                     this.savepath = conf.fluo_savepath;
                 end
                 if isfield(conf, 'fluo_colormap')
-                    cmapvalue = str2double(conf.fluo_colormap);
+                    cmapvalue = conf.fluo_colormap;
                 end
             end
             
