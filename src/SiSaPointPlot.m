@@ -78,10 +78,11 @@ classdef SiSaPointPlot < SiSaGenericPlot
                     if isa(this.smode.p.modes{i},'FluoMode')
                         pointname = pointname';
                         this.fluo_val = this.smode.p.modes{1}.get_mean_value(pointname,720);
-                        tmp{1} = this.sisa_esti;
-                        tmp{2} = this.sisa_esti_err;
-                        tmp{3} = this.fluo_val;
-                        tmp{4} = this.sisa_esti/this.fluo_val
+                        tmp = {'SiSa_esti', 'SiSa_esti_err', 'Fluo_val', 'SiSa/Fluo'};
+                        tmp{2,1} = this.sisa_esti;
+                        tmp{2,2} = this.sisa_esti_err;
+                        tmp{2,3} = this.fluo_val;
+                        tmp{2,4} = this.sisa_esti/this.fluo_val
                     end
                 end
             end
