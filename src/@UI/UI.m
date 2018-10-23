@@ -154,7 +154,7 @@ classdef UI < handle
                                   'position', [0 18 1000 680],...
                                   'SelectionChangedFcn', @this.mode_change_cb);
                              
-            %% check version (only if called as a binary)
+            %% check version
             
             this.loadini();
             if this.check_version()
@@ -176,7 +176,6 @@ classdef UI < handle
             
             %% init
             this.resize();
-            this.loadini();
             
             if nargin > 1
                 if nargin > 3
@@ -196,7 +195,6 @@ classdef UI < handle
         
     % functions for opening and reading various files:
         function open_file(this, path, name)
-            this.loadini();
             this.fileinfo.path = path;
             this.openpath = path;
             filepath = path;
@@ -515,7 +513,7 @@ classdef UI < handle
             UI();
         end
         
-        function loadini(this)
+        function loadini(this, resize)
             if exist(this.inipath, 'file')
                 conf = readini(this.inipath);
                 if isfield(conf, 'UI_position')
@@ -750,7 +748,7 @@ classdef UI < handle
         % callback for opening a new file
         % destroys current figure and creates a new one
         function open_file_cb(this, varargin)
-            this.loadini();
+%             this.loadini();
             
             limit2DB = true;
             db_query = 'model_not';
@@ -809,7 +807,7 @@ classdef UI < handle
         end
         
         function open_folder_cb(this, varargin)
-            this.loadini();
+%             this.loadini();
             % get path of file from user
             names  = uipickfiles('FilterSpec', this.openpath, 'REFilter', '\.h5$|\.diff$|\.state$', 'output', 'str');
             
@@ -839,7 +837,7 @@ classdef UI < handle
         end
         
         function open_db_cb(this, varargin)
-            this.loadini();
+%             this.loadini();
             % get path of file from user
             [name, filepath] = uigetfile({[this.dbpath '*.db']}, 'Dateien auswählen', 'MultiSelect', 'on');
             if (~ischar(name) && ~iscell(name)) || ~ischar(filepath) % no file selected
@@ -902,7 +900,7 @@ classdef UI < handle
         
         
         function open_nsTAS_cb(this,varargin)
-            this.loadini();
+%             this.loadini();
             [name, filepath] = uigetfile({[this.open_nsTAS_path '*.txt;*.diff']}, 'Dateien auswählen', 'MultiSelect', 'on');
             if (~ischar(name) && ~iscell(name)) || ~ischar(filepath) % no file selected
                 return
