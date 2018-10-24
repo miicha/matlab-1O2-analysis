@@ -867,11 +867,19 @@ classdef SiSaGenericPlot < handle
                         y = this.data;
                     end
                     if isempty(this.sisa_fit.last_params)
-                        fprintf(fid, 'x,y\n');
+                        if isempty(this.diff_data)
+                            fprintf(fid, 'x,y\n');
+                        else
+                            fprintf(fid, 'x,y,x_diff,y_diffdata,y_diff\n');
+                        end
                         fitdata = nan;
                         res = nan;
                     else
-                        fprintf(fid, 'x, y, fit, x_res, res\n');
+                        if isempty(this.diff_data)
+                            fprintf(fid, 'x, y, fit, x_res, res\n');
+                        else
+                            fprintf(fid, 'x,y,fit,x_res,res,x_diff,y_diffdata,y_diff\n');
+                        end
                         fitdata = this.sisa_fit.eval(this.fit_params, this.sisa_fit.x_axis);
 
                         res = nan(length(x),2);
@@ -880,11 +888,23 @@ classdef SiSaGenericPlot < handle
                         tmp = this.sisa_fit.get_res;
                         res(end-length(tmp)+1:end,2) = tmp;
                     end
+                    
                     fclose(fid);
-                    if isnan(fitdata)
-                        dlmwrite(path, [x y], '-append');
+                    if isempty(this.diff_data)
+                        if isnan(fitdata)
+                            dlmwrite(path, [x y], '-append');
+                        else
+                            dlmwrite(path, [x y fitdata res], '-append');
+                        end
                     else
-                        dlmwrite(path, [x y fitdata res], '-append');
+                        diff_data = this.diff_data;
+                        diff_data(:,2) = diff_data(:,2)*this.h.faktor_slider.Value;
+                        difference = y - diff_data(:,2);
+                        if isnan(fitdata)
+                            dlmwrite(path, [x y, diff_data, difference], '-append');
+                        else
+                            dlmwrite(path, [x y fitdata res diff_data, difference], '-append');
+                        end
                     end
 
                 else % multiple sets of y values
