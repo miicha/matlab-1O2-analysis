@@ -10,6 +10,8 @@ classdef SiSaMode < GenericMode
         fit_params;
         fit_params_err;
         fit_chisq;
+        fit_dw;
+        fit_z;
         sisa_esti;
         sisa_esti_err;
         fluo_val;
@@ -745,6 +747,8 @@ classdef SiSaMode < GenericMode
             % initialise here, so we can check whether a point is fitted or not
             s = num2cell(size(this.est_params));
             this.fit_chisq = nan(s{1:4});
+            this.fit_dw = this.fit_chisq;
+            this.fit_z = this.fit_chisq;
             this.sisa_esti = nan(s{1:4});
             this.sisa_esti_err = nan(s{1:4});
             this.fluo_val = this.fit_chisq;
@@ -1007,11 +1011,15 @@ classdef SiSaMode < GenericMode
                     case length(this.est_params(1, 1, 1, 1, :)) + 1
                         plot_data = this.fit_chisq;
                     case length(this.est_params(1, 1, 1, 1, :)) + 2
+                        plot_data = this.fit_dw;
+                    case length(this.est_params(1, 1, 1, 1, :)) + 3
+                        plot_data = this.fit_z;
+                    case length(this.est_params(1, 1, 1, 1, :)) + 4
 %                         plot_data = this.corrected_amplitude(this.fit_params);
                         plot_data = this.sisa_esti;
-                    case length(this.est_params(1, 1, 1, 1, :)) + 3
+                    case length(this.est_params(1, 1, 1, 1, :)) + 5
                         plot_data = this.fluo_val;
-                    case length(this.est_params(1, 1, 1, 1, :)) + 4
+                    case length(this.est_params(1, 1, 1, 1, :)) + 6
                         plot_data = this.fluo_val./this.sisa_esti;
                     otherwise
                         plot_data = this.fit_params(:, :, :, :, param);
@@ -1268,6 +1276,8 @@ classdef SiSaMode < GenericMode
             f_s_est = f_chisq;
             f_s_est_err = f_chisq;
             fluo = f_chisq;
+            f_dw = f_chisq;
+            f_z = f_chisq;
 
             g_par = find(this.use_gstart);
             global_start = this.gstart;
@@ -1308,6 +1318,8 @@ classdef SiSaMode < GenericMode
                         f_pars(n+i, :) = par;
                         f_pars_e(n+i, :) = p_err;
                         f_chisq(n+i) = chi;
+                        f_dw(n+i) = sf.dw_test;
+                        f_z(n+i) = sf.runstest;
                     end
                 end
                 lt = lt + toc(innertime);
@@ -1320,6 +1332,8 @@ classdef SiSaMode < GenericMode
                     this.fit_params = reshape(f_pars, [this.sisa_data_size size(f_pars, 2)]);
                     this.fit_params_err = reshape(f_pars_e, [this.sisa_data_size size(f_pars, 2)]);
                     this.fit_chisq = reshape(f_chisq, this.sisa_data_size);
+                    this.fit_dw = reshape(f_dw, this.sisa_data_size);
+                    this.fit_z = reshape(f_z, this.sisa_data_size);
                     this.sisa_esti = reshape(f_s_est, this.sisa_data_size);
                     this.sisa_esti_err = reshape(f_s_est_err, this.sisa_data_size);
                     this.plot_array();
@@ -1345,6 +1359,8 @@ classdef SiSaMode < GenericMode
             this.fit_params = reshape(f_pars, [this.sisa_data_size size(f_pars, 2)]);
             this.fit_params_err = reshape(f_pars_e, [this.sisa_data_size size(f_pars, 2)]);
             this.fit_chisq = reshape(f_chisq, this.sisa_data_size);
+            this.fit_dw = reshape(f_dw, this.sisa_data_size);
+            this.fit_z = reshape(f_z, this.sisa_data_size);
             this.sisa_esti = reshape(f_s_est, this.sisa_data_size);
             this.sisa_esti_err = reshape(f_s_est_err, this.sisa_data_size);
 
@@ -1985,7 +2001,7 @@ classdef SiSaMode < GenericMode
             if ~strcmp(ov, nv)
                 if strcmp(nv, get(this.h.fit_par, 'string'))
                     this.disp_fit_params = true;
-                    params = [par_names, 'Chi^2','SiSa_esti', 'Fluo', 'Fluo/SiSa'];
+                    params = [par_names, 'Chi^2','DW','Z','SiSa_esti', 'Fluo', 'Fluo/SiSa'];
                 else
                     this.disp_fit_params = false;
                     params = [par_names, 'A_korr', 'Summe'];
