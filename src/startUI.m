@@ -1,5 +1,4 @@
-clear all;
-clear classes;
+% clear classes;
 
 warning('off', 'MATLAB:uitabgroup:OldVersion');
 warning('off', 'MATLAB:HandleGraphics:ObsoletedProperty:JavaFrame');
