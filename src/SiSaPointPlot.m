@@ -61,6 +61,7 @@ classdef SiSaPointPlot < SiSaGenericPlot
                     this.h.pe{i}.String = num2str(this.smode.gstart(i));
                 end
             end
+            this.check_gof();
         end
         
         function getdata(this, pointname)
@@ -69,6 +70,8 @@ classdef SiSaPointPlot < SiSaGenericPlot
             this.data = squeeze(this.smode.data(this.cp(1), this.cp(2), this.cp(3), this.cp(4), :));
             if this.fitted
                 this.chisq =  squeeze(this.smode.fit_chisq(this.cp(1), this.cp(2), this.cp(3), this.cp(4), :));
+                this.DW =  squeeze(this.smode.fit_dw(this.cp(1), this.cp(2), this.cp(3), this.cp(4), :));
+                this.Z =  squeeze(this.smode.fit_z(this.cp(1), this.cp(2), this.cp(3), this.cp(4), :));
                 this.fit_params = squeeze(this.smode.fit_params(this.cp(1), this.cp(2), this.cp(3), this.cp(4), :));
                 this.fit_params_err = squeeze(this.smode.fit_params_err(this.cp(1), this.cp(2), this.cp(3), this.cp(4), :));
                 this.sisa_esti = squeeze(this.smode.sisa_esti(this.cp(1), this.cp(2), this.cp(3), this.cp(4), :));

@@ -551,9 +551,12 @@ classdef SiSaGenericPlot < handle
             this.DW = this.sisa_fit.dw_test();
             this.fitted = true;
             this.plotdata();
-            
+            this.check_gof();
+        end
+        
+        function check_gof(this,varargin)
             good_color = [0.2 0.8 0.2];
-            bad_color = [0.8 0.2 0.2];
+            bad_color = [1 0.5 0.5];
             if abs(this.chisq-1)<=0.05
                 this.h.chi.BackgroundColor = good_color;
             else
