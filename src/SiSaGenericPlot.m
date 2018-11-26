@@ -7,6 +7,8 @@ classdef SiSaGenericPlot < handle
         smode;
         fitted = false;
         chisq;              % chisquared
+        DW;                 % Durbin Watson
+        Z;                  % Runs Z
         est_params;         % estimated parameters
         h = struct();       % handles
         fit_params;         % fitted parameters
@@ -73,9 +75,13 @@ classdef SiSaGenericPlot < handle
                 this.h.pb = uicontrol(this.h.fit_tab);
                 this.h.pb_glob = uicontrol(this.h.fit_tab);
                 this.h.pb_set_quant = uicontrol(this.h.fit_tab);
-                this.h.gof = uicontrol(this.h.fit_tab);
                 this.h.quant = uicontrol(this.h.fit_tab);
                 this.h.param = uipanel(this.h.fit_tab);
+                
+                this.h.gof_tab = uipanel(this.h.fit_tab);
+                    this.h.chi = uicontrol(this.h.gof_tab);
+                    this.h.dw = uicontrol(this.h.gof_tab);
+                    this.h.z = uicontrol(this.h.gof_tab);
                 
             this.h.exp_tab = uitab(this.h.tabs);
                 this.h.prev_fig = uicontrol(this.h.exp_tab);
@@ -144,6 +150,9 @@ classdef SiSaGenericPlot < handle
             set(this.h.tabs, 'units', 'pixels',...
                             'position', [10 10 970 105]);
                         
+            set(this.h.gof_tab, 'units', 'pixels',...
+                            'position', [300 25 60 50]);
+                        
             %% fitoptions
             set(this.h.fit_tab, 'units', 'pixels',...
                                'Title', 'Fitten');
@@ -174,19 +183,31 @@ classdef SiSaGenericPlot < handle
                           'FontSize', 9,...
                           'callback', @this.set_as_reference)
                       
-            set(this.h.gof, 'units', 'pixels',...
+            set(this.h.chi, 'units', 'pixels',...
                            'style', 'text',...
                            'FontSize', 9,...
                            'string', {'Chi:', num2str(this.chisq)},...
-                           'position', [300 20 62 45]);
+                           'position', [2 34 56 14]);
+                       
+            set(this.h.dw, 'units', 'pixels',...
+                           'style', 'text',...
+                           'FontSize', 9,...
+                           'string', {'DW:', num2str(this.DW)},...
+                           'position', [2 18 56 14]);
+                       
+           set(this.h.z, 'units', 'pixels',...
+                           'style', 'text',...
+                           'FontSize', 9,...
+                           'string', {'Z: ba', num2str(this.Z)},...
+                           'position', [2 2 56 14]);
             
             set(this.h.quant, 'units', 'pixels',...
                            'style', 'text',...
                            'FontSize', 9,...
-                           'position', [300 10 80 15]);
+                           'position', [300 5 60 14]);
                        
             set(this.h.param, 'units', 'pixels',...
-                             'position', [355 5 620 65]);
+                             'position', [361 5 620 65]);
                          
             this.h.pe = cell(1, 1);
             this.h.pd = cell(1, 1);
@@ -479,9 +500,12 @@ classdef SiSaGenericPlot < handle
 
                 set(this.h.pd{i}, 'string', str,'tooltipString', '95% Konfidenz');
             end
-            tmp = get(this.h.gof, 'string');
-            tmp{2} = sprintf('%1.2f', this.chisq);
-            set(this.h.gof, 'string', tmp);
+%             tmp = get(this.h.chi, 'string');
+            tmp = sprintf('Chi: %1.2f', this.chisq);
+            set(this.h.chi, 'string', tmp);
+            
+            set(this.h.dw, 'string', sprintf('DW: %1.2f', this.DW));
+            set(this.h.z, 'string', sprintf('Z: %1.2f', this.Z));
             this.read_and_calc_quant();
         end
         
@@ -523,8 +547,28 @@ classdef SiSaGenericPlot < handle
             this.fit_params = p;
             this.fit_params_err = p_err;
             this.chisq = chi;
+            this.Z = this.sisa_fit.runstest();
+            this.DW = this.sisa_fit.dw_test();
             this.fitted = true;
             this.plotdata();
+            
+            good_color = [0.2 0.8 0.2];
+            bad_color = [0.8 0.2 0.2];
+            if abs(this.chisq-1)<=0.05
+                this.h.chi.BackgroundColor = good_color;
+            else
+                this.h.chi.BackgroundColor = bad_color;
+            end
+            if abs(this.Z)<=1.96
+                this.h.z.BackgroundColor = good_color;
+            else
+                this.h.z.BackgroundColor = bad_color;
+            end
+            if abs(this.DW-2)<=0.1
+                this.h.dw.BackgroundColor = good_color;
+            else
+                this.h.dw.BackgroundColor = bad_color;
+            end
         end
         
         function xy_zoom_cb(this, varargin)
