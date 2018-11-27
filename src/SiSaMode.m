@@ -1842,8 +1842,11 @@ classdef SiSaMode < GenericMode
                     
                 end
             end
-            
-            num_results_inserted = db.insert(fileinfo, pointinfo, result);
+            if strcmp(this.p.h.config_database_no_DWZ.Checked,'on')
+                num_results_inserted = db.insert(fileinfo, pointinfo, result,true);
+            else
+                num_results_inserted = db.insert(fileinfo, pointinfo, result);
+            end
             
             sprintf('Es wurden %i Ergebnisse von insegsamt %i in die Datenbank eingetragen.', num_results_inserted, ii)
             
@@ -1880,7 +1883,7 @@ classdef SiSaMode < GenericMode
                         otherwise
                             parname = this.sisa_fit.parnames{i};
                     end
-                    parnames{i} = parname;
+                    parnames{i} = [parname '_start'];
                     low_name = [parname '_lo'];
                     up_name = [parname '_up'];
                     lb(i,1) = min(result.(low_name));
