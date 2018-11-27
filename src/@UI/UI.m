@@ -60,6 +60,9 @@ classdef UI < handle
             
             this.h.menu = uimenu(this.h.f);
             this.h.configmenu = uimenu(this.h.f);
+            
+            this.h.DBconfigmenu = uimenu(this.h.f);
+            
             this.h.helpmenu = uimenu(this.h.f);
             
             this.h.bottombar = uipanel();
@@ -132,6 +135,12 @@ classdef UI < handle
             this.h.config_database = uimenu(this.h.configmenu,...
                               'label', 'Database functionality',...
                               'callback', @this.config_database_cb);
+                          
+            this.h.DBconfigmenu.Label = 'DB Settings';
+            this.h.config_database_no_DWZ = uimenu(this.h.DBconfigmenu,...
+                              'label', 'select No DW Z Files',...
+                              'checked', 'on',...
+                              'callback', @this.config_database_noDWZ_cb);
             
             set(this.h.helpmenu, 'Label', '?');
             uimenu(this.h.helpmenu, 'label', 'über',...
@@ -752,7 +761,9 @@ classdef UI < handle
             
             limit2DB = true;
             db_query = 'model_not';
-            
+            if strcmp(this.h.config_database_no_DWZ.Checked,'on')
+                db_query = 'no_DW_Z';
+            end
             
             % get path of file from user
             if this.databasefunction && limit2DB
@@ -766,6 +777,16 @@ classdef UI < handle
             
                 
                 switch db_query
+                    case 'no_DW_Z'
+                        query = ['SELECT dateiinfos.name FROM dateiinfos '...
+                                'WHERE dateiinfos.ID NOT IN( '...
+                                'SELECT dateiinfos.ID FROM `dateiinfos` JOIN '...
+                                'datapointinfos ON datapointinfos.datei = dateiinfos.ID '...
+                                'JOIN ergebnisse ON ergebnisse.DS_ID = datapointinfos.ID '...
+                                'JOIN modell ON ergebnisse.Modell = modell.ID '...
+                                'WHERE modell.name = "' model '" '...
+                                'AND ergebnisse.DW > 0 '...
+                                'GROUP BY dateiinfos.ID)'];
                     case 'model_not'
                         query = ['SELECT dateiinfos.name FROM dateiinfos '...
                                 'WHERE dateiinfos.ID NOT IN( '...
@@ -986,6 +1007,17 @@ classdef UI < handle
                 this.databasefunction = true;
             end
             this.saveini();            
+        end
+        
+        function config_database_noDWZ_cb(this,varargin)
+            if strcmp(this.h.config_database_no_DWZ.Checked,'on')
+                this.h.config_database_no_DWZ.Checked = 'off';
+%                 this.databasefunction = false;
+            else
+                this.h.config_database_no_DWZ.Checked = 'on';
+%                 this.databasefunction = true;
+            end
+%             this.saveini();            
         end
         
         function config_remove_non_sisa_cb(this,varargin)

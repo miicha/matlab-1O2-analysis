@@ -673,6 +673,7 @@ classdef SiSaMode < GenericMode
                 this.h.d_bpth.String = this.p.basepath;
             end
             % init          
+            %% get Metadata
             
             this.read_channel_width();
             
@@ -1133,7 +1134,7 @@ classdef SiSaMode < GenericMode
                 end
             end
             this.data_sum = sum(this.data(:, :, :, :, (this.sisa_fit.t_0+this.sisa_fit.offset_time):end), 5);
-            this.sisa_fit.t_0+this.sisa_fit.offset_time
+%             this.sisa_fit.t_0+this.sisa_fit.offset_time
             this.fitted = false;
             
             
@@ -1811,6 +1812,9 @@ classdef SiSaMode < GenericMode
                     pointinfo(ii).fluo_val = squeeze(this.fluo_val(i,j,k,l,:));
                     
                     result(ii).chisq = squeeze(this.fit_chisq(i,j,k,l,:));
+                    result(ii).DW = squeeze(this.fit_dw(i,j,k,l,:));
+                    result(ii).Z = squeeze(this.fit_z(i,j,k,l,:));
+                    
                     result(ii).fitmodel = this.sisa_fit.name;
 
                     result(ii).t_zero = this.sisa_fit.t_0;
@@ -1856,12 +1860,111 @@ classdef SiSaMode < GenericMode
             [points_in_db,anzahl_in_db] = db.check_file_exists(basepath, filename, this.model);
             anz = {'Points in DB', 'Points in File', 'Results';points_in_db,prod(this.sisa_data_size),anzahl_in_db};
             disp(anz)
+            
+            if strcmp(this.p.h.config_database_no_DWZ.Checked,'on')
+                result = db.getNoDWZ(basepath, filename, this.model);
+                save([tempdir 'result_table.mat'],'result');
+                lb = zeros(length(this.sisa_fit.parnames),1);
+                ub = lb;
+                parnames = cell(length(this.sisa_fit.parnames),1);
+                for i = 1:length(this.sisa_fit.parnames)
+                    switch this.sisa_fit.parnames{i}
+                        case 'A'
+                            parname = 'A1';
+                        case 'B'
+                            parname = 'A2';
+                        case 'tD'
+                            parname = 't1';
+                        case 'tT'
+                            parname = 't2';
+                        otherwise
+                            parname = this.sisa_fit.parnames{i};
+                    end
+                    parnames{i} = parname;
+                    low_name = [parname '_lo'];
+                    up_name = [parname '_up'];
+                    lb(i,1) = min(result.(low_name));
+                    ub(i,1) = max(result.(up_name));
+                end
+
+                this.sisa_fit.update('upper', ub, 'lower', lb);
+                
+                this.update_fit_options_field();
+                % Fitergebnis aus DB als Startwerte setzen
+                for n = 1:prod(this.sisa_data_size)
+                    [i,j,k,l] = ind2sub(this.sisa_data_size, n);
+                    name = squeeze(this.reader.data.sisa_point_name(i, j, k, l, :))-1;
+                    startwert = table2array(result(join(string(name),'/'),parnames));
+                    this.est_params(i, j, k, l, :) = startwert;
+                end
+                
+                figure 
+                subplot(1,2,1)
+                boxplot(result.chisq)
+                subplot(1,2,2)
+                histogram(result.chisq)
+            end
             db.close();
             if anzahl_in_db > 1
                 this.h.sisamode.BackgroundColor = [0.3 .8 .5];
             else
                 this.h.sisamode.BackgroundColor = [0.9400 0.9400 0.9400];
             end
+        end
+        
+        function DBupdatePoints(this, varargin)
+            type = 'add_dw_z';
+            
+            db = db_interaction(this.p.db_config);
+            db.set_progress_cb(@(x) this.p.update_infos(x));
+            fileinfo = this.collect_fileinfo();
+            
+            switch type
+                case 'add_dw_z'
+                    
+                case 'correct_pointname'
+                    if this.disp_ov
+                        num_points = length(find(this.overlays{this.current_ov}));
+                    else
+                        num_points = prod(this.sisa_data_size);
+                    end
+                    s = prod(this.sisa_data_size);
+                    ii = 0;
+                    pointinfo = repmat( struct( 'name', 1 ), num_points, 1 );
+                    jj = 0;
+                    for n = 1:s
+                        [i,j,k,l] = ind2sub(this.sisa_data_size, n);
+                        if ~isnan(squeeze(this.sisa_esti(i,j,k,l,:)))
+                            jj = jj+1;
+                        end
+                        if ~this.disp_ov || this.overlays{this.current_ov}(i, j, k, l)
+                            ii = ii+1;                    
+                            pointinfo(ii).ort = 'undefined';
+                            pointinfo(ii).int_time = this.int_time;
+                            pointinfo(ii).note = '';
+
+                            [~,indx]=ismember(this.reader.meta.pointinfo.point_names,[i-1,j-1,k-1],'rows');                    
+                            try
+                                pointinfo(ii).messzeit = round(this.reader.meta.pointinfo.point_time(indx == 1));
+                            catch
+                                pointinfo(ii).messzeit = 0;
+                            end
+                            pointinfo(ii).ink = (this.reader.meta.sample.measure_time - this.reader.meta.sample.prep_time) + pointinfo(ii).messzeit; % in seconds
+                            
+                            pointinfo(ii).name = sprintf('%i/%i/%i/%i',i-1,j-1,k-1,l-1);
+                            pointinfo(ii).realname = sprintf('%i/%i/%i/%i',squeeze(this.reader.data.sisa_point_name(i, j, k, l, :))-1);
+                            
+                            pointinfo(ii).sisa_intens = squeeze(this.sisa_esti(i,j,k,l,:));
+                            pointinfo(ii).sisa_intens_err = squeeze(this.sisa_esti_err(i,j,k,l,:));
+                            pointinfo(ii).fluo_val = squeeze(this.fluo_val(i,j,k,l,:));
+                        end
+                    end
+                    jj
+                    num_results_updated = db.updatePointInfo(fileinfo, pointinfo);
+                    
+                    sprintf('Es wurden %i Punkte von insegsamt %i in der Tabelle datapointinfos aktualisiert.', num_results_updated, ii)
+            end
+            db.close();
         end
         
         function load_bounds(this, varargin)
@@ -1875,57 +1978,6 @@ classdef SiSaMode < GenericMode
             try
                 this.set_fit_bounds(vals.vals);
             end
-        end
-        
-        function DBupdatePoints(this, varargin)
-            db = db_interaction(this.p.db_config);
-
-            db.set_progress_cb(@(x) this.p.update_infos(x));
-            
-            fileinfo = this.collect_fileinfo();
-            
-            if this.disp_ov
-                num_points = length(find(this.overlays{this.current_ov}));
-            else
-                num_points = prod(this.sisa_data_size);
-            end
-            s = prod(this.sisa_data_size);
-            ii = 0;
-            pointinfo = repmat( struct( 'name', 1 ), num_points, 1 );
-            jj = 0;
-            for n = 1:s
-                [i,j,k,l] = ind2sub(this.sisa_data_size, n);
-                if ~isnan(squeeze(this.sisa_esti(i,j,k,l,:)))
-                    jj = jj+1;
-                end
-                if ~this.disp_ov || this.overlays{this.current_ov}(i, j, k, l)
-                    ii = ii+1;                    
-                    pointinfo(ii).ort = 'undefined';
-                    pointinfo(ii).int_time = this.int_time;
-                    pointinfo(ii).note = '';
-                    
-                    [~,indx]=ismember(this.reader.meta.pointinfo.point_names,[i-1,j-1,k-1],'rows');                    
-                    try
-                        pointinfo(ii).messzeit = round(this.reader.meta.pointinfo.point_time(indx == 1));
-                    catch
-                        pointinfo(ii).messzeit = 0;
-                    end
-                    pointinfo(ii).ink = (this.reader.meta.sample.measure_time - this.reader.meta.sample.prep_time) + pointinfo(ii).messzeit; % in seconds
-                    
-                    pointinfo(ii).name = sprintf('%i/%i/%i/%i',i-1,j-1,k-1,l-1);
-                    pointinfo(ii).realname = sprintf('%i/%i/%i/%i',squeeze(this.reader.data.sisa_point_name(i, j, k, l, :))-1);
-                    
-                    pointinfo(ii).sisa_intens = squeeze(this.sisa_esti(i,j,k,l,:));
-                    pointinfo(ii).sisa_intens_err = squeeze(this.sisa_esti_err(i,j,k,l,:));
-                    pointinfo(ii).fluo_val = squeeze(this.fluo_val(i,j,k,l,:));
-                end
-            end
-            jj
-            num_results_updated = db.updatePointInfo(fileinfo, pointinfo);
-            
-            sprintf('Es wurden %i Punkte von insegsamt %i in der Tabelle datapointinfos aktualisiert.', num_results_updated, ii)
-            
-            db.close();
         end
         
         function add_ov_cb(this, varargin)
@@ -2129,6 +2181,17 @@ classdef SiSaMode < GenericMode
             else
                 this.fit_all(1);
             end
+            
+            figure
+            subplot(1,2,1)
+            boxplot(this.fit_chisq(:))
+            ylabel('\chi^2')
+
+            subplot(1,2,2)
+            histogram(this.fit_chisq(:))
+            title('\chi^2 Verteilung aus Fit')
+            xlabel('\chi^2')
+            
         end
         
         function resume_fit_cb(this, varargin)
