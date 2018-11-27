@@ -1870,6 +1870,7 @@ classdef SiSaMode < GenericMode
                 lb = zeros(length(this.sisa_fit.parnames),1);
                 ub = lb;
                 parnames = cell(length(this.sisa_fit.parnames),1);
+                parnames_start = parnames;
                 for i = 1:length(this.sisa_fit.parnames)
                     switch this.sisa_fit.parnames{i}
                         case 'A'
@@ -1883,7 +1884,8 @@ classdef SiSaMode < GenericMode
                         otherwise
                             parname = this.sisa_fit.parnames{i};
                     end
-                    parnames{i} = [parname '_start'];
+                    parnames{i} = parname;
+                    parnames_start{i} = [parname '_start'];
                     low_name = [parname '_lo'];
                     up_name = [parname '_up'];
                     lb(i,1) = min(result.(low_name));
@@ -1897,8 +1899,15 @@ classdef SiSaMode < GenericMode
                 for n = 1:prod(this.sisa_data_size)
                     [i,j,k,l] = ind2sub(this.sisa_data_size, n);
                     name = squeeze(this.reader.data.sisa_point_name(i, j, k, l, :))-1;
-                    startwert = table2array(result(join(string(name),'/'),parnames));
+                    startwert = table2array(result(join(string(name),'/'),parnames_start));
                     this.est_params(i, j, k, l, :) = startwert;
+                end
+                
+                for i = 1:length(parnames)
+                    if std(result.(parnames{i}))< 1e-10
+                        ['Achtung, ' parnames{i} ' fixieren']
+                        mean(result.(parnames{i}))
+                    end
                 end
                 
                 figure 
