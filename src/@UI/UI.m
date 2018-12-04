@@ -55,6 +55,7 @@ classdef UI < handle
             this.db_config.dbserver = 'localhost';
             this.db_config.dbpw = '';
             this.db_config.dbname = '';
+            this.db_config.dbport = 3306;
             %% initialize all UI objects:
             this.h.f = figure();
             
@@ -552,6 +553,9 @@ classdef UI < handle
                 if isfield(conf, 'dbname')
                     this.db_config.dbname = conf.dbname;
                 end
+                if isfield(conf, 'dbport')
+                    this.db_config.dbport = conf.dbport;
+                end
                 
                 if isfield(conf, 'savepath')
                     this.savepath = conf.savepath;
@@ -655,6 +659,7 @@ classdef UI < handle
             strct.dbserver = this.db_config.dbserver;
             strct.dbpw = this.db_config.dbpw;
             strct.dbname = this.db_config.dbname;
+            strct.dbport = this.db_config.dbport;
             strct.open_nsTAS_path = this.open_nsTAS_path;
             strct.savepath = this.savepath;
             strct.read_fluo = this.h.config_read_fluo.Checked;
@@ -773,6 +778,11 @@ classdef UI < handle
                     if isa(this.modes{m},'SiSaMode')
                         model = this.modes{m}.model;
                     end
+                end
+                if isempty(model)
+                    s = sisafit(1);
+                    models = s.get_model_info;
+                    model = models.model_names{this.siox_config.last_model};
                 end
             
                 
