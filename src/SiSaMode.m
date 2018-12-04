@@ -1924,7 +1924,10 @@ classdef SiSaMode < GenericMode
                         ub(i,1) = max(result.(up_name));
                     end
                     
-                    this.sisa_fit.update('upper', ub, 'lower', lb);
+                    t_0 = mean(result.t_zero);
+                    fit_start = mean(result.fit_start);
+                    
+                    this.sisa_fit.update('upper', ub, 'lower', lb,'t0',t_0, 'offset',fit_start);
                     
                     this.update_fit_options_field();
                     % Fitergebnis aus DB als Startwerte setzen
