@@ -64,6 +64,7 @@ classdef SiSaMode < GenericMode
         gstart = [0 0 0 0];
         use_gstart = [0 0 0 0]';
         reader;
+        dbResults;
     end
     
     methods
@@ -1782,108 +1783,32 @@ classdef SiSaMode < GenericMode
         end
         
         function DBinsert(this, varargin)
-%             server = '141.20.44.176';
-%             server = 'localhost';
-
             db = db_interaction(this.p.db_config);
-
             db.set_progress_cb(@(x) this.p.update_infos(x));
             
             fileinfo = this.collect_fileinfo();
-            
-            if this.disp_ov
-                num_points = length(find(this.overlays{this.current_ov}));
-            else
-                num_points = prod(this.sisa_data_size);
-            end
-            s = prod(this.sisa_data_size);
-            ii = 0;
-%             pointinfo = repmat( struct( 'name', 1 ), num_points, 1 );
-            result = repmat( struct( 'ort', 1 ), num_points, 1 );
-            
-            g_par = find(this.use_gstart);
-            
-            short_siox = this.h.short_siox.Value;
-            weighting = this.h.weighting.Value;
-            for n = 1:s
-                [i,j,k,l] = ind2sub(this.sisa_data_size, n);               
-                if all(~isnan(this.data(i, j, k, l))) && (~this.disp_ov || this.overlays{this.current_ov}(i, j, k, l))
-                    ii = ii+1;                    
-                    pointinfo(ii).ort = 'undefined';
-                    pointinfo(ii).int_time = this.int_time;
-                    pointinfo(ii).note = '';
-                    
-                    [~,indx]=ismember(this.reader.meta.pointinfo.point_names,[i-1,j-1,k-1],'rows');                    
-                    try
-                        pointinfo(ii).messzeit = round(this.reader.meta.pointinfo.point_time(indx == 1));
-                    catch
-                        pointinfo(ii).messzeit = 0;
-                    end
-                    pointinfo(ii).ink = (this.reader.meta.sample.measure_time - this.reader.meta.sample.prep_time) + pointinfo(ii).messzeit; % in seconds
-                    
-                    try
-                        name = sprintf('%i/%i/%i/%i',squeeze(this.reader.data.sisa_point_name(i, j, k, l, :))-1);
-                    catch
-                        name = sprintf('%i/%i/%i/%i',i-1,j-1,k-1,l-1);
-                    end
-                    pointinfo(ii).name = name;
-                    
-                    pointinfo(ii).sisa_intens = squeeze(this.sisa_esti(i,j,k,l,:));
-                    pointinfo(ii).sisa_intens_err = squeeze(this.sisa_esti_err(i,j,k,l,:));
-                    pointinfo(ii).fluo_val = squeeze(this.fluo_val(i,j,k,l,:));
-                    
-                    result(ii).chisq = squeeze(this.fit_chisq(i,j,k,l,:));
-                    result(ii).DW = squeeze(this.fit_dw(i,j,k,l,:));
-                    result(ii).Z = squeeze(this.fit_z(i,j,k,l,:));
-                    
-                    result(ii).fitmodel = this.sisa_fit.name;
+            [pointinfo, result] = this.collectPointInfoResults;
 
-                    result(ii).t_zero = this.sisa_fit.t_0;
-                    result(ii).fit_start = this.sisa_fit.offset_time;
-                    result(ii).fit_end = this.sisa_fit.end_channel;
-                    
-                    result(ii).params = squeeze(this.fit_params(i,j,k,l,:));
-                    result(ii).parnames = this.sisa_fit.parnames;
-                    
-                    result(ii).errors = squeeze(this.fit_params_err(i,j,k,l,:));
-                    
-                    start = squeeze(this.est_params(i, j, k, l, :));
-                    if ~isempty(g_par) % any parameter global startpoint?
-                        start(g_par) = this.gstart(g_par);
-                    end                    
-                    result(ii).start = start;
-                    
-                    result(ii).lower = this.sisa_fit.lower_bounds;
-                    result(ii).upper = this.sisa_fit.upper_bounds;
-                    result(ii).shortSiox = short_siox;
-                    result(ii).weighting = weighting;
-                    
-                    result(ii).rating = this.h.d_fitResultRating.Value;
-                    result(ii).kommentar = this.h.d_note.String;
-                    
-                end
-            end
-            if strcmp(this.p.h.config_database_no_DWZ.Checked,'on')
-                num_results_inserted = db.insert(fileinfo, pointinfo, result,true);
-            else
-                num_results_inserted = db.insert(fileinfo, pointinfo, result);
-            end
-            
+            num_results_inserted = db.insert(fileinfo, pointinfo, result);
             sprintf('Es wurden %i Ergebnisse von insegsamt %i in die Datenbank eingetragen.', num_results_inserted, ii)
             
             db.close();
         end
         
         function DWUpdate(this, varargin)
-%             server = '141.20.44.176';
-%             server = 'localhost';
-
             db = db_interaction(this.p.db_config);
-
             db.set_progress_cb(@(x) this.p.update_infos(x));
             
             fileinfo = this.collect_fileinfo();
+            [pointinfo, result] = this.collectPointInfoResults;
             
+            num_results_inserted = db.addDWZ(fileinfo, pointinfo, result, this.dbResults);
+            sprintf('Es wurden %i Ergebnisse von insegsamt %i in der Datenbank aktualisiert.', num_results_inserted, length(result))
+            
+            db.close();
+        end
+        
+        function [pointinfo, result] = collectPointInfoResults(this)
             if this.disp_ov
                 num_points = length(find(this.overlays{this.current_ov}));
             else
@@ -1892,7 +1817,7 @@ classdef SiSaMode < GenericMode
             s = prod(this.sisa_data_size);
             ii = 0;
 %             pointinfo = repmat( struct( 'name', 1 ), num_points, 1 );
-            result = repmat( struct( 'ort', 1 ), num_points, 1 );
+%             result = repmat( struct( 'ort', 1 ), num_points, 1 );
             
             g_par = find(this.use_gstart);
             
@@ -1956,15 +1881,6 @@ classdef SiSaMode < GenericMode
                     
                 end
             end
-            if strcmp(this.p.h.config_database_no_DWZ.Checked,'on')
-                num_results_inserted = db.insert(fileinfo, pointinfo, result,true);
-            else
-                num_results_inserted = db.insert(fileinfo, pointinfo, result);
-            end
-            
-            sprintf('Es wurden %i Ergebnisse von insegsamt %i in die Datenbank eingetragen.', num_results_inserted, ii)
-            
-            db.close();
         end
   
         function DBcheck(this, varargin)
@@ -1980,61 +1896,62 @@ classdef SiSaMode < GenericMode
             
             if strcmp(this.p.h.config_database_no_DWZ.Checked,'on')
                 result = db.getNoDWZ(basepath, filename, this.model);
+                this.dbResults = result;
                 if ~isempty(result)
-                save([tempdir 'result_table.mat'],'result');
-                lb = zeros(length(this.sisa_fit.parnames),1);
-                ub = lb;
-                parnames = cell(length(this.sisa_fit.parnames),1);
-                parnames_start = parnames;
-                for i = 1:length(this.sisa_fit.parnames)
-                    switch this.sisa_fit.parnames{i}
-                        case 'A'
-                            parname = 'A1';
-                        case 'B'
-                            parname = 'A2';
-                        case 'tD'
-                            parname = 't1';
-                        case 'tT'
-                            parname = 't2';
-                        otherwise
-                            parname = this.sisa_fit.parnames{i};
+                    save([tempdir 'result_table.mat'],'result');
+                    lb = zeros(length(this.sisa_fit.parnames),1);
+                    ub = lb;
+                    parnames = cell(length(this.sisa_fit.parnames),1);
+                    parnames_start = parnames;
+                    for i = 1:length(this.sisa_fit.parnames)
+                        switch this.sisa_fit.parnames{i}
+                            case 'A'
+                                parname = 'A1';
+                            case 'B'
+                                parname = 'A2';
+                            case 'tD'
+                                parname = 't1';
+                            case 'tT'
+                                parname = 't2';
+                            otherwise
+                                parname = this.sisa_fit.parnames{i};
+                        end
+                        parnames{i} = parname;
+                        parnames_start{i} = [parname '_start'];
+                        low_name = [parname '_lo'];
+                        up_name = [parname '_up'];
+                        lb(i,1) = min(result.(low_name));
+                        ub(i,1) = max(result.(up_name));
                     end
-                    parnames{i} = parname;
-                    parnames_start{i} = [parname '_start'];
-                    low_name = [parname '_lo'];
-                    up_name = [parname '_up'];
-                    lb(i,1) = min(result.(low_name));
-                    ub(i,1) = max(result.(up_name));
-                end
-
-                this.sisa_fit.update('upper', ub, 'lower', lb);
-                
-                this.update_fit_options_field();
-                % Fitergebnis aus DB als Startwerte setzen
-                for n = 1:prod(this.sisa_data_size)
-                    [i,j,k,l] = ind2sub(this.sisa_data_size, n);
-                    name = squeeze(this.reader.data.sisa_point_name(i, j, k, l, :))-1;
-                    try
-                        pointname = join(string(name),'/');
-                        startwert = table2array(result(pointname,parnames_start));
-                        this.est_params(i, j, k, l, :) = startwert;
-                    catch
-                        [pointname ' wurde nicht in DB gefunden']
+                    
+                    this.sisa_fit.update('upper', ub, 'lower', lb);
+                    
+                    this.update_fit_options_field();
+                    % Fitergebnis aus DB als Startwerte setzen
+                    for n = 1:prod(this.sisa_data_size)
+                        [i,j,k,l] = ind2sub(this.sisa_data_size, n);
+                        name = squeeze(this.reader.data.sisa_point_name(i, j, k, l, :))-1;
+                        try
+                            pointname = join(string(name),'/');
+                            startwert = table2array(result(pointname,parnames_start));
+                            this.est_params(i, j, k, l, :) = startwert;
+                        catch
+                            [pointname ' wurde nicht in DB gefunden']
+                        end
                     end
-                end
-                
-                for i = 1:length(parnames)
-                    if std(result.(parnames{i}))< 1e-10
-                        ['Achtung, ' parnames{i} ' fixieren']
-                        mean(result.(parnames{i}))
+                    
+                    for i = 1:length(parnames)
+                        if std(result.(parnames{i}))< 1e-10
+                            ['Achtung, ' parnames{i} ' fixieren']
+                            mean(result.(parnames{i}))
+                        end
                     end
-                end
-                
-                figure 
-                subplot(1,2,1)
-                boxplot(result.chisq)
-                subplot(1,2,2)
-                histogram(result.chisq)
+                    
+                    figure
+                    subplot(1,2,1)
+                    boxplot(result.chisq)
+                    subplot(1,2,2)
+                    histogram(result.chisq)
                 end
             end
             db.close();
