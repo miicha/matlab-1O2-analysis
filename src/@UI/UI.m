@@ -205,6 +205,8 @@ classdef UI < handle
         
     % functions for opening and reading various files:
         function open_file(this, path, name)
+            this.loadini();
+            
             this.fileinfo.path = path;
             this.openpath = path;
             filepath = path;
@@ -762,7 +764,6 @@ classdef UI < handle
         % callback for opening a new file
         % destroys current figure and creates a new one
         function open_file_cb(this, varargin)
-%             this.loadini();
             
             limit2DB = true;
             db_query = 'model_not';
