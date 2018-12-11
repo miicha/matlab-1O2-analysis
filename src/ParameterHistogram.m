@@ -67,7 +67,7 @@ classdef ParameterHistogram < handle
             num_par = size(this.params,2);
             m = ceil(num_par/2);
             for i = 1:num_par
-                 ax_tmp = subplot(2,m,i);
+                ax_tmp = subplot(2,m,i);
                 
                 if nargin >= 2 && length(this.paramNames) == length(numbins) && ~isnan(numbins(i))
                     hi_tmp = histogram(this.params(:,i),numbins(i));
@@ -79,6 +79,8 @@ classdef ParameterHistogram < handle
                     this.h.ax(i) = ax_tmp;
                     ax_tmp.Units = 'pixels';
                 end
+                
+                this.histfit(i,'kernel',saveAx)
                 title(this.paramNames{i})
             end
         end
@@ -86,11 +88,92 @@ classdef ParameterHistogram < handle
         function morebins(this,varargin)
             i = str2double(varargin{1}.Tag);
             this.numbins(i) = morebins(this.h.hist(i));
+            this.histfit(i,'kernel');
         end
         
         function lessbins(this,varargin)
             i = str2double(varargin{1}.Tag);
             this.numbins(i) = fewerbins(this.h.hist(i));
+            this.histfit(i,'kernel');
+        end
+        
+        function h = histfit(this,number,dist,saveAx)
+            binedges = this.h.hist(number).BinEdges;
+            if length(binedges)<5
+                try
+                    delete(this.h.histFit(number))
+                end
+                return
+            end
+            if nargin < 4
+                saveAx = true;
+            end
+            data = this.params(:,number);
+            data = data(:);
+            data(isnan(data)) = [];
+            n = numel(data);
+
+            % Fit distribution to data
+            if nargin<3 || isempty(dist)
+                dist = 'normal';
+            end
+            try
+                pd = fitdist(data,dist);
+            catch myException
+                if isequal(myException.identifier,'stats:ProbDistUnivParam:fit:NRequired') || ...
+                        isequal(myException.identifier,'stats:binofit:InvalidN')
+                    % Binomial is not allowed because we have no N parameter
+                    error(message('stats:histfit:BadDistribution'))
+                else
+                    % Pass along another other errors
+                    throw(myException)
+                end
+            end
+            
+            % Find range for plotting
+            q = icdf(pd,[0.0013499 0.99865]); % three-sigma range for normal distribution
+            x = linspace(q(1),q(2));
+            if ~pd.Support.iscontinuous
+                % For discrete distribution use only integers
+                x = round(x);
+                x(diff(x)==0) = [];
+            end
+            
+            
+            % Normalize the density to match the total area of the histogram
+            binwidth = binedges(2)-binedges(1); % Finds the width of each bin
+            area = n * binwidth;
+            y = area * pdf(pd,x);
+            
+            if saveAx
+                ax = this.h.ax(number);
+            else
+                ax = gca;
+            end
+            
+            XLim = ax.XLim;
+            % Overlay the density
+            np = get(ax,'NextPlot');
+            set(ax,'NextPlot','add')
+            
+            if saveAx
+                try
+                    delete(this.h.histFit(number))
+                end
+            end
+            
+            tmp = plot(ax,x,y,'r-','LineWidth',2);
+            
+            if saveAx
+                this.h.histFit(number) = tmp;
+            end
+            
+            if nargout == 1
+                h = [hh; hh1];
+            end
+            
+            set(ax,'NextPlot',np)
+            ax.XLim = XLim;
         end
         
         function export(this,varargin)
