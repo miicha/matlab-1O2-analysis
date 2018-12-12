@@ -1071,7 +1071,6 @@ classdef UI < handle
         % punt to current mode to handle everything
         function save_fig_cb(this, varargin)
             if ~isempty(this.modes)
-                this.modes
                 tmp = this.current_mode;
                 if ischar(tmp)
                     tmp = str2double(tmp);
