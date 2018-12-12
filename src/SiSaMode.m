@@ -1061,49 +1061,34 @@ classdef SiSaMode < GenericMode
         
     % functions that actually compute something
         function compute_ov(this)
-             if this.disp_fit_params
-                val = str2double(get(this.h.ov_val, 'string'));
-                par = get(this.h.ov_drpd, 'value');
-                no_pars = size(this.fit_params, 5);
-                switch get(this.h.ov_rel, 'value')
-                    case 1
-                        if par <= no_pars
-                            this.overlays{1} = this.fit_params(:, :, :, :, par) < val;
-                        else
-                            switch par
-                                case no_pars +1
-                                    this.overlays{1} = this.fit_chisq < val;
-                            end
-                        end
-                    case 2
-                        if par <= no_pars
-                            this.overlays{1} = this.fit_params(:, :, :, :, par) > val;
-                        else
-                            switch par
-                                case no_pars +1
-                                    this.overlays{1} = this.fit_chisq > val;
-                            end
-                        end
+            val = str2double(get(this.h.ov_val, 'string'));
+            par = get(this.h.ov_drpd, 'value');
+            no_pars = size(this.fit_params, 5);
+            
+            if par <= no_pars
+                
+                if this.disp_fit_params
+                    dataToCompare = this.fit_params(:, :, :, :, par);
+                else
+                    dataToCompare = this.est_params(:, :, :, :, par);
                 end
             else
-                val = str2double(get(this.h.ov_val, 'string'));
-                par = get(this.h.ov_drpd, 'value');
-                no_pars = size(this.est_params, 5);
-                switch get(this.h.ov_rel, 'value')
-                    case 1
-                        if par <= no_pars
-                            this.overlays{1} = this.est_params(:, :, :, :, par) < val;
-                        else
-                            this.overlays{1} = this.data_sum < val;
-                        end
-                    case 2
-                        if par <= no_pars
-                            this.overlays{1} = this.est_params(:, :, :, :, par) > val;
-                        else
-                            this.overlays{1} = this.data_sum > val;
-                        end
+                switch par
+                    case no_pars +1 % compare against chisq
+                        dataToCompare = this.fit_chisq;
+                    case no_pars +2 % compare against sum
+                        dataToCompare = this.data_sum;
+                    case no_pars +3 % compare against 1O2 est
+                        dataToCompare = this.sisa_esti;
                 end
             end
+            
+             switch get(this.h.ov_rel, 'value')
+                 case 1
+                     this.overlays{1} = dataToCompare < val;
+                 case 2
+                     this.overlays{1} = dataToCompare > val;
+             end
         end
 
         function estimate_parameters(this)
