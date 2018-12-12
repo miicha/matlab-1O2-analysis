@@ -737,10 +737,6 @@ classdef SiSaMode < GenericMode
             this.sisa_fit.update('t0',t_0, 'offset',t_0+25, 'end_chan', end_ch, 'weighting', this.h.weighting.Value);
 
             % UI stuff
-            % folgende 3 Zeilen wahrscheinlich unn�tz...
-            par_names = this.sisa_fit_info.par_names{this.model_number};
-            set(this.h.param, 'visible', 'on', 'string', [par_names, 'A_korr', 'Summe']);
-            set(this.h.ov_drpd, 'string', [par_names, 'Summe']);
             
             set(this.h.plttxt, 'visible', 'on');
             set(this.h.fit_est, 'visible', 'on');
@@ -831,8 +827,10 @@ classdef SiSaMode < GenericMode
             this.model = str;
             this.estimate_parameters();
             set(this.h.plttxt, 'visible', 'on');
+            
+            set(this.h.ov_drpd, 'string', [par_names,'Chi^2', 'Summe','1O2 est']);
             set(this.h.param, 'visible', 'on',...
-                            'string', [par_names, 'A_korr', 'Summe']);
+                            'string', [par_names, 'Summe']);
             this.plot_array();
             this.set_param_fix_cb();
             this.DBcheck();
@@ -860,20 +858,8 @@ classdef SiSaMode < GenericMode
             end
         end
                
-        function name = get_parname(this, index)
-            fitpars = this.sisa_fit_info.par_names{this.model_number};
-            if index == length(fitpars) + 1
-                name = 'A_korr';
-                return
-            elseif index > length(fitpars)
-                if this.disp_fit_params
-                    name = 'Chi';
-                else
-                    name = 'Summe';
-                end
-                return
-            end
-            name = fitpars{index};
+        function name = get_parname(this)
+            name = this.h.param.String{this.h.param.Value};
         end
 
         function generate_sel_vals(this)
@@ -1044,8 +1030,6 @@ classdef SiSaMode < GenericMode
             else
                 switch param
                     case length(this.est_params(1, 1, 1, 1, :)) + 1
-                        plot_data = this.corrected_amplitude(this.est_params);
-                    case length(this.est_params(1, 1, 1, 1, :)) + 2
                         plot_data = this.data_sum;
                     otherwise
                         if param > length(this.est_params(1, 1, 1, 1, :))
@@ -1086,13 +1070,19 @@ classdef SiSaMode < GenericMode
                         if par <= no_pars
                             this.overlays{1} = this.fit_params(:, :, :, :, par) < val;
                         else
-                            this.overlays{1} = this.fit_chisq < val;
+                            switch par
+                                case no_pars +1
+                                    this.overlays{1} = this.fit_chisq < val;
+                            end
                         end
                     case 2
                         if par <= no_pars
                             this.overlays{1} = this.fit_params(:, :, :, :, par) > val;
                         else
-                            this.overlays{1} = this.fit_chisq > val;
+                            switch par
+                                case no_pars +1
+                                    this.overlays{1} = this.fit_chisq > val;
+                            end
                         end
                 end
             else
@@ -1521,7 +1511,7 @@ classdef SiSaMode < GenericMode
                 tmp = 'geschaetzt';
             end
             np = this.plotpanel.save_fig([this.p.savepath filesep() this.p.genericname...
-                                          '_SiSa_par=' this.get_parname(this.current_param)...
+                                          '_SiSa_par=' this.get_parname()...
                                           '_' tmp '.pdf']);
             this.p.set_savepath(np);
         end
@@ -2100,7 +2090,7 @@ classdef SiSaMode < GenericMode
                     params = [par_names, 'Chi^2','DW','Z','SiSa_esti', 'Fluo', 'Fluo/SiSa'];
                 else
                     this.disp_fit_params = false;
-                    params = [par_names, 'A_korr', 'Summe'];
+                    params = [par_names, 'Summe'];
                 end
 
                 set(this.h.param, 'visible', 'on',...
