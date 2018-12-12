@@ -33,6 +33,7 @@ classdef UI < handle
         
         hyper_pos = false;
         inipath;
+        lastfiles = struct();
         
 
         h = struct();        % handles
@@ -93,6 +94,9 @@ classdef UI < handle
             set(this.h.menu, 'Label', 'File');
             uimenu(this.h.menu, 'label', 'Open File...',...
                               'callback', @this.open_file_cb);
+                          
+            this.h.last_files = uimenu(this.h.menu, 'label', 'Last Files');
+                          
             uimenu(this.h.menu, 'label', 'Open Folder...',...
                               'callback', @this.open_folder_cb);
             uimenu(this.h.menu, 'label', 'Open Database...',...
@@ -170,6 +174,14 @@ classdef UI < handle
             if this.check_version()
                 this.restart();
                 return
+            end
+            
+            if isfield(this.lastfiles(1),'path')
+                for i = 1:length(this.lastfiles)
+                    this.h.("last_file_entry"+i) = uimenu(this.h.last_files, 'label', this.lastfiles(i).name,...
+                                                            'callback',@this.openLastFile_cb,...
+                                                            'tag', num2str(i));
+                end
             end
                                  
             %% limit size with java
@@ -483,11 +495,16 @@ classdef UI < handle
             end
         end
 
-        function updated = check_version(this)
+        function updated = check_version(this, varargin)
+            force = false;
+            try
+                varargin{1}.String;
+                force = true;
+            end
             updated = false;
             
             % check at most once per hour
-            if strcmp(this.h.config_check_version.Checked,'on') && (now() - this.lastopened > 1/24)
+            if force || (strcmp(this.h.config_check_version.Checked,'on') && (now() - this.lastopened > 1/24))
                 strct.lastopened = now();
                 writeini(this.inipath, strct, false, true);
                 try
@@ -525,6 +542,8 @@ classdef UI < handle
             UI();
         end
         
+        %% Ini Krams
+        
         function loadini(this, resize)
             if exist(this.inipath, 'file')
                 conf = readini(this.inipath);
@@ -533,6 +552,9 @@ classdef UI < handle
                 end
                 if isfield(conf, 'openpath')
                     this.openpath = conf.openpath;
+                    if this.openpath(end) ~= filesep
+                        this.openpath(end+1) = filesep;
+                    end
                 else
                     this.openpath = '';
                 end
@@ -625,6 +647,15 @@ classdef UI < handle
                         this.h.config_database.Checked = 'on';
                     end
                 end
+                i = 1;
+                while isfield(conf, "lastfile_"+i)
+                    tmp = conf.("lastfile_"+i);
+                    [filepath,name,ext] = fileparts(tmp);
+                    this.lastfiles(i).path = filepath;
+                    this.lastfiles(i).name = [name ext];
+                    i = i+1;
+                end
+                
                 
                 if isfield(conf, 'fluo_show_wl')
                     this.fluo_config.fluo_show_wl = conf.fluo_show_wl;
@@ -694,9 +725,18 @@ classdef UI < handle
                 save(fullfile(fileparts(this.inipath), 'bounds.mat'),'vals');
             end
             
+            % last files
+            for i = 1:length(this.lastfiles)
+                if isfield(this.lastfiles, 'path')
+                    strct.("lastfile_"+i) = [this.lastfiles(i).path filesep this.lastfiles(i).name];
+                end
+            end
+            
             
             writeini(this.inipath, strct, false, true);
         end
+        
+        %% Close
         
         function destroy(this, children_only)
             for i = 1:10
@@ -758,6 +798,50 @@ classdef UI < handle
         function m = isMaximised(this)
             jFrame = handle(this.h.f).JavaFrame;
             m = jFrame.isMaximized();
+        end
+        
+        function addToLastfiles(this, filepath, filename)
+            max_lastfiles = 5;
+            
+            if filepath(end) == filesep
+                filepath = filepath(1:end-1);
+            end
+%             tic
+            if ~isfield(this.lastfiles(1), 'path')
+                newIndex = 1;
+            else
+                newIndex = length(this.lastfiles)+1;
+                
+                for i = 1:length(this.lastfiles)
+                    if strcmp(this.lastfiles(i).name,filename)
+                        this.lastfiles(i) = [];
+                        newIndex = newIndex-1;
+                        break
+                    end
+                end                
+                reorder = length(this.lastfiles):-1:1;
+                this.lastfiles = this.lastfiles(reorder);
+            end
+            
+            this.lastfiles(newIndex).name = filename;
+            this.lastfiles(newIndex).path = filepath;
+            
+            reorder = length(this.lastfiles):-1:1;
+            this.lastfiles = this.lastfiles(reorder);
+            if length(this.lastfiles) > max_lastfiles
+                this.lastfiles = this.lastfiles(1:max_lastfiles);
+            end
+            
+            
+            for i = 1:length(this.lastfiles)
+                if ~isfield(this.h, "last_file_entry"+i)
+                    this.h.("last_file_entry"+i) = uimenu(this.h.last_files,...
+                                                    'callback',@this.openLastFile_cb,...
+                                                    'tag', num2str(i));
+                end
+                this.h.("last_file_entry"+i).Text = this.lastfiles(i).name;
+            end
+%             toc
         end
         
         %% Callbacks
@@ -832,6 +916,18 @@ classdef UI < handle
                 return
             end
             
+            this.addToLastfiles(filepath,name);
+            this.openpath = filepath;
+            this.saveini();
+            this.close_modes();
+            this.open_file(filepath, name);
+        end
+        
+        function openLastFile_cb(this,varargin)
+            selection = str2double(varargin{1}.Tag);
+            filepath = this.lastfiles(selection).path;
+            name = this.lastfiles(selection).name;
+            this.addToLastfiles(filepath,name);
             this.openpath = filepath;
             this.saveini();
             this.close_modes();
@@ -1113,16 +1209,28 @@ classdef UI < handle
                           'FontSize', 11,...
                           'string', 'Autor: Sebastian Pfitzner, pfitzseb@physik');
                       
+            
+                      
             try
-                server_ver = urlread(this.online_ver);
+                server_ver = webread(this.online_ver);
             catch
                 server_ver = 'keine Internet-Verbindung!';
             end
             
+            if ~strcmp(server_ver,this.version)
+                uicontrol(f, 'style', 'pushbutton',...
+                          'position', [150 132 200 23],...
+                          'HorizontalAlignment', 'center',...
+                          'FontSize', 11,...
+                          'string', 'Try Update',...
+                          'callback',@this.check_version);
+            end
+                      
+            
             str = ['Aktuelle Version: lokal ' num2str(this.version) '  -  online ' server_ver];
 
             uicontrol(f, 'style', 'text',...
-                          'position', [20 120 460 20],...
+                          'position', [20 105 460 20],...
                           'HorizontalAlignment', 'center',...
                           'FontSize', 10,...
                           'string', str);
