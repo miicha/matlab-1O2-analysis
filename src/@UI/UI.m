@@ -926,6 +926,9 @@ classdef UI < handle
         function openLastFile_cb(this,varargin)
             selection = str2double(varargin{1}.Tag);
             filepath = this.lastfiles(selection).path;
+            if filepath(end) ~= filesep
+                filepath(end+1) = filesep;
+            end
             name = this.lastfiles(selection).name;
             this.addToLastfiles(filepath,name);
             this.openpath = filepath;
