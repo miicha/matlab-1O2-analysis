@@ -811,6 +811,10 @@ classdef SiSaMode < GenericMode
         function set_model(this, number)
             tmp = sisafit(number);
             tmp.copy_data(this.sisa_fit);
+            
+            old_parNum = this.sisa_fit.par_num;
+            old_selVal = this.h.ov_drpd.Value;
+            
             this.sisa_fit = tmp;
             
             this.h.drpd.Value = number;
@@ -827,6 +831,17 @@ classdef SiSaMode < GenericMode
             this.model = str;
             this.estimate_parameters();
             set(this.h.plttxt, 'visible', 'on');
+
+            if old_selVal > old_parNum
+                par_diff = this.sisa_fit.par_num-old_parNum;
+                this.h.ov_drpd.Value = this.h.ov_drpd.Value+par_diff;
+            elseif old_selVal == old_parNum
+                this.h.ov_drpd.Value = this.sisa_fit.par_num;
+            else
+                if old_selVal > this.sisa_fit.par_num
+                    this.h.ov_drpd.Value = old_selVal - (old_parNum-this.sisa_fit.par_num);
+                end
+            end
             
             set(this.h.ov_drpd, 'string', [par_names,'Chi^2', 'Summe','1O2 est']);
             set(this.h.param, 'visible', 'on',...
