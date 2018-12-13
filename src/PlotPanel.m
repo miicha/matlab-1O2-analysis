@@ -292,28 +292,9 @@ classdef PlotPanel < handle
         function fighandle = generate_export_fig(this, vis)
             x = size(this.p.data, this.curr_dims(1));
             y = size(this.p.data, this.curr_dims(2));
-
-            if x > y
-                d = x;
-            else
-                d = y;
-            end
-
-            scale_pix = 800/d;  % max width or height of the axes
-            scl = this.p.p.scale./max(this.p.p.scale);
             
-            if x == 1
-                x_pix = 150;
-            else
-                x_pix = x*scale_pix*scl(1);
-            end
-            if y == 1
-                y_pix = 150;
-            else
-                y_pix = y*scale_pix*scl(2);
-            end
-            
-            tmp = get(this.h.axes, 'position');
+            scaleX = this.p.scale(this.curr_dims(1));
+            scaleY = this.p.scale(this.curr_dims(2));
 
             if isfield(this.h, 'plot_pre') && ishandle(this.h.plot_pre)
                 figure(this.h.plot_pre);
@@ -321,22 +302,20 @@ classdef PlotPanel < handle
             else
                 this.h.plot_pre = figure('visible', vis);
             end
-            screensize = get(0, 'ScreenSize');
-            windowpos = [screensize(3)-(x_pix+150) screensize(4)-(y_pix+150)  x_pix+100 y_pix+100];
-            set(this.h.plot_pre, 'units', 'pixels',...
-                   'position', windowpos,...
-                   'numbertitle', 'off',...
-                   'name', 'SISA Scan Vorschau',...
-                   'menubar', 'none',...
-                   'resize', 'off',...
-                   'Color', [.95, .95, .95]);
 
             ax = copyobj(this.h.axes, this.h.plot_pre);
-            set(ax, 'position', [tmp(1)+22 tmp(2) x_pix y_pix],...
-                    'XColor', 'black',...
-                    'YColor', 'black');
+            axis image
+            f = gcf;
+            
+            caxis([this.l_min.(this.mode) this.l_max.(this.mode)]);
+            colormap(this.cmap);
+            c = colorbar();
+            drawnow
+
+            ax.Position(4) = ax.Position(3)*y*scaleY/(x*scaleX);
+
             xlabel([this.dimnames{this.curr_dims(1)} ' [mm]'])
-            ylabel([this.dimnames{this.curr_dims(2)} ' [mm]'])
+%             ylabel([this.dimnames{this.curr_dims(2)} ' [mm]'])
             
             x_label_res = 1;
             x_tick = 1:x_label_res:x;
@@ -352,27 +331,18 @@ classdef PlotPanel < handle
                 y_tick = 1:y_label_res:y;
             end
             
-            x_tick_label = num2cell((0:x_label_res:x-1)*this.p.scale(1));
-            y_tick_label = num2cell((0:y_label_res:y-1)*this.p.scale(2));
+            x_tick_label = num2cell((0:x_label_res:x-1)*scaleX);
+            y_tick_label = num2cell((0:y_label_res:y-1)*scaleY);
             
-            set(ax, 'xtick', x_tick, 'ytick', y_tick,...
-                    'xticklabel', x_tick_label,...
-                    'yticklabel', y_tick_label);
-
-            caxis([this.l_min.(this.mode) this.l_max.(this.mode)]);
-            colormap(this.cmap);
-            c = colorbar();
-            set(c, 'units', 'pixels');
-            tmp2 = get(c, 'position');
-            tmp2(1) = tmp(1)+x_pix+35;
-            set(c, 'position', tmp2);
-            if tmp2(1) + tmp2(3) > windowpos(3)
-                windowpos(3) = windowpos(3) + tmp2(3) + 20;
-                set(this.h.plot_pre, 'position', windowpos);
-            end
+            set(ax, 'xtick', x_tick,'xticklabel', x_tick_label);
+            set(ax, 'ytick', y_tick,'yticklabel', y_tick_label);
+            
+            axSize = ax.OuterPosition;
+            f.Position([3,4]) = axSize([3,4]);
+            
             fighandle = this.h.plot_pre;
         end
-
+        
         function newpath = save_fig(this, path)
             [newpath, ~, ~] = fileparts(path);
             [file, path] = uiputfile(path);
@@ -381,13 +351,7 @@ classdef PlotPanel < handle
             end
             newpath = path;
             f = this.generate_export_fig('off');
-            tmp = get(f, 'position');
-
-            % save the plot and close the figure
-            set(f, 'PaperUnits', 'points');
-            set(f, 'PaperSize', [tmp(3) tmp(4)]*.8);
-            set(f, 'PaperPosition', [0 0 tmp(3) tmp(4)]*.8);
-            print(f, '-dpdf', '-r600', fullfile(path, file));
+            save2pdf(fullfile(path, file),'figure',f, 'tight',false, 'aspect', f.Position(3)/f.Position(4))
             close(f);
         end
 
