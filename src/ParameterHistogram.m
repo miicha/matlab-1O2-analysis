@@ -7,6 +7,8 @@ classdef ParameterHistogram < handle
         numbins;
         params;
         paramNames;
+        name = 'unknown';
+        path = '';
     end
     
     properties (Access = private)
@@ -14,7 +16,14 @@ classdef ParameterHistogram < handle
     end
     
     methods
-        function this = ParameterHistogram(params, paramNames)
+        function this = ParameterHistogram(params, paramNames, filename, savepath)
+            if nargin > 2
+                this.name = filename;
+            end
+            if nargin > 3
+                this.path = [savepath filesep];
+            end
+            
             num_par = size(params,2);
             
             this.h.f = figure;
@@ -22,7 +31,7 @@ classdef ParameterHistogram < handle
             this.h.f.Resize = 'off';
             
             this.params = params;
-            this.paramNames = paramNames;
+            this.paramNames = strrep(regexprep(paramNames,'^(t)([DT\d])?','\\tau_$2'),'_D','_\Delta');
             this.plotHist();
             
             this.numbins = nan(num_par,1);
@@ -60,28 +69,34 @@ classdef ParameterHistogram < handle
     
     methods(Access=private)
         
-        function plotHist(this,numbins,saveAx)
+        function f = plotHist(this,numbins,saveAx)
             if nargin<3
                 saveAx = true;
             end
             num_par = size(this.params,2);
             m = ceil(num_par/2);
+            ha = tight_subplot(2,m,[.08 .04],[.08 .02],[.04 .01]);
             for i = 1:num_par
-                ax_tmp = subplot(2,m,i);
-                
+%                 ax_tmp = subplot(2,m,i);
+                ax_tmp = ha(i);
                 if nargin >= 2 && length(this.paramNames) == length(numbins) && ~isnan(numbins(i))
-                    hi_tmp = histogram(this.params(:,i),numbins(i));
+                    hi_tmp = histogram(ax_tmp, this.params(:,i),numbins(i));
                 else
-                    hi_tmp = histogram(this.params(:,i));
+                    hi_tmp = histogram(ax_tmp,this.params(:,i));
                 end
                 if saveAx
                     this.h.hist(i) = hi_tmp;
                     this.h.ax(i) = ax_tmp;
                     ax_tmp.Units = 'pixels';
                 end
-                
+                axes(ax_tmp)
                 this.histfit(i,'kernel',saveAx)
-                title(this.paramNames{i})
+                labelname = this.paramNames{i};
+                if labelname(1) == '\'
+                    labelname = [labelname ' [\mus]'];
+                end
+                xlabel(ax_tmp,labelname)
+%                 title(this.paramNames{i})
             end
         end
         
@@ -178,7 +193,8 @@ classdef ParameterHistogram < handle
         
         function export(this,varargin)
             figure
-            this.plotHist(this.numbins, false)
+            this.plotHist(this.numbins, false);
+            save2pdf([this.path this.name '-histogramm.pdf'], 'fontsize', 10)
         end
     end
 end

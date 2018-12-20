@@ -19,3 +19,6 @@
 [submodule "3rd-party/updater"]
 	path = 3rd-party/updater
 	url = git@git.daten.tk:michael.pfitzner/matlab-updater.git
+[submodule "3rd-party/tight_subplot"]
+	path = 3rd-party/tight_subplot
+	url = git@git.daten.tk:michael.pfitzner/tight_subplot.git

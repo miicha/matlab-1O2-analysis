@@ -1722,7 +1722,7 @@ classdef SiSaMode < GenericMode
         
         function plot_histo(this, varargin)
             params = this.get_overlay_selection_data(this.fit_params);
-            ParameterHistogram(params, this.sisa_fit.parnames);
+            ParameterHistogram(params, this.sisa_fit.parnames,this.p.genericname,this.p.savepath);
         end
         
         function plot_hyper(this, varargin)
