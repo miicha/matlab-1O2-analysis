@@ -75,10 +75,15 @@ classdef ParameterHistogram < handle
             end
             num_par = size(this.params,2);
             m = ceil(num_par/2);
-            ha = tight_subplot(2,m,[.08 .04],[.08 .02],[.04 .01]);
+            if ~saveAx
+                ha = tight_subplot(2,m,[.08 .04],[.08 .02],[.04 .01]);
+            end
             for i = 1:num_par
-%                 ax_tmp = subplot(2,m,i);
-                ax_tmp = ha(i);
+                if saveAx
+                    ax_tmp = subplot(2,m,i);
+                else
+                    ax_tmp = ha(i);
+                end
                 if nargin >= 2 && length(this.paramNames) == length(numbins) && ~isnan(numbins(i))
                     hi_tmp = histogram(ax_tmp, this.params(:,i),numbins(i));
                 else
@@ -89,14 +94,18 @@ classdef ParameterHistogram < handle
                     this.h.ax(i) = ax_tmp;
                     ax_tmp.Units = 'pixels';
                 end
-                axes(ax_tmp)
-                this.histfit(i,'kernel',saveAx)
+                
                 labelname = this.paramNames{i};
                 if labelname(1) == '\'
                     labelname = [labelname ' [\mus]'];
                 end
+                
                 xlabel(ax_tmp,labelname)
-%                 title(this.paramNames{i})
+                drawnow
+                
+                axes(ax_tmp)
+                this.histfit(i,'kernel',saveAx)
+                
             end
         end
         
