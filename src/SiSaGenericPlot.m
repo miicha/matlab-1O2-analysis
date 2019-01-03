@@ -544,6 +544,7 @@ classdef SiSaGenericPlot < handle
             else
                 [p, p_err, chi, this.res] = this.sisa_fit.fit(this.data);
             end
+            [A,B,C] = this.sisa_fit.get_integrals()
             
             this.fit_params = p;
             this.fit_params_err = p_err;

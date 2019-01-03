@@ -15,6 +15,10 @@ classdef SiSaMode < GenericMode
         sisa_esti;
         sisa_esti_err;
         fluo_val;
+        
+        A_int;
+        B_int;
+        C_int;
             
         est_params;
         last_fitted;
@@ -763,6 +767,11 @@ classdef SiSaMode < GenericMode
             this.fit_dw = this.fit_chisq;
             this.fit_z = this.fit_chisq;
             this.sisa_esti = nan(s{1:4});
+
+            this.A_int = nan(s{1:4});
+            this.B_int = nan(s{1:4});
+            this.C_int = nan(s{1:4});
+            
             this.sisa_esti_err = nan(s{1:4});
             this.fluo_val = this.fit_chisq;
             
@@ -1039,6 +1048,12 @@ classdef SiSaMode < GenericMode
                         plot_data = this.fluo_val;
                     case length(this.est_params(1, 1, 1, 1, :)) + 6
                         plot_data = this.fluo_val./this.sisa_esti;
+                    case length(this.est_params(1, 1, 1, 1, :)) + 7
+                        plot_data = this.A_int;
+                    case length(this.est_params(1, 1, 1, 1, :)) + 8
+                        plot_data = this.B_int;
+                    case length(this.est_params(1, 1, 1, 1, :)) + 9
+                        plot_data = this.C_int;
                     otherwise
                         plot_data = this.fit_params(:, :, :, :, param);
                 end
@@ -1219,6 +1234,8 @@ classdef SiSaMode < GenericMode
                     this.last_fitted = n;
                     [this.sisa_esti(i, j, k, l), this.sisa_esti_err(i, j, k, l)] = sf.get_sisa_estimate();
                     
+                    [this.A_int(i, j, k, l),this.B_int(i, j, k, l),this.C_int(i, j, k, l)] = sf.get_integrals();
+                    
                     lt = lt + toc(innertime);
                     
                     this.p.update_infos(['   |   Fitting ' num2str(m) '/' num2str(ma) ' (sequentiell): '...
@@ -1282,6 +1299,9 @@ classdef SiSaMode < GenericMode
             f_chisq = reshape(this.fit_chisq, prod(this.sisa_data_size), 1);
             f_s_est = f_chisq;
             f_s_est_err = f_chisq;
+            A = f_chisq;
+            B = f_chisq;
+            C = f_chisq;
             fluo = f_chisq;
             f_dw = f_chisq;
             f_z = f_chisq;
@@ -1322,6 +1342,8 @@ classdef SiSaMode < GenericMode
                             [par, p_err, chi] = sf.fit(y);
                         end
                         [f_s_est(n+i), f_s_est_err(n+i)] = sf.get_sisa_estimate();
+                        
+                        [A(n+i),B(n+i),C(n+i)] = sf.get_integrals();
                         f_pars(n+i, :) = par;
                         f_pars_e(n+i, :) = p_err;
                         f_chisq(n+i) = chi;
@@ -1342,6 +1364,11 @@ classdef SiSaMode < GenericMode
                     this.fit_dw = reshape(f_dw, this.sisa_data_size);
                     this.fit_z = reshape(f_z, this.sisa_data_size);
                     this.sisa_esti = reshape(f_s_est, this.sisa_data_size);
+                    
+                    this.A_int = reshape(A, this.sisa_data_size);
+                    this.B_int = reshape(B, this.sisa_data_size);
+                    this.C_int = reshape(C, this.sisa_data_size);
+                    
                     this.sisa_esti_err = reshape(f_s_est_err, this.sisa_data_size);
                     this.plot_array();
                 end
@@ -1369,6 +1396,9 @@ classdef SiSaMode < GenericMode
             this.fit_dw = reshape(f_dw, this.sisa_data_size);
             this.fit_z = reshape(f_z, this.sisa_data_size);
             this.sisa_esti = reshape(f_s_est, this.sisa_data_size);
+            this.A_int = reshape(A, this.sisa_data_size);
+            this.B_int = reshape(B, this.sisa_data_size);
+            this.C_int = reshape(C, this.sisa_data_size);
             this.sisa_esti_err = reshape(f_s_est_err, this.sisa_data_size);
 
             for m = 1:length(this.p.modes)
@@ -2084,10 +2114,24 @@ classdef SiSaMode < GenericMode
             par_names = this.sisa_fit_info.par_names{this.sisa_fit.curr_fitfun};
             ov = get(varargin{2}.OldValue, 'String');
             nv = get(varargin{2}.NewValue, 'String');
+            b = false; c = false;
+            if find(ismember(par_names,'B'))>0
+                b = true;
+            end
+            if find(ismember(par_names,'C'))>0
+                c = true;
+            end
             if ~strcmp(ov, nv)
                 if strcmp(nv, get(this.h.fit_par, 'string'))
                     this.disp_fit_params = true;
-                    params = [par_names, 'Chi^2','DW','Z','SiSa_esti', 'Fluo', 'Fluo/SiSa'];
+                    params = [par_names, 'Chi^2','DW','Z','SiSa_esti', 'Fluo', 'Fluo/SiSa', 'SiSa_int'];
+                    if b
+                        params = [params, 'B_int'];
+                        if c
+                            params = [params, 'C_int'];
+                        end
+                    end
+                    
                 else
                     this.disp_fit_params = false;
                     params = [par_names, 'Summe'];
