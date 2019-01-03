@@ -1177,7 +1177,9 @@ classdef SiSaGenericPlot < handle
     
     methods(Access=private)
         function keypress(this,varargin)
-            varargin{2}.Key
+            if varargin{2}.Key == 'f'
+                this.fit();
+            end
         end
     end
 end
