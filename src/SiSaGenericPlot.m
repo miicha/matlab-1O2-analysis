@@ -114,7 +114,8 @@ classdef SiSaGenericPlot < handle
                          'resize', 'on',...
                          'menubar', 'none',...
                          'toolbar', 'figure',...
-                         'ResizeFcn', @this.resize);
+                         'ResizeFcn', @this.resize,...
+                         'KeyPressFcn',@this.keypress);
             
             toolbar_pushtools = findall(this.h.toolbar, 'Type', 'uipushtool');
             toolbar_toggletools = findall(this.h.toolbar, 'Type', 'uitoggletool');
@@ -1173,6 +1174,11 @@ classdef SiSaGenericPlot < handle
         end
     end
     
+    methods(Access=private)
+        function keypress(this,varargin)
+            varargin{2}.Key
+        end
+    end
 end
 
 function img = lrarrow()
