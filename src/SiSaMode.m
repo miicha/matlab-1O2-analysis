@@ -852,7 +852,9 @@ classdef SiSaMode < GenericMode
                 end
             end
             
-            set(this.h.ov_drpd, 'string', [par_names,'Chi^2', 'Summe','1O2 est']);
+            pars = this.add_integral_selectors([par_names,'Chi^2', 'Summe','1O2 est']);
+            set(this.h.ov_drpd, 'string', pars);
+            
             set(this.h.param, 'visible', 'on',...
                             'string', [par_names, 'Summe']);
             this.plot_array();
@@ -1110,6 +1112,12 @@ classdef SiSaMode < GenericMode
                         dataToCompare = this.data_sum;
                     case no_pars +3 % compare against 1O2 est
                         dataToCompare = this.sisa_esti;
+                    case no_pars +4 % compare against 1O2 integral
+                        dataToCompare = this.A_int;
+                    case no_pars +5 % compare against B integral
+                        dataToCompare = this.B_int;
+                    case no_pars +6 % compare against C integral
+                        dataToCompare = this.C_int;
                 end
             end
             
@@ -1663,7 +1671,27 @@ classdef SiSaMode < GenericMode
         end
     end
     
-    methods (Access = private)       
+    methods (Access = private)
+        
+        function str_array_out = add_integral_selectors(this,str_array_in)
+            par_names = this.sisa_fit_info.par_names{this.sisa_fit.curr_fitfun};
+            b = false; c = false;
+            if find(ismember(par_names,'B'))>0
+                b = true;
+            end
+            if find(ismember(par_names,'C'))>0
+                c = true;
+            end
+            
+            str_array_out = [str_array_in, '1O2_int'];
+            if b
+                str_array_out = [str_array_out, 'B_int'];
+                if c
+                    str_array_out = [str_array_out, 'C_int'];
+                end
+            end
+        end
+        
         %% Callbacks:
         function load_ext_data_cb(this, varargin)
             [name, filepath] = uigetfile({[this.p.openpath '*.fit']}, 'Dateien ausw�hlen');
@@ -2114,24 +2142,10 @@ classdef SiSaMode < GenericMode
             par_names = this.sisa_fit_info.par_names{this.sisa_fit.curr_fitfun};
             ov = get(varargin{2}.OldValue, 'String');
             nv = get(varargin{2}.NewValue, 'String');
-            b = false; c = false;
-            if find(ismember(par_names,'B'))>0
-                b = true;
-            end
-            if find(ismember(par_names,'C'))>0
-                c = true;
-            end
             if ~strcmp(ov, nv)
                 if strcmp(nv, get(this.h.fit_par, 'string'))
                     this.disp_fit_params = true;
-                    params = [par_names, 'Chi^2','DW','Z','SiSa_esti', 'Fluo', 'Fluo/SiSa', 'SiSa_int'];
-                    if b
-                        params = [params, 'B_int'];
-                        if c
-                            params = [params, 'C_int'];
-                        end
-                    end
-                    
+                    params = this.add_integral_selectors([par_names, 'Chi^2','DW','Z','SiSa_esti', 'Fluo', 'Fluo/SiSa']);
                 else
                     this.disp_fit_params = false;
                     params = [par_names, 'Summe'];
