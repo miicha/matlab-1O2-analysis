@@ -56,6 +56,7 @@ classdef SiSaGenericPlot < handle
             %% initialize UI objects
             
             this.h.f = figure();
+            this.h.f.HandleVisibility ='callback';
             minSize = [850 650];
             
             this.h.toolbar = findall(this.h.f,'type','uitoolbar');
