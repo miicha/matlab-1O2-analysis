@@ -367,7 +367,7 @@ classdef UI < handle
                                 this.fileinfo.size = tmp(1:4);
                                 this.modes{i} = InvivoMode(this, reader.get_sisa_data(),...
                                                          reader.data.sisa.verlauf,...
-                                                         reader.meta.sisa.int_time, reader, i);
+                                                         reader.meta.sisa.int_time, reader, i,this.siox_config);
                             case 'in-vivo-dual'
                                 tmp = size(reader.data.sisa_1270.data);
                                 this.fileinfo.size = tmp(1:4);
