@@ -813,7 +813,8 @@ classdef SiSaMode < GenericMode
             this.channel_width = this.reader.meta.sisa.Kanalbreite;
             % select channel width in dropdown
             tmp = str2double(this.h.ch_width.String);
-            this.h.ch_width.Value = find(tmp == this.channel_width*1000);
+            rounded_cw = round(this.channel_width*1000*100)/100;
+            this.h.ch_width.Value = find(tmp == rounded_cw);
             this.change_channel_width();
         end
         
