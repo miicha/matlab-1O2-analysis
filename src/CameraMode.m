@@ -172,6 +172,13 @@ classdef CameraMode < GenericMode
             data = this.data(:, :, :, :, :);
         end
         
+        function destroy(this, children_only)
+            if ~children_only
+                delete(this.h.cameramode)
+                delete(this);
+            end
+        end
+        
     end
     
     methods (Access = private)

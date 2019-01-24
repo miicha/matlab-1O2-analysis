@@ -89,6 +89,13 @@ classdef MetaMode < GenericMode
         function resize(this, varargin)
             
         end
+        
+        function destroy(this, children_only)
+            if ~children_only
+                delete(this.h.metamode)
+                delete(this);
+            end
+        end
     end
     
 end

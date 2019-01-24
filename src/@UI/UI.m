@@ -401,6 +401,7 @@ classdef UI < handle
 %                         imshow(reader.data.camera(:,:,1), [5000, 11000])
                         intTime = 2000;
                         this.modes{i} = CameraMode(this, reader.data.camera,intTime, i);
+                        i = i+1;
                 end
             end
             switch this.FileType
@@ -420,7 +421,7 @@ classdef UI < handle
         end
         
         function close_modes(this)
-            this.modes
+%             this.modes
 %             this.destroy(true);
             for i = 1:length(this.modes)
                 this.modes{i}.destroy(false);

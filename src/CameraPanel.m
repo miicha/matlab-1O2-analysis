@@ -6,9 +6,6 @@ classdef CameraPanel < PlotPanel
             this@PlotPanel(parent, dims, dimnames, gui_parent, dimnames ,{[], [], [], [], []});       
         end
         
-    end
-    
-    methods (Access = protected)      
         function set_nth_val_cb(this, caller, varargin)
             dim = str2double(caller.Tag);
             if strcmp(this.dimnames{this.curr_dims(dim)}, 'l')
@@ -28,6 +25,11 @@ classdef CameraPanel < PlotPanel
                 set_nth_val_cb@PlotPanel(this, caller, varargin{:})
             end
         end
+        
+    end
+    
+    methods (Access = protected)      
+        
         
         function calculate_legend(this, data)
             plot_data = squeeze(data(this.ind{:}));
