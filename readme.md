@@ -1,3 +1,7 @@
+# Copy from private Gitlab instance
+for latest/original/development version [see here](https://www.git.daten.tk/sebastian.pfitzner/sisa-scan-auswertung)
+- submodules need to be fixed on github
+
 ## SiSa-Scan Auswerte-Software
 ---
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;  ![screen](side/screen.png)
