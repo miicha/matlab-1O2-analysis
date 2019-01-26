@@ -17,7 +17,7 @@ Allgemeinen nicht die neusten Features und Bugfixes.
 dann bitte den [64-bit Installer R2017b (9.3)](http://de.mathworks.com/products/compiler/mcr/index.html)
 herunterladen und ausführen. Dann mit dem nächsten Schritt weiter machen.
 
-- Andernfalls reicht es, den Inhalt [diese exe](https://git.daten.tk/sebastian.pfitzner/sisa-scan-auswertung/raw/master/Deployment/SiSaScanAuswertung.exe)
+- Andernfalls reicht es, den Inhalt [diese exe](https://www.git.daten.tk/sebastian.pfitzner/sisa-scan-auswertung/raw/master/Deployment/SiSaScanAuswertung.exe)
 herunterzuladen und auszuführen.
 
 #### m-Files
@@ -67,5 +67,5 @@ schrecklich aussehen. Die Funktionsfähigkeit sollte aber erhalten bleiben.
 - Die Binaries sind ab f79c56c3 mit R2014b kompiliert.
 - Die Binaries sind ab 0.4.3 mit R2015b kompiliert.
 
-In [diesem](https://git.daten.tk/sebastian.pfitzner/sisa-scan-auswertung/tree/R2014a-kompatibel) 
+In [diesem](https://www.git.daten.tk/sebastian.pfitzner/sisa-scan-auswertung/tree/R2014a-kompatibel) 
 Branch sind noch die alten hg1-kompatiblen Files und Binaries enthalten.
